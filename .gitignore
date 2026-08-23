@@ -1,0 +1,46 @@
+### Segurança ###
+.env
+*.p12
+*.jks
+*.pem
+*.key
+
+### LOGS ###
+logs/
+*.log
+
+### MAVEN ###
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### INTELLIJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### ECLIPSE ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### VSCODE ###
+.vscode/
+
+### SISTEMA OPERACIONAL ###
+.DS_Store
+Thumbs.db
+
+### DOCKER ###
+.env.local
+.env.production
+
+### UPLOADS LOCAIS ###
+uploads/
