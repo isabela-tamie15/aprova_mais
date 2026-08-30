@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'aprovamais'
+    static_configs:
+      - targets: ['backend:8443']
+    metrics_path: '/actuator/prometheus'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
