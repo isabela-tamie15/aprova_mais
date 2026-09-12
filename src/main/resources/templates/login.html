@@ -60,10 +60,8 @@
                         return;
                     }
 
-                    localStorage.setItem('token', dados.token);
-                    localStorage.setItem('perfil', dados.perfil);
-                    localStorage.setItem('nome', dados.nome);
-
+                    // Token agora está no cookie HttpOnly
+                    // Não precisa mais salvar no localStorage
                     this.redirecionarPorPerfil(dados.perfil);
 
                 } catch (e) {
