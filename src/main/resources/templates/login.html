@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Aprova+ | Login</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<h2>Aprova+</h2>
+
+<div x-data="loginForm()">
+
+    <p x-show="erro" x-text="erro" style="color: red;"></p>
+
+    <form @submit.prevent="entrar">
+        <div>
+            <label for="email">E-mail</label><br>
+            <input type="email" id="email" x-model="email" required>
+        </div>
+        <br>
+        <div>
+            <label for="senha">Senha</label><br>
+            <input type="password" id="senha" x-model="senha" required>
+        </div>
+        <br>
+        <button type="submit" :disabled="carregando">
+            <span x-show="!carregando">Entrar</span>
+            <span x-show="carregando">Entrando...</span>
+        </button>
+    </form>
+</div>
+
+<script>
+    function loginForm() {
+        return {
+            email: '',
+            senha: '',
+            erro: '',
+            carregando: false,
+
+            async entrar() {
+                this.erro = '';
+                this.carregando = true;
+
+                try {
+                    const resposta = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: this.email,
+                            senha: this.senha
+                        })
+                    });
+
+                    const dados = await resposta.json();
+
+                    if (!resposta.ok) {
+                        this.erro = dados.mensagem || 'Erro ao realizar login.';
+                        return;
+                    }
+
+                    localStorage.setItem('token', dados.token);
+                    localStorage.setItem('perfil', dados.perfil);
+                    localStorage.setItem('nome', dados.nome);
+
+                    this.redirecionarPorPerfil(dados.perfil);
+
+                } catch (e) {
+                    this.erro = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.carregando = false;
+                }
+            },
+
+            redirecionarPorPerfil(perfil) {
+                const rotas = {
+                    'COORDENADOR': '/coordenador/dashboard',
+                    'ORIENTADOR': '/orientador/dashboard',
+                    'ALUNO': '/aluno/dashboard'
+                };
+                window.location.href = rotas[perfil] || '/login';
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
