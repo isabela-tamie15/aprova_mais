@@ -9,5 +9,5 @@ public class TipoEstagioResponse {
 
     private Long id;
     private String nome;
-    private BigDecimal cargaHorariaSemanal;
+    private BigDecimal cargaHorariaNecessaria;
 }
