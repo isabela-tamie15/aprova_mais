@@ -165,7 +165,7 @@ public class EstagioService {
         resposta.setStatus(estagio.getStatus().name());
         resposta.setDataInicio(estagio.getDataInicio());
         resposta.setNomeTipoEstagio(estagio.getTipoEstagio().getNome());
-        resposta.setCargaHorariaSemanal(estagio.getCargaHorariaNecessaria());
+        resposta.setCargaHorariaNecessaria(estagio.getCargaHorariaNecessaria());
         resposta.setNomeAluno(estagio.getMatricula().getAluno().getNome());
         resposta.setJustificativaRejeicao(estagio.getJustificativaRejeicao());
 
