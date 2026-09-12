@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/login",
+                                "/estagio",
+                                "/orientador/validacoes",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/convite/**",
                                 "/swagger-ui.html",
