@@ -3,6 +3,7 @@ package tcc.ges.aprovamais.security;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,16 +32,14 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain cadeiaFiltros
     ) throws ServletException, IOException {
 
-        final String cabecalhoAutorizacao = requisicao.getHeader("Authorization");
+        String token = extrairToken(requisicao);
 
-        if (cabecalhoAutorizacao == null || !cabecalhoAutorizacao.startsWith("Bearer ")) {
+        if (token == null) {
             cadeiaFiltros.doFilter(requisicao, resposta);
             return;
         }
 
-        final String token = cabecalhoAutorizacao.substring(7);
         final String email;
-
         try {
             email = jwtService.extrairEmail(token);
         } catch (JwtException | IllegalArgumentException e) {
@@ -69,5 +68,21 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         cadeiaFiltros.doFilter(requisicao, resposta);
+    }
+
+    private String extrairToken(HttpServletRequest requisicao) {
+        String cabecalho = requisicao.getHeader("Authorization");
+        if (cabecalho != null && cabecalho.startsWith("Bearer ")) {
+            return cabecalho.substring(7);
+        }
+        if (requisicao.getCookies() != null) {
+            for (Cookie cookie : requisicao.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        return null;
     }
 }
