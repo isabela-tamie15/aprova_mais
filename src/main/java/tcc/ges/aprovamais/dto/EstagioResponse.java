@@ -12,8 +12,9 @@ public class EstagioResponse {
     private String status;
     private LocalDate dataInicio;
     private String nomeTipoEstagio;
-    private BigDecimal cargaHorariaSemanal;
+    private BigDecimal cargaHorariaNecessaria;
     private String nomeOrientador;
     private String nomeAluno;
     private String justificativaRejeicao;
 }
+
