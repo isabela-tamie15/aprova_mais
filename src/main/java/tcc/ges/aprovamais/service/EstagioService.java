@@ -43,7 +43,7 @@ public class EstagioService {
             TipoEstagioResponse resposta = new TipoEstagioResponse();
             resposta.setId(tipo.getId());
             resposta.setNome(tipo.getNome());
-            resposta.setCargaHorariaSemanal(tipo.getCargaHorariaNecessaria());
+            resposta.setCargaHorariaNecessaria(tipo.getCargaHorariaNecessaria());
             respostas.add(resposta);
         }
         return respostas;
