@@ -48,17 +48,22 @@ public class EstagioService {
     }
 
     private EstagioResponse paraResponse(Estagio estagio) {
-        return EstagioResponse.builder()
-                .id(estagio.getId())
-                .status(estagio.getStatus().name())
-                .dataInicio(estagio.getDataInicio())
-                .nomeTipoEstagio(estagio.getTipoEstagio().getNome())
-                .cargaHorariaNecessaria(estagio.getCargaHorariaNecessaria())
-                .nomeAluno(estagio.getMatricula().getAluno().getNome())
-                .nomeOrientador(estagio.getOrientador() != null
-                        ? estagio.getOrientador().getNome()
-                        : null)
-                .justificativaRejeicao(estagio.getJustificativaRejeicao())
-                .build();
+        EstagioResponse resposta = new EstagioResponse();
+
+        resposta.setId(estagio.getId());
+        resposta.setStatus(estagio.getStatus().name());
+        resposta.setDataInicio(estagio.getDataInicio());
+        resposta.setNomeTipoEstagio(estagio.getTipoEstagio().getNome());
+        resposta.setCargaHorariaNecessaria(estagio.getCargaHorariaNecessaria());
+        resposta.setNomeAluno(estagio.getMatricula().getAluno().getNome());
+        resposta.setJustificativaRejeicao(estagio.getJustificativaRejeicao());
+
+        if (estagio.getOrientador() != null) {
+            resposta.setNomeOrientador(estagio.getOrientador().getNome());
+        } else {
+            resposta.setNomeOrientador(null);
+        }
+
+        return resposta;
     }
 }
