@@ -1,39 +1,51 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-
     <meta charset="UTF-8">
     <title>Aprova+ | Dashboard</title>
-
 </head>
 <body>
 
-<h2>Bem vindo ao Aprova+</h2>
+<h2>Bem-vindo ao Aprova+</h2>
 
-<div th:if="${estagio}">
+<div th:if="${estagio == null}">
+    <p>Você ainda não possui um estágio cadastrado.</p>
+    <a href="/estagio">Cadastrar estágio</a>
+</div>
 
+<div th:if="${estagio != null and estagio.status == 'PENDENTE'}">
     <h3>Meu Estágio</h3>
-
     <p>Tipo: <span th:text="${estagio.nomeTipoEstagio}"></span></p>
-    <p>Status: <span th:text="${estagio.status}"></span></p>
+    <p>Status: <strong>Aguardando aprovação do orientador</strong></p>
     <p>Início: <span th:text="${estagio.dataInicio}"></span></p>
-
-    <p>Carga horária necessária: <span th:text="${estagio.cargaHorariaNecessaria}"></span>h</p>
-
+    <p>Empresa: <span th:text="${estagio.nomeEmpresa}"></span></p>
     <p>Orientador:
         <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
         <span th:unless="${estagio.nomeOrientador}">Não atribuído</span>
     </p>
-
-    <br>
-    <a href="/aluno/trilha">Ver minha trilha de tarefas</a>
-
 </div>
 
-<div th:unless="${estagio}">
+<div th:if="${estagio != null and estagio.status == 'REJEITADO'}">
+    <h3>Meu Estágio</h3>
+    <p>Status: <strong style="color: red;">Reprovado pelo orientador</strong></p>
+    <p>Justificativa: <span th:text="${estagio.justificativaRejeicao}"></span></p>
+    <br>
+    <a href="/estagio">Reenviar estágio para aprovação</a>
+</div>
 
-    <p>Você não possui um estágio ativo</p>
-
+<div th:if="${estagio != null and estagio.status == 'ATIVO'}">
+    <h3>Meu Estágio</h3>
+    <p>Tipo: <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+    <p>Status: <strong style="color: green;">Ativo</strong></p>
+    <p>Início: <span th:text="${estagio.dataInicio}"></span></p>
+    <p>Carga horária necessária: <span th:text="${estagio.cargaHorariaNecessaria}"></span>h</p>
+    <p>Empresa: <span th:text="${estagio.nomeEmpresa}"></span></p>
+    <p>Orientador:
+        <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+        <span th:unless="${estagio.nomeOrientador}">Não atribuído</span>
+    </p>
+    <br>
+    <a href="/aluno/trilha">Ver minha trilha de tarefas</a>
 </div>
 
 </body>

@@ -60,8 +60,6 @@
                         return;
                     }
 
-                    // Token agora está no cookie HttpOnly
-                    // Não precisa mais salvar no localStorage
                     this.redirecionarPorPerfil(dados.perfil);
 
                 } catch (e) {
@@ -74,7 +72,7 @@
             redirecionarPorPerfil(perfil) {
                 const rotas = {
                     'COORDENADOR': '/coordenador/dashboard',
-                    'ORIENTADOR': '/orientador/dashboard',
+                    'ORIENTADOR': '/orientador/validacoes',
                     'ALUNO': '/aluno/dashboard'
                 };
                 window.location.href = rotas[perfil] || '/login';

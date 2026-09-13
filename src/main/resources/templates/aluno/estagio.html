@@ -1,105 +1,78 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Meu Estágio</title>
+    <title>Aprova+ | Meu Estágio</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
-<h1>Meu Estágio</h1>
 
-<div x-data="estagioApp()" x-init="init()">
+<h2>Meu Estágio</h2>
+<a href="/aluno/dashboard">← Voltar ao dashboard</a>
+<br><br>
 
-    <div x-show="carregando">
-        <p>Carregando...</p>
+<div th:if="${estagio != null and estagio.status == 'PENDENTE'}">
+    <p><strong>Status:</strong> Aguardando aprovação do orientador</p>
+    <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+    <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+    <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+</div>
+
+<div th:if="${estagio == null or estagio.status == 'REJEITADO'}"
+     x-data="estagioForm()"
+     x-init="carregarTipos()">
+
+    <div th:if="${estagio != null and estagio.status == 'REJEITADO'}">
+        <p style="color: red;"><strong>Estágio rejeitado.</strong>
+            Justificativa: <span th:text="${estagio.justificativaRejeicao}"></span>
+        </p>
+        <p>Preencha o formulário abaixo para reenviar.</p>
     </div>
 
-    <div x-show="!carregando && !estagio && !formularioAberto">
-        <p>Você ainda não cadastrou seu estágio.</p>
-        <button @click="abrirFormulario()">Cadastrar Estágio</button>
+    <div th:if="${estagio == null}">
+        <p>Cadastre seu estágio para iniciar o processo de aprovação.</p>
     </div>
 
-    <div x-show="!carregando && estagio">
-        <h2>Situação do seu estágio</h2>
-        <p>Tipo: <span x-text="estagio?.nomeTipoEstagio"></span></p>
-        <p>Status: <span x-text="estagio?.status"></span></p>
-        <p>Início: <span x-text="estagio?.dataInicio"></span></p>
-        <p>Orientador: <span x-text="estagio?.nomeOrientador || 'Não atribuído'"></span></p>
+    <p x-show="erro" x-text="erro" style="color: red;"></p>
 
-        <div x-show="estagio?.status === 'REJEITADO'">
-            <p style="color:red">Justificativa: <span x-text="estagio?.justificativaRejeicao"></span></p>
-            <button @click="abrirFormulario()">Reenviar para aprovação</button>
+    <form @submit.prevent="enviar()">
+        <div>
+            <label>Tipo de Estágio</label><br>
+            <select x-model="form.tipoEstagioId" required>
+                <option value="">Selecione...</option>
+                <template x-for="tipo in tipos" :key="tipo.id">
+                    <option :value="tipo.id" x-text="tipo.nome"></option>
+                </template>
+            </select>
         </div>
-    </div>
-
-    <div x-show="formularioAberto">
-        <h2>Cadastrar Estágio</h2>
-
-        <div x-show="erro" style="color:red">
-            <p x-text="erro"></p>
+        <br>
+        <div>
+            <label>Nome da Empresa</label><br>
+            <input type="text" x-model="form.nomeEmpresa" required>
         </div>
-
-        <form @submit.prevent="enviar()">
-            <div>
-                <label>Tipo de Estágio</label>
-                <select x-model="form.tipoEstagioId">
-                    <option value="">Selecione...</option>
-                    <template x-for="tipo in tipos" :key="tipo.id">
-                        <option :value="tipo.id" x-text="tipo.nome"></option>
-                    </template>
-                </select>
-            </div>
-
-            <div>
-                <label>Data de Início</label>
-                <input type="date" x-model="form.dataInicio">
-            </div>
-
-            <button type="submit" :disabled="enviando">
-                <span x-show="!enviando">Enviar para aprovação</span>
-                <span x-show="enviando">Enviando...</span>
-            </button>
-
-            <button type="button" @click="formularioAberto = false">Cancelar</button>
-        </form>
-    </div>
+        <br>
+        <div>
+            <label>Data de Início</label><br>
+            <input type="date" x-model="form.dataInicio" required>
+        </div>
+        <br>
+        <button type="submit" :disabled="enviando">
+            <span x-show="!enviando">Enviar para aprovação</span>
+            <span x-show="enviando">Enviando...</span>
+        </button>
+    </form>
 </div>
 
 <script>
-    function estagioApp() {
+    function estagioForm() {
         return {
-            carregando: true,
-            estagio: null,
             tipos: [],
-            formularioAberto: false,
             enviando: false,
             erro: '',
             form: {
                 tipoEstagioId: '',
+                nomeEmpresa: '',
                 dataInicio: ''
-            },
-
-            async init() {
-                await this.carregarEstagio();
-                await this.carregarTipos();
-                this.carregando = false;
-            },
-
-            async carregarEstagio() {
-                try {
-                    const resp = await fetch('/api/v1/aluno/estagio', {
-                        credentials: 'include'
-                    });
-                    if (resp.status === 204) {
-                        this.estagio = null;
-                        return;
-                    }
-                    if (resp.ok) {
-                        this.estagio = await resp.json();
-                    }
-                } catch (e) {
-                    console.error('Erro ao carregar estágio', e);
-                }
             },
 
             async carregarTipos() {
@@ -115,12 +88,6 @@
                 }
             },
 
-            abrirFormulario() {
-                this.formularioAberto = true;
-                this.erro = '';
-                this.form = { tipoEstagioId: '', dataInicio: '' };
-            },
-
             async enviar() {
                 this.erro = '';
                 this.enviando = true;
@@ -131,19 +98,18 @@
                         credentials: 'include',
                         body: JSON.stringify({
                             tipoEstagioId: Number(this.form.tipoEstagioId),
+                            nomeEmpresa: this.form.nomeEmpresa,
                             dataInicio: this.form.dataInicio
                         })
                     });
 
-                    const dados = await resp.json();
-
                     if (!resp.ok) {
+                        const dados = await resp.json();
                         this.erro = dados.mensagem || 'Erro ao cadastrar estágio.';
                         return;
                     }
 
-                    this.estagio = dados;
-                    this.formularioAberto = false;
+                    window.location.href = '/aluno/dashboard';
 
                 } catch (e) {
                     this.erro = 'Não foi possível conectar ao servidor.';
@@ -154,5 +120,6 @@
         }
     }
 </script>
+
 </body>
 </html>
