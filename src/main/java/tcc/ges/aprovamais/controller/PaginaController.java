@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.TrilhaService;
 
@@ -25,8 +26,13 @@ public class PaginaController {
     @PreAuthorize("hasRole('ALUNO')")
     public String dashboardAluno(Model model, Authentication authentication) {
         String email = authentication.getName();
-        model.addAttribute("estagio", estagioService.buscarEstagioAtivo(email));
-        return "aluno/dashboard";}
+        try {
+            model.addAttribute("estagio", estagioService.buscarEstagioAtivo(email));
+        } catch (ResourceNotFoundException e) {
+            model.addAttribute("estagio", null);
+        }
+        return "aluno/dashboard";
+    }
 
     @GetMapping("/aluno/trilha")
     @PreAuthorize("hasRole('ALUNO')")
