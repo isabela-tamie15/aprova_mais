@@ -41,7 +41,7 @@ public class SecurityConfig {
             Environment env) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/**"))
+                .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .sessionManagement(session -> session
@@ -50,9 +50,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/login",
-                                "/estagio",
-                                "/orientador/validacoes",
+                                "/error",
+                                "/favicon.ico",
+                                "/.well-known/**",
                                 "/api/v1/auth/login",
+                                "/api/v1/auth/logout",
                                 "/api/v1/auth/convite/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
