@@ -70,6 +70,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erros);
     }
 
+    // 409 regra de negócio violada (ex.: estágio já pendente, já analisado)
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErroResposta> handleIllegalState(IllegalStateException ex) {
+        log.warn("[EXCEPTION] Regra de negócio violada: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(construirErro(HttpStatus.CONFLICT, ex.getMessage()));
+    }
+
     // 404 recurso não encontrado
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErroResposta> handleNotFound(ResourceNotFoundException ex) {
