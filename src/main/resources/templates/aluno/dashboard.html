@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+
+    <meta charset="UTF-8">
+    <title>Aprova+ | Dashboard</title>
+
+</head>
+<body>
+
+<h2>Bem vindo ao Aprova+</h2>
+
+<div th:if="${estagio}">
+
+    <h3>Meu Estágio</h3>
+
+    <p>Tipo: <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+    <p>Status: <span th:text="${estagio.status}"></span></p>
+    <p>Início: <span th:text="${estagio.dataInicio}"></span></p>
+
+    <p>Carga horária necessária: <span th:text="${estagio.cargaHorariaNecessaria}"></span>h</p>
+
+    <p>Orientador:
+        <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+        <span th:unless="${estagio.nomeOrientador}">Não atribuído</span>
+    </p>
+
+    <br>
+    <a href="/aluno/trilha">Ver minha trilha de tarefas</a>
+
+</div>
+
+<div th:unless="${estagio}">
+
+    <p>Você não possui um estágio ativo</p>
+
+</div>
+
+</body>
+</html>

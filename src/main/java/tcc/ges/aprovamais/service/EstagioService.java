@@ -1,6 +1,8 @@
 package tcc.ges.aprovamais.service;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
@@ -28,6 +30,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class EstagioService {
+
+    private static final Logger log = LoggerFactory.getLogger(EstagioService.class);
 
     private final EstagioRepository estagioRepository;
     private final MatriculaRepository matriculaRepository;
@@ -62,6 +66,33 @@ public class EstagioService {
         } else {
             return Optional.empty();
         }
+    }
+
+    /**
+     * Consulta o estágio ATIVO do aluno pelo e-mail (usado pelo Leonardo em outra funcionalidade).
+     */
+    @Transactional(readOnly = true)
+    public EstagioResponse buscarEstagioAtivo(String emailAluno) {
+
+        Matricula matricula = matriculaRepository
+                .findFirstByAlunoUsuarioEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
+                .orElseThrow(() -> {
+                    log.warn("[ESTÁGIO] Matrícula ativa não encontrada para: {}", emailAluno);
+                    return new ResourceNotFoundException("Matrícula ativa não encontrada.");
+                });
+
+        Estagio estagio = estagioRepository
+                .findByMatriculaIdAndStatus(matricula.getId(), StatusEstagio.ATIVO)
+                .orElseThrow(() -> {
+                    log.warn("[ESTÁGIO] Estágio ativo não encontrado para matrícula: {}",
+                            matricula.getId());
+                    return new ResourceNotFoundException("Estágio ativo não encontrado.");
+                });
+
+        log.info("[ESTÁGIO] Estágio ativo encontrado para aluno: {} - Tipo: {}",
+                emailAluno, estagio.getTipoEstagio().getNome());
+
+        return paraResponse(estagio);
     }
 
     @Transactional

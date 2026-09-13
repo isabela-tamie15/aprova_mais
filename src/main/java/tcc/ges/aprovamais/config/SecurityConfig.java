@@ -3,6 +3,7 @@ package tcc.ges.aprovamais.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,7 +39,6 @@ public class SecurityConfig {
             HttpSecurity http,
             AuthenticationProvider authenticationProvider,
             Environment env) throws Exception {
-
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/**"))
@@ -66,13 +66,11 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
         if (env.acceptsProfiles(Profiles.of("prod"))) {
             http.requiresChannel(channel -> channel
                     .anyRequest().requiresSecure()
             );
         }
-
         return http.build();
     }
 

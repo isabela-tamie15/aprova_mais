@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+
+
+    <meta charset="UTF-8">
+    <title>Aprova+ | Minha Trilha</title>
+
+
+</head>
+
+
+<body>
+<h2>Minha Trilha de Tarefas</h2>
+<a href="/aluno/dashboard">← Voltar ao dashboard</a>
+
+
+<div th:if="${trilha}">
+    <h3 th:text="${trilha.nomeTipoEstagio}"></h3>
+    <p th:text="${trilha.nomeTrilha}"></p>
+
+    <table border="1">
+
+        <thead>
+
+        <tr>
+            <th>Ordem</th>
+            <th>Tarefa</th>
+            <th>Descrição</th>
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        <tr th:each="tarefa : ${trilha.tarefas}">
+            <td th:text="${tarefa.ordem}"></td>
+            <td th:text="${tarefa.nome}"></td>
+            <td th:text="${tarefa.descricao}"></td>
+        </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<div th:unless="${trilha}">
+    <p>Nenhuma trilha encontrada para o seu tipo de estágio</p>
+</div>
+
+</body>
+</html>

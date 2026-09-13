@@ -23,4 +23,3 @@ public class EstagioResponse {
     private String nomeAluno;
     private String justificativaRejeicao;
 }
-
