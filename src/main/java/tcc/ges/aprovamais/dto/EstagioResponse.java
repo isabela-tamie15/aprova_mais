@@ -1,25 +1,21 @@
 package tcc.ges.aprovamais.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Data
+@Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class EstagioResponse {
 
-    private Long id;
-    private String status;
-    private LocalDate dataInicio;
-    private String nomeTipoEstagio;
-    private BigDecimal cargaHorariaNecessaria;
-    private String nomeOrientador;
-    private String nomeAluno;
-    private String justificativaRejeicao;
+    private final Long id;
+    private final String status;
+    private final LocalDate dataInicio;
+    private final String nomeTipoEstagio;
+    private final BigDecimal cargaHorariaNecessaria;
+    private final String nomeOrientador;
+    private final String nomeAluno;
+    private final String justificativaRejeicao;
 }
