@@ -25,9 +25,8 @@ public class EstagioService {
 
     @Transactional(readOnly = true)
     public EstagioResponse buscarEstagioAtivo(String emailAluno) {
-
         Matricula matricula = matriculaRepository
-                .findFirstByAlunoUsuarioEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
+                .findFirstByAlunoEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
                 .orElseThrow(() -> {
                     log.warn("[ESTÁGIO] Matrícula ativa não encontrada para: {}", emailAluno);
                     return new ResourceNotFoundException("Matrícula ativa não encontrada.");
