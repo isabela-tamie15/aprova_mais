@@ -17,11 +17,13 @@ public class PaginaController {
     private final EstagioService estagioService;
     private final TrilhaService trilhaService;
 
+    //endpoints públicos
     @GetMapping("/login")
     public String login() {
         return "login";
     }
 
+    //Endpoints do aluno
     @GetMapping("/aluno/dashboard")
     @PreAuthorize("hasRole('ALUNO')")
     public String dashboardAluno(Model model, Authentication authentication) {
@@ -40,5 +42,23 @@ public class PaginaController {
         String email = authentication.getName();
         model.addAttribute("trilha", trilhaService.buscarTrilhaDoAluno(email));
         return "aluno/trilha";
+    }
+
+    @GetMapping("/estagio")
+    @PreAuthorize("hasRole('ALUNO')")
+    public String paginaEstagio(Model model, Authentication authentication) {
+        String email = authentication.getName();
+        model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
+        model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis());
+        return "estagio";
+    }
+
+    //Endpoints do orientador
+    @GetMapping("/orientador/validacoes")
+    @PreAuthorize("hasRole('ORIENTADOR')")
+    public String paginaValidacoes(Model model, Authentication authentication) {
+        String email = authentication.getName();
+        model.addAttribute("estagios", estagioService.listarPendentes(email));
+        return "validacoes";
     }
 }
