@@ -28,11 +28,7 @@ public class PaginaController {
     @PreAuthorize("hasRole('ALUNO')")
     public String dashboardAluno(Model model, Authentication authentication) {
         String email = authentication.getName();
-        try {
-            model.addAttribute("estagio", estagioService.buscarEstagioAtivo(email));
-        } catch (ResourceNotFoundException e) {
-            model.addAttribute("estagio", null);
-        }
+        model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         return "aluno/dashboard";
     }
 
@@ -50,7 +46,7 @@ public class PaginaController {
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis());
-        return "estagio";
+        return "aluno/estagio";
     }
 
     //Endpoints do orientador
@@ -59,6 +55,6 @@ public class PaginaController {
     public String paginaValidacoes(Model model, Authentication authentication) {
         String email = authentication.getName();
         model.addAttribute("estagios", estagioService.listarPendentes(email));
-        return "validacoes";
+        return "orientador/validacoes";
     }
 }
