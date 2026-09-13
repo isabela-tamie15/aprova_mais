@@ -1,123 +1,104 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Validações de Estágio</title>
+    <title>Aprova+ | Validações</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
-<h1>Validações de Estágio</h1>
 
-<div x-data="validacoesApp()" x-init="init()">
+<h2>Validações de Estágio</h2>
 
-    <div x-show="carregando">
-        <p>Carregando...</p>
-    </div>
-
-    <div x-show="!carregando && estagios.length === 0">
-        <p>Nenhum estágio pendente de validação.</p>
-    </div>
-
-    <div x-show="!carregando && estagios.length > 0">
-        <template x-for="estagio in estagios" :key="estagio.id">
-            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
-                <p>Aluno: <span x-text="estagio.nomeAluno"></span></p>
-                <p>Tipo: <span x-text="estagio.nomeTipoEstagio"></span></p>
-                <p>Início: <span x-text="estagio.dataInicio"></span></p>
-                <p>Status: <span x-text="estagio.status"></span></p>
-
-                <div x-show="estagio.status === 'PENDENTE'">
-                    <button @click="aprovar(estagio.id)">Aprovar</button>
-
-                    <div>
-                        <input type="text"
-                               x-model="justificativas[estagio.id]"
-                               placeholder="Justificativa para rejeição">
-                        <button @click="rejeitar(estagio.id)">Rejeitar</button>
-                    </div>
-                </div>
-            </div>
-        </template>
-    </div>
-    <div x-show="mensagem">
-        <p x-text="mensagem"></p>
-    </div>
-
+<div th:if="${#lists.isEmpty(estagios)}">
+    <p>Nenhum estágio pendente de validação.</p>
 </div>
 
-<script>
-    function validacoesApp() {
+<div th:unless="${#lists.isEmpty(estagios)}">
+    <div th:each="estagio : ${estagios}"
+         th:attr="x-data=${'validacao(' + estagio.id + ')'}"
+         style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+
+        <p><strong>Aluno:</strong> <span th:text="${estagio.nomeAluno}"></span></p>
+        <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+        <p><strong>Status:</strong> <span th:text="${estagio.status}"></span></p>
+
+        <div th:if="${estagio.status == 'REJEITADO'}">
+            <p style="color: red;"><strong>Justificativa anterior:</strong>
+                <span th:text="${estagio.justificativaRejeicao}"></span>
+            </p>
+        </div>
+
+        <div th:if="${estagio.status == 'PENDENTE'}">
+            <p x-show="mensagem" x-text="mensagem"></p>
+
+            <button @click="aprovar()" :disabled="processando">Aprovar</button>
+
+            <div>
+                <input type="text" x-model="justificativa"
+                       placeholder="Justificativa para rejeição">
+                <button @click="rejeitar()" :disabled="processando">Rejeitar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function validacao(id) {
         return {
-            carregando: true,
-            estagios: [],
-            justificativas: {},
+            justificativa: '',
             mensagem: '',
+            processando: false,
 
-            async init() {
-                await this.carregarPendentes();
-                this.carregando = false;
-            },
-
-            async carregarPendentes() {
-                try {
-                    const resp = await fetch('/api/v1/orientador/validacoes', {
-                        credentials: 'include'
-                    });
-                    if (resp.ok) {
-                        this.estagios = await resp.json();
-                    }
-                } catch (e) {
-                    console.error('Erro ao carregar pendentes', e);
-                }
-            },
-
-            async aprovar(id) {
+            async aprovar() {
+                this.processando = true;
                 try {
                     const resp = await fetch(`/api/v1/orientador/validacoes/${id}/aprovar`, {
                         method: 'POST',
                         credentials: 'include'
                     });
-
                     if (resp.ok) {
-                        this.mensagem = 'Estágio aprovado com sucesso!';
-                        await this.carregarPendentes();
+                        window.location.reload();
                     } else {
                         const dados = await resp.json();
-                        this.mensagem = dados.mensagem || 'Erro ao aprovar estágio.';
+                        this.mensagem = dados.mensagem || 'Erro ao aprovar.';
                     }
                 } catch (e) {
                     this.mensagem = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.processando = false;
                 }
             },
 
-            async rejeitar(id) {
-                const justificativa = this.justificativas[id];
-                if (!justificativa || justificativa.trim() === '') {
+            async rejeitar() {
+                if (!this.justificativa.trim()) {
                     this.mensagem = 'Informe a justificativa antes de rejeitar.';
                     return;
                 }
-
+                this.processando = true;
                 try {
                     const resp = await fetch(`/api/v1/orientador/validacoes/${id}/rejeitar`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',
-                        body: JSON.stringify({ justificativa })
+                        body: JSON.stringify({ justificativa: this.justificativa })
                     });
-
                     if (resp.ok) {
-                        this.mensagem = 'Estágio rejeitado.';
-                        await this.carregarPendentes();
+                        window.location.reload();
                     } else {
                         const dados = await resp.json();
-                        this.mensagem = dados.mensagem || 'Erro ao rejeitar estágio.';
+                        this.mensagem = dados.mensagem || 'Erro ao rejeitar.';
                     }
                 } catch (e) {
                     this.mensagem = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.processando = false;
                 }
             }
         }
     }
 </script>
+
 </body>
 </html>
