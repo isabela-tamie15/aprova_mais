@@ -174,7 +174,6 @@ public class EstagioService {
     }
 
     //métodos auxiliares/universais
-
     private Aluno buscarAlunoPorEmail(String email) {
         return alunoRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado"));
@@ -195,6 +194,7 @@ public class EstagioService {
                 .nomeTipoEstagio(estagio.getTipoEstagio().getNome())
                 .cargaHorariaNecessaria(estagio.getCargaHorariaNecessaria())
                 .nomeAluno(estagio.getMatricula().getAluno().getNome())
+                .nomeEmpresa(estagio.getNomeEmpresa())
                 .nomeOrientador(estagio.getOrientador() != null
                         ? estagio.getOrientador().getNome()
                         : null)

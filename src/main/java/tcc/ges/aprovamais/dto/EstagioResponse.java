@@ -9,7 +9,6 @@ import java.time.LocalDate;
 @Getter
 @Builder
 public class EstagioResponse {
-
     private final Long id;
     private final String status;
     private final LocalDate dataInicio;
@@ -17,5 +16,6 @@ public class EstagioResponse {
     private final BigDecimal cargaHorariaNecessaria;
     private final String nomeOrientador;
     private final String nomeAluno;
+    private final String nomeEmpresa;
     private final String justificativaRejeicao;
 }
