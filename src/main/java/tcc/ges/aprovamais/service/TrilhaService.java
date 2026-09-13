@@ -57,7 +57,7 @@ public class TrilhaService {
 
     private Matricula buscarMatriculaAtiva(String emailAluno) {
         return matriculaRepository
-                .findFirstByAlunoUsuarioEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
+                .findFirstByAlunoEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
                 .orElseThrow(() -> {
                     log.warn("[TRILHA] Matrícula ativa não encontrada para aluno: {}", emailAluno);
                     return new ResourceNotFoundException("Matrícula ativa não encontrada.");
