@@ -3,50 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <title>Aprova+ | Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-light">
 
-<h2>Bem-vindo ao Aprova+</h2>
+<nav class="navbar navbar-dark bg-dark px-3 mb-4">
+    <span class="navbar-brand fw-bold">Aprova+</span>
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+</nav>
 
-<div th:if="${estagio == null}">
-    <p>Você ainda não possui um estágio cadastrado.</p>
-    <a href="/estagio">Cadastrar estágio</a>
+<div class="container">
+    <h4 class="mb-4">Bem-vindo ao Aprova+</h4>
+
+    <div th:if="${estagio == null}" class="card p-4 text-center">
+        <p class="text-muted">Você ainda não possui um estágio cadastrado.</p>
+        <a href="/estagio" class="btn btn-primary mt-2">Cadastrar estágio</a>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'PENDENTE'}" class="card p-4">
+        <h5 class="card-title mb-3">Meu Estágio</h5>
+        <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
+        <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+        <p><strong>Orientador:</strong>
+            <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+            <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
+        </p>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="card p-4">
+        <h5 class="card-title mb-3">Meu Estágio</h5>
+        <span class="badge bg-danger mb-3">Reprovado pelo orientador</span>
+        <p><strong>Justificativa:</strong> <span th:text="${estagio.justificativaRejeicao}"></span></p>
+        <a href="/estagio" class="btn btn-warning mt-2">Reenviar estágio para aprovação</a>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'ATIVO'}" class="card p-4">
+        <h5 class="card-title mb-3">Meu Estágio</h5>
+        <span class="badge bg-success mb-3">Ativo</span>
+        <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+        <p><strong>Carga horária necessária:</strong>
+            <span th:text="${estagio.cargaHorariaNecessaria}"></span>h
+        </p>
+        <p><strong>Orientador:</strong>
+            <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+            <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
+        </p>
+        <a href="/aluno/trilha" class="btn btn-primary mt-2">Ver minha trilha de tarefas</a>
+    </div>
 </div>
 
-<div th:if="${estagio != null and estagio.status == 'PENDENTE'}">
-    <h3>Meu Estágio</h3>
-    <p>Tipo: <span th:text="${estagio.nomeTipoEstagio}"></span></p>
-    <p>Status: <strong>Aguardando aprovação do orientador</strong></p>
-    <p>Início: <span th:text="${estagio.dataInicio}"></span></p>
-    <p>Empresa: <span th:text="${estagio.nomeEmpresa}"></span></p>
-    <p>Orientador:
-        <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
-        <span th:unless="${estagio.nomeOrientador}">Não atribuído</span>
-    </p>
-</div>
+<script>
+    async function logout() {
+        await fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        window.location.href = '/login';
+    }
+</script>
 
-<div th:if="${estagio != null and estagio.status == 'REJEITADO'}">
-    <h3>Meu Estágio</h3>
-    <p>Status: <strong style="color: red;">Reprovado pelo orientador</strong></p>
-    <p>Justificativa: <span th:text="${estagio.justificativaRejeicao}"></span></p>
-    <br>
-    <a href="/estagio">Reenviar estágio para aprovação</a>
-</div>
-
-<div th:if="${estagio != null and estagio.status == 'ATIVO'}">
-    <h3>Meu Estágio</h3>
-    <p>Tipo: <span th:text="${estagio.nomeTipoEstagio}"></span></p>
-    <p>Status: <strong style="color: green;">Ativo</strong></p>
-    <p>Início: <span th:text="${estagio.dataInicio}"></span></p>
-    <p>Carga horária necessária: <span th:text="${estagio.cargaHorariaNecessaria}"></span>h</p>
-    <p>Empresa: <span th:text="${estagio.nomeEmpresa}"></span></p>
-    <p>Orientador:
-        <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
-        <span th:unless="${estagio.nomeOrientador}">Não atribuído</span>
-    </p>
-    <br>
-    <a href="/aluno/trilha">Ver minha trilha de tarefas</a>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

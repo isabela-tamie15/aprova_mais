@@ -3,32 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <title>Aprova+ | Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body>
+<body class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
 
-<h2>Aprova+</h2>
+<div class="card shadow-sm p-4" style="width: 100%; max-width: 400px;">
 
-<div x-data="loginForm()">
+    <div class="text-center mb-4">
+        <h4 class="fw-bold mb-0">Aprova+</h4>
+        <small class="text-muted">Gestão de Estágios Supervisionados</small>
+    </div>
 
-    <p x-show="erro" x-text="erro" style="color: red;"></p>
+    <div x-data="loginForm()">
 
-    <form @submit.prevent="entrar">
-        <div>
-            <label for="email">E-mail</label><br>
-            <input type="email" id="email" x-model="email" required>
-        </div>
-        <br>
-        <div>
-            <label for="senha">Senha</label><br>
-            <input type="password" id="senha" x-model="senha" required>
-        </div>
-        <br>
-        <button type="submit" :disabled="carregando">
-            <span x-show="!carregando">Entrar</span>
-            <span x-show="carregando">Entrando...</span>
-        </button>
-    </form>
+        <div class="alert alert-danger py-2 small" x-show="erro" x-text="erro"></div>
+
+        <form @submit.prevent="entrar">
+            <div class="mb-3">
+                <label for="email" class="form-label">E-mail</label>
+                <input type="email"
+                       id="email"
+                       class="form-control"
+                       placeholder="seu@email.com"
+                       x-model="email"
+                       required
+                       autocomplete="email">
+            </div>
+
+            <div class="mb-4">
+                <label for="senha" class="form-label">Senha</label>
+                <input type="password"
+                       id="senha"
+                       class="form-control"
+                       placeholder="••••••••"
+                       x-model="senha"
+                       required
+                       autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100" :disabled="carregando">
+                <span x-show="!carregando">Entrar</span>
+                <span x-show="carregando">
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                    Entrando...
+                </span>
+            </button>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -81,5 +103,6 @@
     }
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
