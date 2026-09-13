@@ -55,19 +55,16 @@ public class EstagioService {
     }
 
     //Isa - cadastro e validação de estaágio
-
     @Transactional(readOnly = true)
     public List<TipoEstagioResponse> listarTiposEstagioDisponiveis() {
         return tipoEstagioRepository.findAll()
                 .stream()
-                .map(tipo -> {
-                    TipoEstagioResponse response = new TipoEstagioResponse();
-                    response.setId(tipo.getId());
-                    response.setNome(tipo.getNome());
-                    response.setDescricao(tipo.getDescricao());
-                    response.setCargaHorariaNecessaria(tipo.getCargaHorariaNecessaria());
-                    return response;
-                })
+                .map(tipo -> TipoEstagioResponse.builder()
+                        .id(tipo.getId())
+                        .nome(tipo.getNome())
+                        .descricao(tipo.getDescricao())
+                        .cargaHorariaNecessaria(tipo.getCargaHorariaNecessaria())
+                        .build())
                 .collect(Collectors.toList());
     }
 
