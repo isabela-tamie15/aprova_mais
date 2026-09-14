@@ -74,13 +74,14 @@ Orientador: Prof. Pedro
 
 ### Passos
 
-1. Clone o repositorio:
-
+**1. Clone o repositorio:**
+```
 git clone https://github.com/isabela-tamie15/aprova_mais.git
 cd aprova_mais
+```
 
-2. Configure o arquivo .env na raiz do projeto:
-
+**2. Configure o arquivo .env na raiz do projeto:**
+```
 DB_URL=jdbc:postgresql://postgres:5432/dbaprovamais
 DB_USERNAME=usuario_aprovamais
 DB_PASSWORD=sua_senha
@@ -99,18 +100,23 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 
 SPRING_PROFILES_ACTIVE=dev
+```
 
-3. Gere o JAR:
-
+**3. Gere o JAR:**
+```
 ./mvnw clean package -DskipTests
+```
 
-4. Suba os containers:
-
+**4. Suba os containers:**
+```
 docker compose up --build
+```
 
-5. Acesse http://localhost:8080/login
+**5. Acesse:**
+http://localhost:8080/login
 
 ---
+
 ## Seed de Dados
 
 Apos subir o Docker, conecte no pgAdmin em localhost:5433 e rode o script de seed disponivel em docs/seed.sql.
@@ -128,30 +134,33 @@ Usuarios disponiveis apos o seed:
 
 ## Estrutura do Projeto
 
-src/main/java/tcc/ges/aprovamais/
-- auth/           - Autenticacao: AuthController, AuthService, UserDetailsServiceImpl
-- config/         - Configuracoes: SecurityConfig, AsyncConfig
-- controller/     - Controllers de pagina: PaginaController
-- dto/            - Objetos de transferencia de dados
-- entity/         - Entidades JPA e enums
-- exception/      - Tratamento global de excecoes
-- repository/     - Repositorios Spring Data JPA
-- security/       - JwtService, JwtFilter, AesEncryptor
-- service/        - Logica de negocio: EstagioService, TrilhaService
+**src/main/java/tcc/ges/aprovamais/**
+```
+auth/        - Autenticacao: AuthController, AuthService, UserDetailsServiceImpl
+config/      - Configuracoes: SecurityConfig, AsyncConfig
+controller/  - Controllers de pagina: PaginaController
+dto/         - Objetos de transferencia de dados
+entity/      - Entidades JPA e enums
+exception/   - Tratamento global de excecoes
+repository/  - Repositorios Spring Data JPA
+security/    - JwtService, JwtFilter, AesEncryptor
+service/     - Logica de negocio: EstagioService, TrilhaService
+```
 
-src/main/resources/
-- templates/
-  - login.html
-  - aluno/
-    - dashboard.html
-    - estagio.html
-    - trilha.html
-  - orientador/
-    - validacoes.html
-- static/
+**src/main/resources/**
+```
+templates/
+├── login.html
+├── aluno/
+│   ├── dashboard.html
+│   ├── estagio.html
+│   └── trilha.html
+└── orientador/
+    └── validacoes.html
+static/
+```
 
 ---
-
 ## Endpoints da API
 
 ### Autenticacao
