@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Aprova+ | Validações</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-dark px-3 mb-4">
+    <span class="navbar-brand fw-bold">Aprova+</span>
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+</nav>
+
+<div class="container">
+    <h4 class="mb-4">Validações de Estágio</h4>
+
+    <!-- Sem estágios pendentes -->
+    <div th:if="${#lists.isEmpty(estagios)}" class="card p-4 text-center">
+        <p class="text-muted">Nenhum estágio pendente de validação.</p>
+    </div>
+
+    <div th:unless="${#lists.isEmpty(estagios)}">
+        <div th:each="estagio : ${estagios}"
+             th:attr="x-data=${'validacao(' + estagio.id + ')'}"
+             class="card p-4 mb-3">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0" th:text="${estagio.nomeAluno}"></h5>
+                <span th:if="${estagio.status == 'PENDENTE'}" class="badge bg-warning text-dark">Pendente</span>
+                <span th:if="${estagio.status == 'REJEITADO'}" class="badge bg-danger">Rejeitado</span>
+            </div>
+
+            <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+            <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+            <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+
+            <div th:if="${estagio.status == 'REJEITADO'}" class="alert alert-danger py-2 mb-3">
+                <strong>Justificativa anterior:</strong>
+                <span th:text="${estagio.justificativaRejeicao}"></span>
+            </div>
+
+            <!-- Ações para estágios pendentes -->
+            <div th:if="${estagio.status == 'PENDENTE'}">
+                <div class="alert alert-danger py-2 mb-3" x-show="mensagem" x-text="mensagem"></div>
+
+                <div class="d-flex gap-2 align-items-start">
+                    <button class="btn btn-success"
+                            @click="aprovar()"
+                            :disabled="processando">
+                        Aprovar
+                    </button>
+
+                    <div class="d-flex gap-2 flex-grow-1">
+                        <input type="text"
+                               class="form-control"
+                               x-model="justificativa"
+                               placeholder="Justificativa para rejeição">
+                        <button class="btn btn-danger"
+                                @click="rejeitar()"
+                                :disabled="processando">
+                            Rejeitar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function validacao(id) {
+        return {
+            justificativa: '',
+            mensagem: '',
+            processando: false,
+
+            async aprovar() {
+                this.processando = true;
+                try {
+                    const resp = await fetch(`/api/v1/orientador/validacoes/${id}/aprovar`, {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    if (resp.ok) {
+                        window.location.reload();
+                    } else {
+                        const dados = await resp.json();
+                        this.mensagem = dados.mensagem || 'Erro ao aprovar.';
+                    }
+                } catch (e) {
+                    this.mensagem = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.processando = false;
+                }
+            },
+
+            async rejeitar() {
+                if (!this.justificativa.trim()) {
+                    this.mensagem = 'Informe a justificativa antes de rejeitar.';
+                    return;
+                }
+                this.processando = true;
+                try {
+                    const resp = await fetch(`/api/v1/orientador/validacoes/${id}/rejeitar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ justificativa: this.justificativa })
+                    });
+                    if (resp.ok) {
+                        window.location.reload();
+                    } else {
+                        const dados = await resp.json();
+                        this.mensagem = dados.mensagem || 'Erro ao rejeitar.';
+                    }
+                } catch (e) {
+                    this.mensagem = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.processando = false;
+                }
+            }
+        }
+    }
+
+    async function logout() {
+        await fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        window.location.href = '/login';
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

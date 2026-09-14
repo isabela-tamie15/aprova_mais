@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -13,4 +14,7 @@ public class EstagioCadastroRequest {
 
     @NotNull(message = "Selecione o perfil do estágio")
     private Long tipoEstagioId;
+
+    @NotBlank(message = "Informe o nome da empresa")
+    private String nomeEmpresa;
 }

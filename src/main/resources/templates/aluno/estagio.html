@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Aprova+ | Meu Estágio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark px-3 mb-4">
+    <span class="navbar-brand fw-bold">Aprova+</span>
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+</nav>
+
+<div class="container">
+
+    <div class="d-flex align-items-center mb-4">
+        <a href="/aluno/dashboard" class="btn btn-outline-secondary btn-sm me-3">← Voltar ao dashboard</a>
+        <h4 class="mb-0">Meu Estágio</h4>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'PENDENTE'}" class="card p-4 mb-4">
+        <h5 class="card-title mb-3">Situação Atual</h5>
+        <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
+        <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+    </div>
+
+    <div th:if="${estagio == null or estagio.status == 'REJEITADO'}"
+         x-data="estagioForm()"
+         x-init="carregarTipos()">
+
+        <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="alert alert-danger mb-4">
+            <strong>Estágio rejeitado.</strong>
+            Justificativa: <span th:text="${estagio.justificativaRejeicao}"></span>
+            <p class="mb-0 mt-2">Preencha o formulário abaixo para reenviar.</p>
+        </div>
+
+        <div th:if="${estagio == null}" class="alert alert-info mb-4">
+            Cadastre seu estágio para iniciar o processo de aprovação.
+        </div>
+
+        <div class="card p-4">
+            <h5 class="card-title mb-3">Cadastrar Estágio</h5>
+
+            <div class="alert alert-danger" x-show="erro" x-text="erro"></div>
+
+            <form @submit.prevent="enviar()">
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Estágio</label>
+                    <select class="form-select" x-model="form.tipoEstagioId" required>
+                        <option value="">Selecione...</option>
+                        <template x-for="tipo in tipos" :key="tipo.id">
+                            <option :value="tipo.id" x-text="tipo.nome"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nome da Empresa</label>
+                    <input type="text" class="form-control" x-model="form.nomeEmpresa" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Data de Início</label>
+                    <input type="date" class="form-control" x-model="form.dataInicio" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" :disabled="enviando">
+                    <span x-show="!enviando">Enviar para aprovação</span>
+                    <span x-show="enviando">
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                        Enviando...
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function estagioForm() {
+        return {
+            tipos: [],
+            enviando: false,
+            erro: '',
+            form: {
+                tipoEstagioId: '',
+                nomeEmpresa: '',
+                dataInicio: ''
+            },
+
+            async carregarTipos() {
+                try {
+                    const resp = await fetch('/api/v1/aluno/estagio/tipos', {
+                        credentials: 'include'
+                    });
+                    if (resp.ok) {
+                        this.tipos = await resp.json();
+                    }
+                } catch (e) {
+                    console.error('Erro ao carregar tipos', e);
+                }
+            },
+
+            async enviar() {
+                this.erro = '';
+                this.enviando = true;
+                try {
+                    const resp = await fetch('/api/v1/aluno/estagio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            tipoEstagioId: Number(this.form.tipoEstagioId),
+                            nomeEmpresa: this.form.nomeEmpresa,
+                            dataInicio: this.form.dataInicio
+                        })
+                    });
+
+                    if (!resp.ok) {
+                        const dados = await resp.json();
+                        this.erro = dados.mensagem || 'Erro ao cadastrar estágio.';
+                        return;
+                    }
+
+                    window.location.href = '/aluno/dashboard';
+
+                } catch (e) {
+                    this.erro = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.enviando = false;
+                }
+            }
+        }
+    }
+
+    async function logout() {
+        await fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        window.location.href = '/login';
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

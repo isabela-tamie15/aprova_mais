@@ -1,13 +1,16 @@
 package tcc.ges.aprovamais.dto;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Builder
 public class TipoEstagioResponse {
 
-    private Long id;
-    private String nome;
-    private BigDecimal cargaHorariaNecessaria;
+    private final Long id;
+    private final String nome;
+    private final String descricao;
+    private final BigDecimal cargaHorariaNecessaria;
 }

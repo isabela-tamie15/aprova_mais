@@ -38,7 +38,7 @@ public class Estagio {
     @ToString.Exclude
     private TipoEstagio tipoEstagio;
 
-    @Column(name = "nome_empresa")
+    @Column(name = "nome_empresa", nullable = false)
     private String nomeEmpresa;
 
     @Column(name = "local_empresa")

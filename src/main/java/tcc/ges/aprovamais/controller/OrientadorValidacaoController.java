@@ -19,8 +19,8 @@ public class OrientadorValidacaoController {
     private final EstagioService estagioService;
 
     @GetMapping
-    public ResponseEntity<List<EstagioResponse>> listarPendentes() {
-        return ResponseEntity.ok(estagioService.listarPendentes());
+    public ResponseEntity<List<EstagioResponse>> listarPendentes(Authentication authentication) {
+        return ResponseEntity.ok(estagioService.listarPendentes(authentication.getName()));
     }
 
     @PostMapping("/{id}/aprovar")

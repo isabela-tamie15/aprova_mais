@@ -11,4 +11,5 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
     List<Estagio> findByStatus(StatusEstagio status);
     Optional<Estagio> findByMatriculaId(Long matriculaId);
     Optional<Estagio> findByMatriculaIdAndStatus(Long matriculaId, StatusEstagio status);
+    List<Estagio> findByOrientadorEmailAndStatusIn(String email, List<StatusEstagio> statuses);
 }

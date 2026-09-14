@@ -5,27 +5,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.EstagioResponse;
+import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
-import tcc.ges.aprovamais.entity.Aluno;
-import tcc.ges.aprovamais.entity.Estagio;
-import tcc.ges.aprovamais.entity.Matricula;
-import tcc.ges.aprovamais.entity.Orientador;
-import tcc.ges.aprovamais.entity.TipoEstagio;
-import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
-import tcc.ges.aprovamais.repository.AlunoRepository;
-import tcc.ges.aprovamais.repository.EstagioRepository;
-import tcc.ges.aprovamais.repository.MatriculaRepository;
-import tcc.ges.aprovamais.repository.TipoEstagioRepository;
-import tcc.ges.aprovamais.repository.UsuarioRepository;
+import tcc.ges.aprovamais.repository.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,42 +26,11 @@ public class EstagioService {
 
     private final EstagioRepository estagioRepository;
     private final MatriculaRepository matriculaRepository;
-    private final TipoEstagioRepository tipoEstagioRepository;
     private final AlunoRepository alunoRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final TipoEstagioRepository tipoEstagioRepository;
+    private final OrientadorTurmaRepository orientadorTurmaRepository;
 
-    public List<TipoEstagioResponse> listarTiposEstagioDisponiveis() {
-        List<TipoEstagio> tipos = tipoEstagioRepository.findAll();
-
-        List<TipoEstagioResponse> respostas = new ArrayList<>();
-        for (TipoEstagio tipo : tipos) {
-            TipoEstagioResponse resposta = new TipoEstagioResponse();
-            resposta.setId(tipo.getId());
-            resposta.setNome(tipo.getNome());
-            resposta.setCargaHorariaNecessaria(tipo.getCargaHorariaNecessaria());
-            respostas.add(resposta);
-        }
-        return respostas;
-    }
-
-    public Optional<EstagioResponse> buscarEstagioDoAluno(String emailAluno) {
-        Aluno aluno = buscarAlunoPorEmail(emailAluno);
-        Matricula matricula = buscarMatriculaAtiva(aluno);
-
-        Optional<Estagio> estagioEncontrado = estagioRepository.findByMatriculaId(matricula.getId());
-
-        if (estagioEncontrado.isPresent()) {
-            Estagio estagio = estagioEncontrado.get();
-            EstagioResponse resposta = paraResponse(estagio);
-            return Optional.of(resposta);
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Consulta o estágio ATIVO do aluno pelo e-mail (usado pelo Leonardo em outra funcionalidade).
-     */
+    // Leo - trilha personalizada
     @Transactional(readOnly = true)
     public EstagioResponse buscarEstagioAtivo(String emailAluno) {
         Matricula matricula = matriculaRepository
@@ -94,20 +54,45 @@ public class EstagioService {
         return paraResponse(estagio);
     }
 
+    //Isa - cadastro e validação de estaágio
+    @Transactional(readOnly = true)
+    public List<TipoEstagioResponse> listarTiposEstagioDisponiveis() {
+        return tipoEstagioRepository.findAll()
+                .stream()
+                .map(tipo -> TipoEstagioResponse.builder()
+                        .id(tipo.getId())
+                        .nome(tipo.getNome())
+                        .descricao(tipo.getDescricao())
+                        .cargaHorariaNecessaria(tipo.getCargaHorariaNecessaria())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<EstagioResponse> buscarEstagioDoAluno(String emailAluno) {
+        Aluno aluno = buscarAlunoPorEmail(emailAluno);
+        Matricula matricula = buscarMatriculaAtiva(aluno);
+
+        return estagioRepository.findByMatriculaId(matricula.getId())
+                .map(this::paraResponse);
+    }
+
     @Transactional
-    public EstagioResponse cadastrarOuAtualizarEstagio(String emailAluno, EstagioCadastroRequest request) {
+    public EstagioResponse cadastrarOuAtualizarEstagio(String emailAluno,
+                                                       EstagioCadastroRequest request) {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
         Matricula matricula = buscarMatriculaAtiva(aluno);
 
         TipoEstagio tipoEstagio = tipoEstagioRepository.findById(request.getTipoEstagioId())
-                .orElseThrow(() -> new ResourceNotFoundException("Perfil de estágio não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Perfil de estágio não encontrado"));
 
-        Optional<Estagio> estagioExistente = estagioRepository.findByMatriculaId(matricula.getId());
+        Optional<Estagio> estagioExistente =
+                estagioRepository.findByMatriculaId(matricula.getId());
 
         Estagio estagio;
         if (estagioExistente.isPresent()) {
             estagio = estagioExistente.get();
-
             if (estagio.getStatus() == StatusEstagio.PENDENTE) {
                 throw new IllegalStateException(
                         "Já existe uma solicitação aguardando aprovação do orientador");
@@ -119,92 +104,101 @@ public class EstagioService {
 
         estagio.setTipoEstagio(tipoEstagio);
         estagio.setDataInicio(request.getDataInicio());
+        estagio.setNomeEmpresa(request.getNomeEmpresa());
         estagio.setCargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria());
         estagio.setStatus(StatusEstagio.PENDENTE);
         estagio.setJustificativaRejeicao(null);
 
-        Estagio salvo = estagioRepository.save(estagio);
-        return paraResponse(salvo);
+        Orientador orientador = orientadorTurmaRepository
+                .findFirstByTurmaId(matricula.getTurma().getId())
+                .map(OrientadorTurma::getOrientador)
+                .orElse(null);
+        estagio.setOrientador(orientador);
+
+        estagioRepository.save(estagio);
+
+        Estagio recarregado = estagioRepository.findById(estagio.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
+
+        log.info("[ESTÁGIO] Estágio cadastrado/atualizado para aluno: {} - Tipo: {}",
+                emailAluno, tipoEstagio.getNome());
+
+        return paraResponse(recarregado);
     }
 
-    public List<EstagioResponse> listarPendentes() {
-        List<Estagio> estagiosPendentes = estagioRepository.findByStatus(StatusEstagio.PENDENTE);
-
-        List<EstagioResponse> respostas = new ArrayList<>();
-        for (Estagio estagio : estagiosPendentes) {
-            EstagioResponse resposta = paraResponse(estagio);
-            respostas.add(resposta);
-        }
-        return respostas;
+    @Transactional(readOnly = true)
+    public List<EstagioResponse> listarPendentes(String emailOrientador) {
+        return estagioRepository
+                .findByOrientadorEmailAndStatusIn(
+                        emailOrientador,
+                        List.of(StatusEstagio.PENDENTE, StatusEstagio.REJEITADO)
+                )
+                .stream()
+                .map(this::paraResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public EstagioResponse aprovar(Long estagioId, String emailOrientador) {
-        Estagio estagio = buscarEstagioPendente(estagioId);
-        Orientador orientador = buscarOrientadorPorEmail(emailOrientador);
+        Estagio estagio = estagioRepository.findById(estagioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
 
-        estagio.setOrientador(orientador);
+        if (estagio.getStatus() != StatusEstagio.PENDENTE) {
+            throw new IllegalStateException("Apenas estágios pendentes podem ser aprovados");
+        }
+
         estagio.setStatus(StatusEstagio.ATIVO);
         estagio.setJustificativaRejeicao(null);
 
-        return paraResponse(estagioRepository.save(estagio));
+        Estagio salvo = estagioRepository.save(estagio);
+        log.info("[ESTÁGIO] Estágio {} aprovado pelo orientador: {}", estagioId, emailOrientador);
+        return paraResponse(salvo);
     }
 
     @Transactional
-    public EstagioResponse rejeitar(Long estagioId, String emailOrientador, String justificativa) {
-        Estagio estagio = buscarEstagioPendente(estagioId);
-        Orientador orientador = buscarOrientadorPorEmail(emailOrientador);
+    public EstagioResponse rejeitar(Long estagioId, String emailOrientador,
+                                    String justificativa) {
+        Estagio estagio = estagioRepository.findById(estagioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
 
-        estagio.setOrientador(orientador);
+        if (estagio.getStatus() != StatusEstagio.PENDENTE) {
+            throw new IllegalStateException("Apenas estágios pendentes podem ser rejeitados");
+        }
+
         estagio.setStatus(StatusEstagio.REJEITADO);
         estagio.setJustificativaRejeicao(justificativa);
 
-        return paraResponse(estagioRepository.save(estagio));
+        Estagio salvo = estagioRepository.save(estagio);
+        log.info("[ESTÁGIO] Estágio {} rejeitado pelo orientador: {}", estagioId, emailOrientador);
+        return paraResponse(salvo);
     }
 
+    //métodos auxiliares/universais
     private Aluno buscarAlunoPorEmail(String email) {
         return alunoRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado"));
     }
 
-    private Orientador buscarOrientadorPorEmail(String email) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Orientador não encontrado"));
-        return (Orientador) usuario;
-    }
-
     private Matricula buscarMatriculaAtiva(Aluno aluno) {
-        return matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)
-                .orElseThrow(() -> new ResourceNotFoundException("Aluno não possui matrícula ativa"));
-    }
-
-    private Estagio buscarEstagioPendente(Long id) {
-        Estagio estagio = estagioRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
-
-        if (estagio.getStatus() != StatusEstagio.PENDENTE) {
-            throw new IllegalStateException("Este estágio já foi analisado");
-        }
-        return estagio;
+        return matriculaRepository
+                .findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Aluno não possui matrícula ativa"));
     }
 
     private EstagioResponse paraResponse(Estagio estagio) {
-        EstagioResponse resposta = new EstagioResponse();
-
-        resposta.setId(estagio.getId());
-        resposta.setStatus(estagio.getStatus().name());
-        resposta.setDataInicio(estagio.getDataInicio());
-        resposta.setNomeTipoEstagio(estagio.getTipoEstagio().getNome());
-        resposta.setCargaHorariaNecessaria(estagio.getCargaHorariaNecessaria());
-        resposta.setNomeAluno(estagio.getMatricula().getAluno().getNome());
-        resposta.setJustificativaRejeicao(estagio.getJustificativaRejeicao());
-
-        if (estagio.getOrientador() != null) {
-            resposta.setNomeOrientador(estagio.getOrientador().getNome());
-        } else {
-            resposta.setNomeOrientador(null);
-        }
-
-        return resposta;
+        return EstagioResponse.builder()
+                .id(estagio.getId())
+                .status(estagio.getStatus().name())
+                .dataInicio(estagio.getDataInicio())
+                .nomeTipoEstagio(estagio.getTipoEstagio().getNome())
+                .cargaHorariaNecessaria(estagio.getCargaHorariaNecessaria())
+                .nomeAluno(estagio.getMatricula().getAluno().getNome())
+                .nomeEmpresa(estagio.getNomeEmpresa())
+                .nomeOrientador(estagio.getOrientador() != null
+                        ? estagio.getOrientador().getNome()
+                        : null)
+                .justificativaRejeicao(estagio.getJustificativaRejeicao())
+                .build();
     }
 }

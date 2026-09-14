@@ -1,53 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
-
-
     <meta charset="UTF-8">
     <title>Aprova+ | Minha Trilha</title>
-
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+<body class="bg-light">
 
+<nav class="navbar navbar-dark bg-dark px-3 mb-4">
+    <span class="navbar-brand fw-bold">Aprova+</span>
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+</nav>
 
-<body>
-<h2>Minha Trilha de Tarefas</h2>
-<a href="/aluno/dashboard">← Voltar ao dashboard</a>
+<div class="container">
 
+    <div class="d-flex align-items-center mb-4">
+        <a href="/aluno/dashboard" class="btn btn-outline-secondary btn-sm me-3">← Voltar ao dashboard</a>
+        <h4 class="mb-0">Minha Trilha de Tarefas</h4>
+    </div>
 
-<div th:if="${trilha}">
-    <h3 th:text="${trilha.nomeTipoEstagio}"></h3>
-    <p th:text="${trilha.nomeTrilha}"></p>
+    <div th:if="${trilha}" class="card p-4">
+        <h5 class="card-title" th:text="${trilha.nomeTipoEstagio}"></h5>
+        <p class="text-muted" th:text="${trilha.nomeTrilha}"></p>
 
-    <table border="1">
+        <table class="table table-bordered table-hover mt-3">
+            <thead class="table-dark">
+            <tr>
+                <th style="width: 80px;">Ordem</th>
+                <th>Tarefa</th>
+                <th>Descrição</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="tarefa : ${trilha.tarefas}">
+                <td class="text-center" th:text="${tarefa.ordem}"></td>
+                <td th:text="${tarefa.nome}"></td>
+                <td th:text="${tarefa.descricao}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
-        <thead>
-
-        <tr>
-            <th>Ordem</th>
-            <th>Tarefa</th>
-            <th>Descrição</th>
-        </tr>
-
-        </thead>
-
-        <tbody>
-
-        <tr th:each="tarefa : ${trilha.tarefas}">
-            <td th:text="${tarefa.ordem}"></td>
-            <td th:text="${tarefa.nome}"></td>
-            <td th:text="${tarefa.descricao}"></td>
-        </tr>
-
-        </tbody>
-
-    </table>
+    <div th:unless="${trilha}" class="card p-4 text-center">
+        <p class="text-muted">Nenhuma trilha encontrada para o seu tipo de estágio.</p>
+    </div>
 
 </div>
 
-<div th:unless="${trilha}">
-    <p>Nenhuma trilha encontrada para o seu tipo de estágio</p>
-</div>
+<script>
+    async function logout() {
+        await fetch('/api/v1/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        window.location.href = '/login';
+    }
+</script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
