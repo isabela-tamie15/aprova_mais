@@ -15,8 +15,7 @@ O sistema permite que alunos cadastrem seus estagios, orientadores validem as so
 | Leonardo Valdir Silva | 11232100617 | Desenvolvedor - Feature: Trilha Personalizada |
 | Isabela Tamie Shihara | 11231203887 | Desenvolvedora - Feature: Cadastro e Validacao de Estagio |
 
-Turma: 7B - Engenharia de Software - UMC
-Orientador: Prof. Pedro
+Turma: 8B - Engenharia de Software - UMC
 
 ---
 
