@@ -1,19 +1,19 @@
-# Aprova+ - Sistema de Gestao de Estagios Supervisionados
+# Aprova+ - Sistema de Gestão de Estágios Supervisionados
 
 ## Sobre o Projeto
 
-O Aprova+ e um sistema web desenvolvido como Projeto Final de Conclusão de Curso (PFC) para a gestao de estagios supervisionados da Universidade de Mogi das Cruzes (UMC).
+O Aprova+ é um sistema web desenvolvido como Projeto Final de Curso (PFC) para a gestão de estágios supervisionados da Universidade de Mogi das Cruzes (UMC).
 
-O sistema permite que alunos cadastrem seus estagios, orientadores validem as solicitacoes e acompanhem o progresso, promovendo uma gestao mais eficiente e digitalizada do processo de estagio.
+O sistema permite que alunos cadastrem seus estágios, orientadores validem as solicitações e acompanhem o progresso, promovendo uma gestão mais eficiente e digitalizada do processo de estágio.
 
 ---
 
 ## Equipe
 
-| Nome | RGM | Funcao |
+| Nome | RGM | Função |
 |------|-----|--------|
 | Leonardo Valdir Silva | 11232100617 | Desenvolvedor - Feature: Trilha Personalizada |
-| Isabela Tamie Shihara | 11231203887 | Desenvolvedora - Feature: Cadastro e Validacao de Estagio |
+| Isabela Tamie Shihara | 11231203887 | Desenvolvedora - Feature: Cadastro e Validação de Estágio |
 
 Turma: 8B - Engenharia de Software - UMC
 
@@ -24,10 +24,10 @@ Turma: 8B - Engenharia de Software - UMC
 - Java 25
 - Spring Boot 4.1.1
 - PostgreSQL 18
-- Redis (reservado para blocklist de logout - implementacao futura)
-- Thymeleaf - renderizacao server-side
+- Redis (reservado para blocklist de logout - implementação futura)
+- Thymeleaf - renderização server-side
 - Alpine.js - interatividade leve no frontend
-- Bootstrap 5 - estilizacao
+- Bootstrap 5 - estilização
 - JWT via cookie HttpOnly com SameSite=Strict
 - Docker + Docker Compose
 - Prometheus + Grafana (monitoramento)
@@ -36,44 +36,44 @@ Turma: 8B - Engenharia de Software - UMC
 
 ## Funcionalidades Implementadas
 
-### Feature 1 - Cadastro e Validacao de Estagio (Isabela)
-- Aluno cadastra estagio escolhendo tipo, empresa e data de inicio
-- Estagio enviado com status PENDENTE para aprovacao
-- Orientador visualiza estagios PENDENTE e REJEITADO da sua turma
+### Feature 1 - Cadastro e Validação de Estágio (Isabela)
+- Aluno cadastra estágio escolhendo tipo, empresa e data de início
+- Estágio enviado com status PENDENTE para aprovação
+- Orientador visualiza estágios PENDENTE e REJEITADO da sua turma
 - Orientador aprova - status muda para ATIVO
 - Orientador rejeita com justificativa - status muda para REJEITADO
-- Aluno pode reenviar apos rejeicao
+- Aluno pode reenviar após rejeição
 
 ### Feature 2 - Trilha Personalizada (Leonardo)
-- Aluno com estagio ATIVO acessa sua trilha personalizada
-- Trilha determinada pelo tipo de estagio escolhido
+- Aluno com estágio ATIVO acessa sua trilha personalizada
+- Trilha determinada pelo tipo de estágio escolhido
 - Tarefas listadas em ordem definida pelo coordenador
-- Diferentes tipos de estagio possuem trilhas diferentes
+- Diferentes tipos de estágio possuem trilhas diferentes
 
 ---
 
-## Seguranca
+## Segurança
 
-- Autenticacao via JWT armazenado em cookie HttpOnly com SameSite=Strict
-- O browser envia o cookie automaticamente em todas as requisicoes
-- Nao e necessario enviar header Authorization manualmente nas paginas
+- Autenticação via JWT armazenado em cookie HttpOnly com SameSite=Strict
+- O browser envia o cookie automaticamente em todas as requisições
+- Não é necessário enviar header Authorization manualmente nas páginas
 - Defense in depth: regras de acesso no SecurityConfig e @PreAuthorize nos controllers
-- Bloqueio automatico de conta apos 5 tentativas de login falhas
-- Desbloqueio automatico apos 5 minutos
-- Estrutura preparada para autenticacao de dois fatores (2FA)
+- Bloqueio automático de conta após 5 tentativas de login falhas
+- Desbloqueio automático após 5 minutos
+- Estrutura preparada para autenticação de dois fatores (2FA)
 
 ---
 
 ## Como Executar
 
-### Pre-requisitos
+### Pré-requisitos
 - Docker e Docker Compose instalados
 - Java 25
 - Maven
 
 ### Passos
 
-**1. Clone o repositorio:**
+**1. Clone o repositório:**
 ```
 git clone https://github.com/isabela-tamie15/aprova_mais.git
 cd aprova_mais
@@ -118,16 +118,16 @@ http://localhost:8080/login
 
 ## Seed de Dados
 
-Apos subir o Docker, conecte no pgAdmin em localhost:5433 e rode o script de seed disponivel em docs/seed.sql.
+Após subir o Docker, conecte no pgAdmin em localhost:5433 e rode o script de seed disponível em docs/seed.sql.
 
-Usuarios disponiveis apos o seed:
+Usuários disponíveis após o seed:
 
 | Perfil | Email | Senha |
 |--------|-------|-------|
 | COORDENADOR | coordenador@teste.com | senha123 |
 | ORIENTADOR | orientador@teste.com | senha123 |
-| ALUNO (com estagio ATIVO) | aluno@teste.com | senha123 |
-| ALUNO (sem estagio) | aluno2@teste.com | senha123 |
+| ALUNO (com estágio ATIVO) | aluno@teste.com | senha123 |
+| ALUNO (sem estágio) | aluno2@teste.com | senha123 |
 
 ---
 
@@ -135,15 +135,15 @@ Usuarios disponiveis apos o seed:
 
 **src/main/java/tcc/ges/aprovamais/**
 ```
-auth/        - Autenticacao: AuthController, AuthService, UserDetailsServiceImpl
-config/      - Configuracoes: SecurityConfig, AsyncConfig
-controller/  - Controllers de pagina: PaginaController
-dto/         - Objetos de transferencia de dados
+auth/        - Autenticação: AuthController, AuthService, UserDetailsServiceImpl
+config/      - Configurações: SecurityConfig, AsyncConfig
+controller/  - Controllers de página: PaginaController
+dto/         - Objetos de transferência de dados
 entity/      - Entidades JPA e enums
-exception/   - Tratamento global de excecoes
-repository/  - Repositorios Spring Data JPA
+exception/   - Tratamento global de exceções
+repository/  - Repositórios Spring Data JPA
 security/    - JwtService, JwtFilter, AesEncryptor
-service/     - Logica de negocio: EstagioService, TrilhaService
+service/     - Lógica de negócio: EstagioService, TrilhaService
 ```
 
 **src/main/resources/**
@@ -162,38 +162,38 @@ static/
 ---
 ## Endpoints da API
 
-### Autenticacao
-| Metodo | Endpoint | Descricao |
+### Autenticação
+| Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | POST | /api/v1/auth/login | Realiza login e cria cookie JWT |
 | POST | /api/v1/auth/logout | Invalida o cookie JWT |
 
 ### Aluno
-| Metodo | Endpoint | Descricao |
+| Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| GET | /api/v1/aluno/estagio | Busca o estagio atual do aluno |
-| GET | /api/v1/aluno/estagio/tipos | Lista os tipos de estagio disponiveis |
-| POST | /api/v1/aluno/estagio | Cadastra ou reenvia o estagio |
+| GET | /api/v1/aluno/estagio | Busca o estágio atual do aluno |
+| GET | /api/v1/aluno/estagio/tipos | Lista os tipos de estágio disponíveis |
+| POST | /api/v1/aluno/estagio | Cadastra ou reenvia o estágio |
 | GET | /api/v1/aluno/trilha | Busca a trilha personalizada do aluno |
 
 ### Orientador
-| Metodo | Endpoint | Descricao |
+| Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| GET | /api/v1/orientador/validacoes | Lista estagios pendentes e rejeitados da turma |
-| POST | /api/v1/orientador/validacoes/{id}/aprovar | Aprova um estagio |
-| POST | /api/v1/orientador/validacoes/{id}/rejeitar | Rejeita um estagio com justificativa |
+| GET | /api/v1/orientador/validacoes | Lista estágios pendentes e rejeitados da turma |
+| POST | /api/v1/orientador/validacoes/{id}/aprovar | Aprova um estágio |
+| POST | /api/v1/orientador/validacoes/{id}/rejeitar | Rejeita um estágio com justificativa |
 
 ---
 
-## Paginas
+## Páginas
 
-| Rota | Perfil | Descricao |
+| Rota | Perfil | Descrição |
 |------|--------|-----------|
-| /login | Publico | Tela de login |
-| /aluno/dashboard | ALUNO | Dashboard com situacao do estagio |
-| /estagio | ALUNO | Formulario de cadastro ou reenvio |
+| /login | Público | Tela de login |
+| /aluno/dashboard | ALUNO | Dashboard com situação do estágio |
+| /estagio | ALUNO | Formulário de cadastro ou reenvio |
 | /aluno/trilha | ALUNO | Trilha personalizada de tarefas |
-| /orientador/validacoes | ORIENTADOR | Lista de estagios para validar |
+| /orientador/validacoes | ORIENTADOR | Lista de estágios para validar |
 
 ## Projeto Final de Curso (PFC)
 
