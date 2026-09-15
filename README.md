@@ -197,7 +197,7 @@ static/
 
 ## Projeto Final de Curso (PFC)
 
-Este projeto é desenvolvido como Projeto Final de Conclusão de Curso (PFC) do curso de Engenharia de Software da Universidade de Mogi das Cruzes (UMC).
+Este projeto é desenvolvido como Projeto Final de Curso (PFC) do curso de Engenharia de Software da Universidade de Mogi das Cruzes (UMC).
 
 **Orientador:** Prof. Leonardo Torres  
 **Co-orientador:** Prof. Alessandro Silva
