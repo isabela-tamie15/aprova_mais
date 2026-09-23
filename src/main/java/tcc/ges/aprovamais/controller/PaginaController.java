@@ -22,6 +22,21 @@ public class PaginaController {
         return "login";
     }
 
+    @GetMapping("/consentimento")
+    public String consentimento() {
+        return "consentimento";
+    }
+
+    @GetMapping("/termos")
+    public String termos() {
+        return "termos";
+    }
+
+    @GetMapping("/privacidade")
+    public String privacidade() {
+        return "privacidade";
+    }
+
     //Endpoints do aluno
     @GetMapping("/aluno/dashboard")
     @PreAuthorize("hasRole('ALUNO')")
