@@ -1,0 +1,303 @@
+/* =============================================
+   Aprova+ - Estilos globais e customizações
+   ============================================= */
+
+[x-cloak] { display: none !important; }
+
+/* Base */
+* {
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Layout de dois painéis - exclusivo da tela de login */
+body.pagina-login {
+    display: flex;
+}
+
+/* =============================================
+   Login - Painel esquerdo (azul)
+   ============================================= */
+
+.painel-esquerdo {
+    background-color: #2B4ECC;
+    width: 60%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2.5rem 3rem;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.logo-icon {
+    background: white;
+    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: #2B4ECC;
+}
+
+.logo-nome {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.hero-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.hero-text h1 {
+    color: white;
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.2rem;
+    max-width: 480px;
+}
+
+.hero-text p {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 420px;
+    margin: 0;
+}
+
+.rodape-esquerdo {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+}
+
+/* =============================================
+   Login - Painel direito (branco)
+   ============================================= */
+
+.painel-direito {
+    width: 40%;
+    min-height: 100vh;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3rem 3.5rem;
+}
+
+.form-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.badge-portal {
+    display: inline-block;
+    background: #EEF2FF;
+    color: #2B4ECC;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.titulo-form {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem;
+    line-height: 1.2;
+}
+
+.subtitulo-form {
+    color: #6B7280;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+
+/* =============================================
+   Formulário - campos e labels
+   ============================================= */
+
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.4rem;
+}
+
+.input-wrapper {
+    position: relative;
+    margin-bottom: 1.2rem;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9CA3AF;
+    width: 16px;
+    height: 16px;
+}
+
+/* Escopado pelo painel-direito para não sobrescrever o Bootstrap nas outras páginas */
+.painel-direito .form-control {
+    padding-left: 2.4rem;
+    height: 48px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #111827;
+    transition: border-color 0.15s;
+}
+
+.painel-direito .form-control:focus {
+    border-color: #2B4ECC;
+    box-shadow: 0 0 0 3px rgba(43, 78, 204, 0.08);
+    outline: none;
+}
+
+.painel-direito .form-control::placeholder {
+    color: #D1D5DB;
+}
+
+.link-recuperar {
+    font-size: 0.82rem;
+    color: #6B7280;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
+.link-recuperar a {
+    color: #2B4ECC;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.link-recuperar a:hover {
+    text-decoration: underline;
+}
+
+/* =============================================
+   Botões
+   ============================================= */
+
+.btn-entrar {
+    background: #2B4ECC;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    height: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    width: 100%;
+    transition: background 0.15s;
+    letter-spacing: -0.01em;
+}
+
+.btn-entrar:hover:not(:disabled) {
+    background: #2440B0;
+    color: white;
+}
+
+.btn-entrar:disabled {
+    opacity: 0.65;
+}
+
+/* =============================================
+   Alertas
+   ============================================= */
+
+.alerta-erro {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+/* =============================================
+   Rodapé do painel direito
+   ============================================= */
+
+.rodape-direito {
+    text-align: right;
+    font-size: 0.82rem;
+    color: #9CA3AF;
+}
+
+.rodape-direito a {
+    color: #2B4ECC;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.rodape-direito a:hover {
+    text-decoration: underline;
+}
+
+/* =============================================
+   Navbar - páginas autenticadas
+   ============================================= */
+
+.navbar-aprovamais {
+    background-color: #1E3A8A;
+}
+
+/* =============================================
+   Responsivo
+   ============================================= */
+
+@media (max-width: 768px) {
+    body.pagina-login {
+        flex-direction: column;
+    }
+
+    .painel-esquerdo {
+        width: 100%;
+        min-height: 220px;
+        padding: 2rem;
+    }
+
+    .hero-text h1 {
+        font-size: 1.8rem;
+    }
+
+    .painel-direito {
+        width: 100%;
+        padding: 2rem;
+        min-height: auto;
+    }
+}
