@@ -100,6 +100,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Resend para envio de e-mails -->
+		<dependency>
+			<groupId>com.resend</groupId>
+			<artifactId>resend-java</artifactId>
+			<version>4.1.1</version>
+		</dependency>
+
 		<!-- Google Authenticator — 2FA via TOTP -->
 		<dependency>
 			<groupId>com.warrenstrange</groupId>
