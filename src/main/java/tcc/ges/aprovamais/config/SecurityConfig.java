@@ -3,7 +3,6 @@ package tcc.ges.aprovamais.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -52,6 +51,8 @@ public class SecurityConfig {
                                 "/login",
                                 "/error",
                                 "/favicon.ico",
+                                "/css/**",
+                                "/js/**",
                                 "/.well-known/**",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/logout",

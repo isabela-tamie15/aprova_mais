@@ -28,9 +28,7 @@
         <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
     </div>
 
-    <div th:if="${estagio == null or estagio.status == 'REJEITADO'}"
-         x-data="estagioForm()"
-         x-init="carregarTipos()">
+    <div th:if="${estagio == null or estagio.status == 'REJEITADO'}" x-data="estagioForm()" x-init="init()" th:attr="data-nome-empresa=${estagio != null ? estagio.nomeEmpresa : ''},data-data-inicio=${estagio != null ? estagio.dataInicio : ''}, data-tipo-estagio-nome=${estagio != null ? estagio.nomeTipoEstagio : ''}">
 
         <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="alert alert-danger mb-4">
             <strong>Estágio rejeitado.</strong>
@@ -92,6 +90,23 @@
                 dataInicio: ''
             },
 
+            async init() {
+                await this.carregarTipos();
+
+                const el = this.$el;
+                const nomeEmpresa = el.dataset.nomeEmpresa;
+                const dataInicio = el.dataset.dataInicio;
+                const tipoEstagioNome = el.dataset.tipoEstagioNome;
+
+                if (nomeEmpresa) this.form.nomeEmpresa = nomeEmpresa;
+                if (dataInicio) this.form.dataInicio = dataInicio;
+
+                if (tipoEstagioNome) {
+                    const tipo = this.tipos.find(t => t.nome === tipoEstagioNome);
+                    if (tipo) this.form.tipoEstagioId = tipo.id;
+                }
+            },
+
             async carregarTipos() {
                 try {
                     const resp = await fetch('/api/v1/aluno/estagio/tipos', {
@@ -137,13 +152,13 @@
         }
     }
 
-    async function logout() {
-        await fetch('/api/v1/auth/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        window.location.href = '/login';
-    }
+        async function logout() {
+            await fetch('/api/v1/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            window.location.href = '/login';
+        }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
