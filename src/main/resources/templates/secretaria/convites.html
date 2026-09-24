@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Meus Convites</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background-color: #f8f9fa; }
+        .navbar-aprovamais { background-color: #2B4ECC; }
+        .card-lista {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .badge-PENDENTE { background-color: #FEF3C7; color: #92400E; }
+        .badge-ACEITO { background-color: #D1FAE5; color: #065F46; }
+        .badge-RECUSADO { background-color: #FEE2E2; color: #991B1B; }
+        .badge-EXPIRADO { background-color: #F3F4F6; color: #6B7280; }
+        .badge-CANCELADO { background-color: #F3F4F6; color: #6B7280; }
+        .badge-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-aprovamais px-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a href="/secretaria/dashboard" class="btn btn-outline-light btn-sm">← Voltar</a>
+        <span class="navbar-brand fw-bold mb-0">Aprova+</span>
+    </div>
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+</nav>
+
+<div class="container" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Meus Convites</h4>
+            <p class="text-muted mb-0">Acompanhe o status dos convites enviados</p>
+        </div>
+        <a href="/secretaria/enviar-convite" class="btn btn-primary btn-sm fw-semibold">
+            + Novo convite
+        </a>
+    </div>
+
+    <div class="card-lista">
+        <div th:if="${#lists.isEmpty(convites)}" class="p-4 text-center text-muted">
+            Nenhum convite enviado ainda.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(convites)}">
+            <table class="table mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-4">E-mail</th>
+                    <th>Perfil</th>
+                    <th>Status</th>
+                    <th>Enviado em</th>
+                    <th>Expira em</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="convite : ${convites}">
+                    <td class="ps-4" th:text="${convite.email}"></td>
+                    <td th:text="${convite.perfilDestino}"></td>
+                    <td>
+                            <span class="badge-status"
+                                  th:classappend="'badge-' + ${convite.status}"
+                                  th:text="${convite.status}">
+                            </span>
+                    </td>
+                    <td th:text="${#temporals.format(convite.criadoEm, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td th:text="${#temporals.format(convite.expiracaoToken, 'dd/MM/yyyy HH:mm')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function logout() {
+        await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+        window.location.href = '/login';
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -59,7 +59,7 @@ function loginForm() {
 
                 const rotas = {
                     'COORDENADOR': '/coordenador/dashboard',
-                    'COORDENADOR_CURSO': '/coordenador/dashboard',
+                    'SECRETARIA': '/secretaria/dashboard',
                     'ORIENTADOR': '/orientador/validacoes',
                     'ALUNO': '/aluno/dashboard'
                 };

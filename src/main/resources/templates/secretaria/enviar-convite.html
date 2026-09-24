@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Enviar Convite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background-color: #f8f9fa; }
+        .navbar-aprovamais { background-color: #2B4ECC; }
+        [x-cloak] { display: none !important; }
+        .card-form {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .btn-enviar {
+            background: #2B4ECC;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            height: 48px;
+            font-weight: 600;
+            transition: background 0.15s;
+        }
+        .btn-enviar:hover:not(:disabled) {
+            background: #2440B0;
+            color: white;
+        }
+        .btn-enviar:disabled { opacity: 0.6; }
+        .form-control:focus, .form-select:focus {
+            border-color: #2B4ECC;
+            box-shadow: 0 0 0 3px rgba(43,78,204,0.08);
+        }
+        .alerta-erro {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            font-size: 0.85rem;
+        }
+        .alerta-sucesso {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: #16a34a;
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-aprovamais px-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <a href="/secretaria/dashboard" class="btn btn-outline-light btn-sm">← Voltar</a>
+        <span class="navbar-brand fw-bold mb-0">Aprova+</span>
+    </div>
+    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+</nav>
+
+<div class="container" style="max-width: 520px;">
+    <h4 class="fw-bold mb-1">Enviar Convite de Acesso</h4>
+    <p class="text-muted mb-4">
+        O destinatário receberá um email com um link para concluir o cadastro.
+    </p>
+
+    <div class="card-form p-4" x-data="conviteForm()">
+
+        <div class="alerta-erro mb-3" role="alert" x-show="erro" x-text="erro" x-cloak></div>
+        <div class="alerta-sucesso mb-3" role="status" x-show="sucesso" x-cloak>
+            Convite enviado com sucesso! O destinatário receberá um email em instantes.
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label fw-semibold">E-mail do destinatário</label>
+            <input id="email"
+                   type="email"
+                   class="form-control"
+                   placeholder="nome@email.com"
+                   x-model="form.emailDestino"
+                   required
+                   autofocus>
+        </div>
+
+        <div class="mb-4">
+            <label for="perfil" class="form-label fw-semibold">Perfil de acesso</label>
+            <select id="perfil" class="form-select" x-model="form.perfil">
+                <option value="">Selecione o perfil...</option>
+                <option value="ALUNO">Aluno</option>
+                <option value="ORIENTADOR">Orientador</option>
+            </select>
+        </div>
+
+        <button class="btn btn-enviar w-100"
+                :disabled="!podoEnviar() || enviando"
+                @click="enviar()">
+            <span x-show="!enviando">Enviar convite</span>
+            <span x-show="enviando" x-cloak>
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Enviando...
+            </span>
+        </button>
+    </div>
+</div>
+
+<script>
+    function conviteForm() {
+        return {
+            form: { emailDestino: '', perfil: '' },
+            enviando: false,
+            erro: '',
+            sucesso: false,
+
+            podoEnviar() {
+                return this.form.emailDestino && this.form.perfil;
+            },
+
+            async enviar() {
+                this.erro = '';
+                this.sucesso = false;
+                this.enviando = true;
+
+                try {
+                    const resp = await fetch('/api/v1/convites', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(this.form)
+                    });
+
+                    const dados = await resp.json().catch(() => ({}));
+
+                    if (!resp.ok) {
+                        if (resp.status >= 500) {
+                            this.erro = 'Erro interno no servidor. Tente novamente.';
+                        } else {
+                            this.erro = dados.mensagem || 'Erro ao enviar convite.';
+                        }
+                        return;
+                    }
+
+                    this.sucesso = true;
+                    this.form = { emailDestino: '', perfil: '' };
+
+                } catch (e) {
+                    this.erro = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.enviando = false;
+                }
+            }
+        }
+    }
+
+    async function logout() {
+        await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+        window.location.href = '/login';
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
