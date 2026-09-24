@@ -28,7 +28,7 @@ public class LogAuditoria {
     private String emailTentativa;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     private PerfilAuditoria perfil;
 
     @Column(nullable = false)
