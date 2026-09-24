@@ -60,6 +60,7 @@ public class SecurityConfig {
                                 "/primeiro-acesso",
                                 "/primeiro-acesso/aceitar",
                                 "/primeiro-acesso/recusar",
+                                "/primeiro-acesso-erro",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/logout",
                                 "/api/v1/auth/convite/**",

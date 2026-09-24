@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Primeiro Acesso</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background-color: #f8f9fa; }
+
+        .card-principal {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+
+        .header-azul {
+            background-color: #2B4ECC;
+            border-radius: 12px 12px 0 0;
+            padding: 2rem;
+        }
+
+        .badge-portal {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.7rem;
+            border-radius: 4px;
+        }
+
+        .resumo-termos {
+            background: #F8FAFF;
+            border: 1px solid #DBEAFE;
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            font-size: 0.88rem;
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        .resumo-termos a {
+            color: #2B4ECC;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .resumo-termos a:hover {
+            text-decoration: underline;
+        }
+
+        .form-control:focus {
+            border-color: #2B4ECC;
+            box-shadow: 0 0 0 3px rgba(43, 78, 204, 0.08);
+        }
+
+        .btn-concluir {
+            background: #2B4ECC;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            height: 48px;
+            font-weight: 600;
+            transition: background 0.15s;
+        }
+
+        .btn-concluir:hover:not(:disabled) {
+            background: #2440B0;
+            color: white;
+        }
+
+        .btn-concluir:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-recusar {
+            border-radius: 8px;
+            height: 48px;
+            font-weight: 600;
+        }
+
+        .alerta-erro {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .alerta-senha {
+            background: #FFF7ED;
+            border: 1px solid #FED7AA;
+            color: #C2410C;
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body class="py-5">
+
+<div class="container" style="max-width: 600px;">
+
+    <div class="card-principal">
+
+        <!-- Header azul -->
+        <div class="header-azul">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div style="background: white; border-radius: 8px; width: 36px; height: 36px;
+                            display: flex; align-items: center; justify-content: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#2B4ECC">
+                        <path d="M12 3L4 7v5c0 5.25 3.4 10.15 8 11.35C16.6 22.15 20 17.25 20 12V7L12 3zm-1 13l-3-3 1.4-1.4 1.6 1.6 4.6-4.6L17 10l-6 6z"/>
+                    </svg>
+                </div>
+                <span style="color: white; font-weight: 700; font-size: 1.1rem;">Aprova+</span>
+            </div>
+            <span class="badge-portal">Primeiro Acesso</span>
+            <h4 class="text-white fw-bold mt-2 mb-1">Bem-vindo ao Aprova+</h4>
+            <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+                Para concluir seu cadastro, leia e aceite os termos abaixo e defina sua senha.
+            </p>
+        </div>
+
+        <!-- Corpo do formulário -->
+        <div class="p-4" x-data="primeiroAcessoForm()">
+
+            <!-- Alerta de erro -->
+            <div class="alerta-erro mb-3" role="alert" x-show="erro" x-text="erro" x-cloak></div>
+
+            <!-- Email do usuário (somente leitura) -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">E-mail</label>
+                <input type="email" class="form-control bg-light"
+                       th:value="${email}" readonly>
+            </div>
+
+            <!-- Resumo dos termos -->
+            <div class="resumo-termos mb-3">
+                <p class="mb-2">
+                    Ao continuar, você concorda com os
+                    <a href="/termos" target="_blank">Termos de Uso</a>
+                    e a
+                    <a href="/privacidade" target="_blank">Política de Privacidade</a>
+                    do Aprova+.
+                </p>
+                <p class="mb-0">
+                    O sistema coleta seus dados para gestão do estágio supervisionado,
+                    conforme a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).
+                </p>
+            </div>
+
+            <!-- Checkbox de aceite -->
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="aceite" x-model="aceitou">
+                <label class="form-check-label" for="aceite">
+                    Li e concordo com os <strong>Termos de Uso</strong>
+                    e a <strong>Política de Privacidade</strong>
+                </label>
+            </div>
+
+            <!-- Formulário de senha — só aparece após aceitar -->
+            <div x-show="aceitou" x-cloak>
+                <hr class="mb-4">
+                <h6 class="fw-bold mb-3">Defina sua senha</h6>
+
+                <!-- Alerta de senhas diferentes -->
+                <div class="alerta-senha mb-3"
+                     x-show="senha && confirmacaoSenha && senha !== confirmacaoSenha"
+                     x-cloak>
+                    As senhas não coincidem.
+                </div>
+
+                <div class="mb-3">
+                    <label for="senha" class="form-label fw-semibold">Senha</label>
+                    <input id="senha" type="password" class="form-control"
+                           placeholder="Mínimo 8 caracteres"
+                           x-model="senha" minlength="8">
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirmacaoSenha" class="form-label fw-semibold">
+                        Confirmar senha
+                    </label>
+                    <input id="confirmacaoSenha" type="password" class="form-control"
+                           placeholder="Digite a senha novamente"
+                           x-model="confirmacaoSenha">
+                </div>
+            </div>
+
+            <!-- Botões -->
+            <div class="d-grid gap-2">
+                <button class="btn btn-concluir"
+                        :disabled="!podeConcluir()"
+                        @click="aceitar()">
+                    <span x-show="!enviando">Concluir cadastro</span>
+                    <span x-show="enviando" x-cloak>
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Concluindo...
+                    </span>
+                </button>
+
+                <button class="btn btn-outline-secondary btn-recusar"
+                        @click="recusar()"
+                        :disabled="enviando">
+                    Recusar e cancelar acesso
+                </button>
+            </div>
+
+            <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.8rem;">
+                Ao recusar, seu convite será cancelado. Para obter um novo acesso,
+                entre em contato com a secretaria.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function primeiroAcessoForm() {
+        return {
+            aceitou: false,
+            senha: '',
+            confirmacaoSenha: '',
+            enviando: false,
+            erro: '',
+
+            podeConcluir() {
+                return this.aceitou &&
+                       this.senha.length >= 8 &&
+                       this.senha === this.confirmacaoSenha;
+            },
+
+            async aceitar() {
+                this.erro = '';
+                this.enviando = true;
+
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get('token');
+
+                try {
+                    const resp = await fetch('/primeiro-acesso/aceitar?token=' + token, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            senha: this.senha,
+                            confirmacaoSenha: this.confirmacaoSenha
+                        })
+                    });
+
+                    if (resp.ok || resp.redirected) {
+                        window.location.href = '/login?cadastro=concluido';
+                    } else {
+                        const dados = await resp.json().catch(() => ({}));
+                        this.erro = dados.mensagem || 'Erro ao concluir cadastro.';
+                    }
+                } catch (e) {
+                    this.erro = 'Não foi possível conectar ao servidor.';
+                } finally {
+                    this.enviando = false;
+                }
+            },
+
+            async recusar() {
+                this.enviando = true;
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get('token');
+
+                try {
+                    await fetch('/primeiro-acesso/recusar?token=' + token, {
+                        method: 'POST'
+                    });
+                    window.location.href = '/login?convite=recusado';
+                } catch (e) {
+                    window.location.href = '/login?convite=recusado';
+                }
+            }
+        }
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
