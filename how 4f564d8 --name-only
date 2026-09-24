@@ -1,0 +1,15 @@
+[33m864b8a1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/entrega-seguranca[m[33m, [m[1;31morigin/feature/entrega-seguranca[m[33m)[m chore(merge): integra commits da Isabela na feature/entrega-seguranca
+[33mcf7b849[m feat(config): adiciona rotas publicas de primeiro acesso, consentimento, termos e privacidade
+[33m73dda3b[m chore(deps): adiciona dependencia resend-java para envio de emails
+[33mc28b406[m chore(config): adiciona variavel app.url para montagem de links de convite
+[33m3ed0293[m feat(controller): adiciona PrimeiroAcessoController para fluxo de convite e consentimento
+[33mebee35e[m feat(dto): adiciona PrimeiroAcessoRequest para fluxo de primeiro acesso
+[33m9de8c21[m feat(service): adiciona ConviteService com geracao e validacao de token de convite
+[33m6a62a1b[m feat(service): adiciona EmailService com integracao Resend para envio de convites e recuperacao de senha
+[33m7025c41[m feat(repository): adiciona ConviteRepository
+[33m531f7bc[m feat(entity): adiciona entidade Convite para fluxo de primeiro acesso
+[33m8b735cc[m feat(enum): adiciona status RECUSADO no StatusConvite
+[33me2194c0[m fix(config): libera rotas publicas de consentimento, termos e privacidade
+[33m456d883[m feat(controller): adiciona rotas publicas de consentimento, termos e privacidade
+[33m4f564d8[m feat(view): adiciona paginas de consentimento, termos de uso e aviso de privacidade
+[33mfcbc140[m[33m ([m[1;31morigin/develop[m[33m)[m Merge pull request #11 from isabela-tamie15/fix/melhorias-e-comentarios

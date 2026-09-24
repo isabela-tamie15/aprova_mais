@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Aviso de Privacidade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <style>
+        body { background: #F9FAFB; font-family: 'Inter', sans-serif; }
+        .doc-container { max-width: 720px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+        .doc-intro { font-size: 0.925rem; color: #4B5563; line-height: 1.8; margin-bottom: 1.5rem; }
+        .doc-section { margin-bottom: 2.2rem; }
+        .doc-section h2 { font-size: 1.05rem; font-weight: 700; color: #111827; margin-bottom: 0.75rem; }
+        .doc-section p, .doc-section li { font-size: 0.875rem; color: #4B5563; line-height: 1.8; }
+        .doc-section ul { padding-left: 1.2rem; }
+        .doc-section li { margin-bottom: 0.4rem; }
+        .doc-divider { border: none; border-top: 1px solid #F3F4F6; margin: 2rem 0; }
+        .badge-doc { display: inline-block; background: #EEF2FF; color: #2B4ECC;
+                     font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+                     text-transform: uppercase; padding: 0.3rem 0.7rem; border-radius: 4px;
+                     margin-bottom: 0.75rem; }
+        .btn-voltar { font-size: 0.85rem; font-weight: 600; color: #2B4ECC;
+                      border: 1px solid #2B4ECC; border-radius: 8px; padding: 0.5rem 1.2rem;
+                      text-decoration: none; background: white; }
+        .btn-voltar:hover { background: #EEF2FF; color: #2B4ECC; }
+        .doc-versao { font-size: 0.78rem; color: #9CA3AF; margin-top: 0.3rem; }
+        .table-doc { font-size: 0.82rem; }
+        .table-doc th { background: #F9FAFB; color: #374151; font-weight: 600; font-size: 0.78rem; }
+        .table-doc td { color: #4B5563; vertical-align: top; padding: 0.6rem 0.75rem; line-height: 1.6; }
+    </style>
+</head>
+<body>
+<div class="doc-container">
+
+    <div class="text-center mb-4">
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="#2B4ECC" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <span class="logo-nome" style="color: #111827; font-size: 1.05rem;">Aprova+</span>
+        </div>
+        <span class="badge-doc">Aviso de Privacidade</span>
+        <p class="doc-versao" style="margin-top: 0.5rem;">Versão 1.0, Setembro de 2026 · Conforme LGPD (Lei nº 13.709/2018)</p>
+    </div>
+
+    <p class="doc-intro">
+        O Aprova+ foi desenvolvido por alunos do curso de Engenharia de Software da UMC como
+        Projeto Final de Curso (PFC). A Universidade, como responsável institucional pelo sistema,
+        trata os dados pessoais dos usuários com cuidado e transparência, em observância à Lei
+        Geral de Proteção de Dados (Lei nº 13.709/2018, "LGPD") e às demais legislações aplicáveis.
+    </p>
+    <p class="doc-intro">
+        Esta Política vai ajudá-lo a entender quais dados coletamos quando você usa o Aprova+,
+        por que os coletamos, como os utilizamos, com quem podemos compartilhá-los, quais direitos
+        você possui sobre esses dados e como exercê-los.
+    </p>
+    <p class="doc-intro">
+        Nesta Política, quando mencionarmos "dados" ou "dados pessoais", estamos nos referindo a
+        qualquer informação que identifique ou possa levar à sua identificação, como nome, e-mail
+        e RGM. Quando falarmos em "Aprova+" ou "sistema", estamos nos referindo à plataforma de
+        gestão de estágio supervisionado desenvolvida pela UMC. Quando mencionarmos "você" ou
+        "usuário", estamos nos referindo à pessoa cadastrada no sistema, seja aluno, orientador,
+        coordenador ou secretaria.
+    </p>
+
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Quem é o responsável pelos seus dados</h2>
+        <p>O responsável pelo tratamento dos dados pessoais coletados pelo Aprova+ é a <strong>Universidade de Mogi das Cruzes (UMC)</strong>, CNPJ [inserir CNPJ], com sede em Mogi das Cruzes, São Paulo.</p>
+        <p>O encarregado de proteção de dados (DPO) é a Coordenação do Curso de Engenharia de Software da UMC, contactável pelo e-mail institucional da secretaria acadêmica. O encarregado é o canal de contato entre o Aprova+, os titulares dos dados e a Autoridade Nacional de Proteção de Dados (ANPD), conforme Art. 41 da LGPD.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Como e quais dados coletamos sobre você</h2>
+        <p>Coletamos apenas os dados estritamente necessários para o funcionamento do sistema de gestão de estágio. Nenhum dado é coletado além do que a funcionalidade exige.</p>
+        <table class="table table-bordered table-doc mt-3">
+            <thead>
+            <tr>
+                <th>Dado</th>
+                <th>Por que coletamos</th>
+                <th>Base legal</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr><td>Nome completo</td><td>Identificação nos registros acadêmicos do estágio</td><td>Obrigação legal (Lei 11.788/2008)</td></tr>
+            <tr><td>E-mail institucional</td><td>Autenticação no sistema e envio de notificações</td><td>Legítimo interesse acadêmico</td></tr>
+            <tr><td>CPF</td><td>Identificação e vínculo com registros institucionais</td><td>Obrigação legal</td></tr>
+            <tr><td>RGM (matrícula)</td><td>Vínculo do aluno com a turma</td><td>Obrigação legal</td></tr>
+            <tr><td>Nome e endereço da empresa</td><td>Registro oficial do local do estágio</td><td>Obrigação legal (Lei 11.788/2008)</td></tr>
+            <tr><td>Data de início do estágio</td><td>Cálculo de prazo e carga horária</td><td>Obrigação legal</td></tr>
+            <tr><td>Horas trabalhadas e atividades</td><td>Validação da carga horária mínima</td><td>Obrigação legal</td></tr>
+            <tr><td>Data e versão de aceite desta Política</td><td>Registro do consentimento do usuário</td><td>Cumprimento de obrigação legal</td></tr>
+            </tbody>
+        </table>
+        <p>O Aprova+ não coleta dados sensíveis como origem racial, convicção religiosa, opinião política, dado de saúde, orientação sexual ou dado biométrico. Não coletamos dados de geolocalização, histórico de navegação fora do sistema ou qualquer informação além das listadas acima.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Bases legais para o tratamento dos seus dados</h2>
+        <p>A LGPD autoriza o tratamento de dados pessoais com base em hipóteses legais específicas. O Aprova+ trata seus dados de acordo com as seguintes bases:</p>
+        <table class="table table-bordered table-doc mt-3">
+            <thead>
+            <tr>
+                <th>Base legal</th>
+                <th>O que significa</th>
+                <th>Como se aplica no Aprova+</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><strong>Obrigação legal</strong></td>
+                <td>Necessário para cumprir uma lei ou regulamento</td>
+                <td>Dados exigidos pela Lei 11.788/2008 e normas do MEC, sem necessidade de consentimento</td>
+            </tr>
+            <tr>
+                <td><strong>Legítimo interesse</strong></td>
+                <td>Necessário para o funcionamento legítimo da atividade, respeitados seus direitos fundamentais</td>
+                <td>E-mail para autenticação e envio de notificações do sistema</td>
+            </tr>
+            <tr>
+                <td><strong>Consentimento</strong></td>
+                <td>Você concordou expressamente com o uso dos dados para uma finalidade específica</td>
+                <td>Registrado no primeiro acesso ao sistema, podendo ser revogado a qualquer momento</td>
+            </tr>
+            </tbody>
+        </table>
+        <p>Quando o consentimento for revogado, o tratamento realizado anteriormente permanece válido. A revogação pode impossibilitar o uso de funcionalidades que dependem dos dados consentidos.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Por quanto tempo guardamos seus dados</h2>
+        <p>Dados de estágio estão sujeitos à obrigação legal de retenção prevista na Lei 11.788/2008 e nas normas do MEC. Por isso, os registros acadêmicos não podem ser simplesmente deletados após a conclusão do estágio.</p>
+        <p>Quando você solicita a exclusão dos seus dados, aplicamos a <strong>anonimização</strong>: os dados pessoais identificáveis (nome, e-mail, CPF, RGM) são substituídos por valores neutros, mantendo os registros acadêmicos intactos. Após a anonimização, você não é mais identificável no sistema.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Com quem compartilhamos seus dados</h2>
+        <p>Seus dados são acessíveis apenas dentro do sistema, por pessoas com perfil autorizado:</p>
+        <ul>
+            <li>Dados do aluno: visíveis para o orientador da turma e para a coordenação</li>
+            <li>Dados do orientador: visíveis para a coordenação</li>
+            <li>Dados de estágio: visíveis para o aluno, o orientador e a coordenação</li>
+        </ul>
+        <p>O Aprova+ utiliza os seguintes serviços externos, que podem ter acesso a dados para o funcionamento do sistema: <strong>Cloudflare R2</strong> para armazenamento de arquivos de entregas do estágio, e <strong>SMTP</strong> para envio de notificações e convites de acesso. Nenhum dado é vendido, cedido ou compartilhado com terceiros para fins comerciais.</p>
+        <p>O Cloudflare R2 opera com infraestrutura distribuída globalmente, o que pode envolver transferência de dados pessoais para fora do Brasil. Adotamos as medidas previstas no Art. 33 da LGPD para garantir nível de proteção equivalente ao da legislação brasileira.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Como protegemos seus dados</h2>
+        <p>O Aprova+ implementa as seguintes medidas de segurança para proteger seus dados:</p>
+        <ul>
+            <li><strong>BCrypt:</strong> senhas nunca armazenadas em texto legível</li>
+            <li><strong>JWT em cookie HttpOnly:</strong> token de sessão inacessível por JavaScript, protegendo contra roubo de credenciais</li>
+            <li><strong>Controle de acesso por perfil:</strong> cada usuário acessa apenas o que seu papel permite</li>
+            <li><strong>Criptografia AES-256:</strong> para dados sensíveis em repouso</li>
+            <li><strong>HTTPS:</strong> comunicação cifrada em produção</li>
+            <li><strong>Autenticação em dois fatores (2FA):</strong> disponível para reforço de segurança</li>
+        </ul>
+        <p>Em caso de incidente de segurança que possa acarretar risco ou dano relevante a você, como vazamento, acesso não autorizado ou perda de dados, a UMC comunicará o ocorrido à ANPD e aos usuários afetados no prazo de até <strong>72 horas</strong> após a ciência do incidente, conforme Art. 48 da LGPD.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Seus direitos sobre os seus dados</h2>
+        <p>A LGPD garante os seguintes direitos, que podem ser exercidos a qualquer momento pelo canal indicado ao fim desta Política:</p>
+        <ul>
+            <li><strong>Acesso:</strong> solicitar cópia de todos os dados que o sistema tem sobre você</li>
+            <li><strong>Correção:</strong> solicitar correção de dados incorretos ou desatualizados</li>
+            <li><strong>Esquecimento:</strong> solicitar a remoção dos seus dados pessoais identificáveis, implementada via anonimização conforme descrito acima</li>
+            <li><strong>Revogação do consentimento:</strong> revogar o aceite desta Política a qualquer momento, sem afetar o tratamento realizado anteriormente</li>
+            <li><strong>Portabilidade:</strong> solicitar seus dados em formato estruturado para transferência a outro sistema</li>
+            <li><strong>Informação sobre compartilhamento:</strong> saber com quem seus dados foram ou são compartilhados</li>
+        </ul>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Cookies</h2>
+        <p>O Aprova+ utiliza um único cookie para autenticação: o cookie <code>jwt</code>, do tipo HttpOnly. Ele guarda o token de sessão e é necessário para manter o login ativo. Sem ele, não é possível usar o sistema. Esse cookie é removido automaticamente após 8 horas ou quando você faz logout, não rastreia comportamento de navegação e não é compartilhado com terceiros. O sistema não utiliza cookies de rastreamento, publicidade ou análise de comportamento.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Como exercer seus direitos</h2>
+        <p>Para exercer qualquer um dos direitos listados acima, envie e-mail para a secretaria acadêmica da UMC informando seu nome completo, RGM e o direito que deseja exercer, ou utilize o canal de suporte disponível dentro do próprio sistema. O prazo de resposta é de até 15 dias úteis, conforme previsto na LGPD.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Alterações nesta Política</h2>
+        <p>Esta Política pode ser atualizada para refletir mudanças no sistema, na legislação ou nas práticas de privacidade. Quando houver alteração relevante, você será notificado dentro do sistema e precisará aceitar a nova versão antes de continuar usando o Aprova+. A data da versão está indicada no início deste documento.</p>
+    </div>
+
+    <div class="mt-4 text-center">
+        <a href="/consentimento" class="btn-voltar">Voltar para aceite</a>
+    </div>
+
+    <p class="mt-4 text-center" style="font-size: 0.78rem; color: #9CA3AF;">
+        © 2026 Aprova+ · Universidade de Mogi das Cruzes
+    </p>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

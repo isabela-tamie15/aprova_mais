@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Consentimento</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { background: #F9FAFB; font-family: 'Inter', sans-serif; }
+        .doc-card { border: 1px solid #E5E7EB; border-radius: 12px; background: white; }
+        .doc-titulo { font-size: 0.85rem; font-weight: 700; color: #111827; }
+        .doc-texto { font-size: 0.83rem; color: #6B7280; line-height: 1.6; }
+        .btn-ver { font-size: 0.78rem; font-weight: 600; color: #2B4ECC; border: 1px solid #2B4ECC;
+                   border-radius: 6px; padding: 0.25rem 0.7rem; text-decoration: none; }
+        .btn-ver:hover { background: #EEF2FF; color: #2B4ECC; }
+        .checkbox-label { font-size: 0.85rem; color: #374151; }
+        .checkbox-label a { color: #2B4ECC; font-weight: 600; text-decoration: none; }
+        .checkbox-label a:hover { text-decoration: underline; }
+        .alerta-erro { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626;
+                       border-radius: 8px; padding: 0.7rem 1rem; font-size: 0.85rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center py-5" style="min-height: 100vh;">
+
+<div style="width: 100%; max-width: 480px; padding: 1rem;">
+
+    <div class="text-center mb-4">
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="#2B4ECC" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <span class="logo-nome" style="color: #111827;">Aprova+</span>
+        </div>
+        <p style="font-size: 0.88rem; color: #6B7280; margin: 0;">
+            Antes de continuar, leia e aceite os documentos abaixo.
+        </p>
+    </div>
+
+    <div x-data="consentimentoForm()">
+
+        <div class="alerta-erro" x-show="erro" x-text="erro" x-cloak></div>
+
+        <div class="doc-card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="doc-titulo">Termos de Uso</span>
+                <a href="/termos" target="_blank" class="btn-ver">Ler completo</a>
+            </div>
+            <p class="doc-texto mb-0">
+                O Aprova+ é de uso exclusivo de pessoas vinculadas à UMC. O acesso é feito por
+                convite institucional. Ao usar o sistema, você se compromete a manter suas
+                credenciais em sigilo, inserir apenas informações verdadeiras e usar o sistema
+                exclusivamente para fins relacionados ao estágio supervisionado.
+            </p>
+        </div>
+
+        <div class="doc-card p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="doc-titulo">Aviso de Privacidade</span>
+                <a href="/privacidade" target="_blank" class="btn-ver">Ler completo</a>
+            </div>
+            <p class="doc-texto mb-0">
+                Coletamos apenas os dados necessários para gestão do estágio: nome, e-mail,
+                RGM, dados da empresa e horas trabalhadas, conforme exigido pela Lei do Estágio
+                (Lei 11.788/2008). Você tem direito de acessar, corrigir ou solicitar a remoção
+                dos seus dados a qualquer momento. Não compartilhamos dados para fins comerciais.
+            </p>
+        </div>
+
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="aceite" x-model="aceitou"
+                   style="border-color: #D1D5DB; width: 1rem; height: 1rem;">
+            <label class="form-check-label checkbox-label" for="aceite">
+                Li e concordo com os
+                <a href="/termos" target="_blank">Termos de Uso</a>
+                e o
+                <a href="/privacidade" target="_blank">Aviso de Privacidade</a>
+                do Aprova+.
+            </label>
+        </div>
+
+        <div class="text-center">
+            <button class="btn-ver"
+                    style="cursor: pointer; padding: 0.25rem 1.2rem;"
+                    :style="(!aceitou || carregando) ? 'opacity: 0.55; cursor: not-allowed;' : ''"
+                    :disabled="!aceitou || carregando"
+                    @click="aceitar()">
+                <span x-show="!carregando">Continuar</span>
+                <span x-show="carregando" x-cloak>
+                    <span class="spinner-border spinner-border-sm me-2" style="width:0.8rem;height:0.8rem;"></span>
+                    Registrando...
+                </span>
+            </button>
+        </div>
+
+    </div>
+
+    <p class="text-center mt-4" style="font-size: 0.78rem; color: #9CA3AF; text-align: center;">
+        © 2026 Aprova+ · Universidade de Mogi das Cruzes
+    </p>
+
+</div>
+
+<script>
+    function consentimentoForm() {
+        return {
+            aceitou: false,
+            carregando: false,
+            erro: '',
+            async aceitar() {
+                if (!this.aceitou) return;
+                this.carregando = true;
+                this.erro = '';
+                try {
+                    const response = await fetch('/api/v1/consentimento/aceitar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (response.ok) {
+                        window.location.href = '/dashboard';
+                    } else {
+                        this.erro = 'Erro ao registrar o aceite. Tente novamente.';
+                    }
+                } catch (e) {
+                    this.erro = 'Erro de conexão. Tente novamente.';
+                } finally {
+                    this.carregando = false;
+                }
+            }
+        }
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
