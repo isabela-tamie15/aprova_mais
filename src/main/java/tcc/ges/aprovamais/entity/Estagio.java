@@ -11,7 +11,7 @@ import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 @EntityListeners(AuditingEntityListener.class)
@@ -66,9 +66,9 @@ public class Estagio {
 
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
-    private LocalDateTime criadoEm;
+    private OffsetDateTime criadoEm;
 
     @LastModifiedDate
     @Column(name = "alterado_em", nullable = false)
-    private LocalDateTime alteradoEm;
+    private OffsetDateTime alteradoEm;
 }
