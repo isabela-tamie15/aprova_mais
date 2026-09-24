@@ -29,6 +29,8 @@ public class EstagioService {
     private final AlunoRepository alunoRepository;
     private final TipoEstagioRepository tipoEstagioRepository;
     private final OrientadorTurmaRepository orientadorTurmaRepository;
+    private final AuditoriaService auditoriaService;
+    private final UsuarioRepository usuarioRepository;
 
     // Leo - trilha personalizada
     @Transactional(readOnly = true)
@@ -120,6 +122,14 @@ public class EstagioService {
         Estagio recarregado = estagioRepository.findById(estagio.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
 
+        auditoriaService.registrar(
+                aluno,
+                "ESTAGIO_CADASTRADO",
+                "Estágio cadastrado para empresa: " + request.getNomeEmpresa(),
+                null,
+                true
+        );
+
         log.info("[ESTÁGIO] Estágio cadastrado/atualizado para aluno: {} - Tipo: {}",
                 emailAluno, tipoEstagio.getNome());
 
@@ -151,6 +161,21 @@ public class EstagioService {
         estagio.setJustificativaRejeicao(null);
 
         Estagio salvo = estagioRepository.save(estagio);
+
+        Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
+                .orElse(null);
+
+        if (orientador != null) {
+            auditoriaService.registrar(
+                    orientador,
+                    "ESTAGIO_APROVADO",
+                    "Estágio id=" + estagioId + " aprovado para aluno: "
+                            + estagio.getMatricula().getAluno().getNome(),
+                    null,
+                    true
+            );
+        }
+
         log.info("[ESTÁGIO] Estágio {} aprovado pelo orientador: {}", estagioId, emailOrientador);
         return paraResponse(salvo);
     }
@@ -169,6 +194,20 @@ public class EstagioService {
         estagio.setJustificativaRejeicao(justificativa);
 
         Estagio salvo = estagioRepository.save(estagio);
+
+        Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
+                .orElse(null);
+
+        if (orientador != null) {
+            auditoriaService.registrar(
+                    orientador,
+                    "ESTAGIO_REJEITADO",
+                    "Estágio id=" + estagioId + " rejeitado. Justificativa: " + justificativa,
+                    null,
+                    true
+            );
+        }
+
         log.info("[ESTÁGIO] Estágio {} rejeitado pelo orientador: {}", estagioId, emailOrientador);
         return paraResponse(salvo);
     }
