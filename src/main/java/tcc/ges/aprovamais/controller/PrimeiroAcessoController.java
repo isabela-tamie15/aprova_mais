@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,6 +12,7 @@ import tcc.ges.aprovamais.entity.Convite;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+import tcc.ges.aprovamais.service.AuditoriaService;
 import tcc.ges.aprovamais.service.ConviteService;
 
 import java.time.OffsetDateTime;
@@ -24,6 +26,7 @@ public class PrimeiroAcessoController {
     private final ConviteService conviteService;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditoriaService auditoriaService;
 
     private static final String VERSAO_TERMOS = "1.0";
 
@@ -43,6 +46,7 @@ public class PrimeiroAcessoController {
     @PostMapping("/aceitar")
     public String aceitar(@RequestParam String token,
                           @Valid @ModelAttribute PrimeiroAcessoRequest request,
+                          HttpServletRequest httpRequest,
                           Model model) {
         try {
             Convite convite = conviteService.validarToken(token);
@@ -57,12 +61,25 @@ public class PrimeiroAcessoController {
             usuario.setPrimeiroAcesso(false);
 
             usuarioRepository.save(usuario);
-
             conviteService.aceitarConvite(token);
+
+            auditoriaService.registrar(
+                    usuario,
+                    "PRIMEIRO_ACESSO_ACEITO",
+                    "Termos aceitos e cadastro concluído. Versão: " + VERSAO_TERMOS,
+                    httpRequest.getRemoteAddr(),
+                    true
+            );
 
             return "redirect:/login?cadastro=concluido";
 
         } catch (Exception e) {
+            auditoriaService.registrarTentativa(
+                    token,
+                    "PRIMEIRO_ACESSO_ERRO",
+                    "Erro ao concluir cadastro: " + e.getMessage(),
+                    httpRequest.getRemoteAddr()
+            );
             model.addAttribute("erro", e.getMessage());
             model.addAttribute("token", token);
             return "primeiro-acesso";
@@ -70,10 +87,22 @@ public class PrimeiroAcessoController {
     }
 
     @PostMapping("/recusar")
-    public String recusar(@RequestParam String token, Model model) {
+    public String recusar(@RequestParam String token,
+                          HttpServletRequest httpRequest,
+                          Model model) {
         try {
+            Convite convite = conviteService.validarToken(token);
+
+            auditoriaService.registrarTentativa(
+                    convite.getEmail(),
+                    "PRIMEIRO_ACESSO_RECUSADO",
+                    "Usuário recusou os termos de uso",
+                    httpRequest.getRemoteAddr()
+            );
+
             conviteService.recusarConvite(token);
             return "redirect:/login?convite=recusado";
+
         } catch (Exception e) {
             model.addAttribute("erro", e.getMessage());
             model.addAttribute("token", token);
