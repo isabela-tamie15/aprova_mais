@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.Convite;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -12,4 +13,5 @@ public interface ConviteRepository extends JpaRepository<Convite, Long> {
     Optional<Convite> findByTokenConvite(String tokenConvite);
     Optional<Convite> findByEmailAndStatus(String email, StatusConvite status);
     boolean existsByEmailAndStatus(String email, StatusConvite status);
+    List<Convite> findByRemetenteEmailOrderByCriadoEmDesc(String emailRemetente);
 }
