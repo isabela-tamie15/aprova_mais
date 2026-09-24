@@ -71,6 +71,8 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/api/v1/coordenador/**").hasRole("COORDENADOR")
                         .requestMatchers("/api/v1/orientador/**").hasRole("ORIENTADOR")
+                        .requestMatchers("/secretaria/**").hasRole("SECRETARIA")
+                        .requestMatchers("/api/v1/convites/**").hasRole("SECRETARIA")
                         .requestMatchers("/api/v1/aluno/**").hasRole("ALUNO")
                         .anyRequest().authenticated()
                 )
