@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.TrilhaService;
 
@@ -15,8 +16,9 @@ public class PaginaController {
 
     private final EstagioService estagioService;
     private final TrilhaService trilhaService;
+    private final ConviteRepository conviteRepository;
 
-    //endpoints públicos
+    //rotas públicas/gerais
     @GetMapping("/login")
     public String login() {
         return "login";
@@ -37,7 +39,7 @@ public class PaginaController {
         return "privacidade";
     }
 
-    //Endpoints do aluno
+    //rotas do aluno
     @GetMapping("/aluno/dashboard")
     @PreAuthorize("hasRole('ALUNO')")
     public String dashboardAluno(Model model, Authentication authentication) {
@@ -63,12 +65,34 @@ public class PaginaController {
         return "aluno/estagio";
     }
 
-    //Endpoints do orientador
+    //orientador
     @GetMapping("/orientador/validacoes")
     @PreAuthorize("hasRole('ORIENTADOR')")
     public String paginaValidacoes(Model model, Authentication authentication) {
         String email = authentication.getName();
         model.addAttribute("estagios", estagioService.listarPendentes(email));
         return "orientador/validacoes";
+    }
+
+    //rotas da secretaria
+    @GetMapping("/secretaria/dashboard")
+    @PreAuthorize("hasRole('SECRETARIA')")
+    public String dashboardSecretaria() {
+        return "secretaria/dashboard";
+    }
+
+    @GetMapping("/secretaria/enviar-convite")
+    @PreAuthorize("hasRole('SECRETARIA')")
+    public String enviarConvite() {
+        return "secretaria/enviar-convite";
+    }
+
+    @GetMapping("/secretaria/convites")
+    @PreAuthorize("hasRole('SECRETARIA')")
+    public String listarConvites(Model model, Authentication authentication) {
+        String email = authentication.getName();
+        model.addAttribute("convites",
+                conviteRepository.findByRemetenteEmailOrderByCriadoEmDesc(email));
+        return "secretaria/convites";
     }
 }
