@@ -235,8 +235,7 @@
                        this.senha.length >= 8 &&
                        this.senha === this.confirmacaoSenha;
             },
-
-            async aceitar() {
+             async aceitar() {
                 this.erro = '';
                 this.enviando = true;
 
@@ -246,18 +245,17 @@
                 try {
                     const resp = await fetch('/primeiro-acesso/aceitar?token=' + token, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: new URLSearchParams({
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
                             senha: this.senha,
                             confirmacaoSenha: this.confirmacaoSenha
                         })
                     });
 
-                    if (resp.ok || resp.redirected) {
+                    if (resp.ok) {
                         window.location.href = '/login?cadastro=concluido';
                     } else {
-                        const dados = await resp.json().catch(() => ({}));
-                        this.erro = dados.mensagem || 'Erro ao concluir cadastro.';
+                        this.erro = 'Erro ao concluir cadastro. Tente novamente.';
                     }
                 } catch (e) {
                     this.erro = 'Não foi possível conectar ao servidor.';
