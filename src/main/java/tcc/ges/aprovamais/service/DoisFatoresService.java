@@ -24,7 +24,7 @@ import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.UUID;
 
-
+// Esse service cuida de tudo relacionado ao 2fa, tanto o token de pré-autenticação quanto o TOTP em si
 @Service
 @RequiredArgsConstructor
 public class DoisFatoresService {
@@ -37,15 +37,18 @@ public class DoisFatoresService {
     private final AuditoriaService auditoriaService;
     private final BloqueioContaService bloqueioContaService;
 
+    // Tempo em minutos que o token de pré-autenticação fica válido, vem do application.yml
     @Value("${jwt.pre-auth-expiration}")
     private long minutosPreAutenticacao;
 
     // ===== Token de pré-autenticação (fluxo de login) =====
 
-    /**
-     * Gera um token de pré-autenticação para o usuário que acabou de acertar a senha.
-     * Retorna o valor original (enviado ao cliente); no banco fica apenas o hash.
-     */
+    /*
+       Gera o token de pré-autenticação pra quem acabou de acertar a senha.
+       O valor original vai pro cliente, mas o que fica salvo no banco é só
+       o hash. Assim, se o banco vazar, ninguém consegue usar os tokens que
+       estão lá dentro
+    */
     public String gerarTokenPreAutenticacao(Usuario usuario) {
         String token = UUID.randomUUID().toString();
         usuario.setTokenPreAutenticacao(gerarHash(token));
@@ -54,10 +57,12 @@ public class DoisFatoresService {
         return token;
     }
 
-    /**
-     * Busca o usuário dono de um token de pré-autenticação válido e não expirado.
-     * Qualquer falha resulta em BadCredentialsException genérica.
-     */
+    /*
+       Busca o usuário dono do token de pré-autenticação. Faz várias checagens
+       em sequência: token existe, não expirou e a conta ainda tá ativa. Se
+       qualquer uma falhar, lança a mesma exceção genérica, sem dizer qual
+       foi o problema, pra não dar pista pra quem tá tentando adivinhar
+    */
     public Usuario buscarPorTokenPreAutenticacao(String token) {
         if (token == null || token.isBlank()) {
             throw new BadCredentialsException("Credenciais inválidas");
@@ -79,17 +84,13 @@ public class DoisFatoresService {
         return usuario;
     }
 
-    /**
-     * Estende a validade do token (usado ao exibir o QR Code, para dar tempo de escanear).
-     */
+    // Estende a validade do token, usado ao exibir o QR Code pra dar tempo do usuário escanear
     public void renovarPreAutenticacao(Usuario usuario) {
         usuario.setExpiracaoPreAutenticacao(calcularExpiracao());
         usuarioRepository.save(usuario);
     }
 
-    /**
-     * Invalida o token após o uso: cada token vale para um único login.
-     */
+    // Invalida o token depois do uso, cada token vale pra um único login
     public void invalidarPreAutenticacao(Usuario usuario) {
         usuario.setTokenPreAutenticacao(null);
         usuario.setExpiracaoPreAutenticacao(null);
@@ -98,6 +99,7 @@ public class DoisFatoresService {
 
     // ===== TOTP =====
 
+    // Confere se o código de 6 dígitos bate com o segredo do usuário
     public boolean codigoValido(String segredo, String codigo) {
         if (segredo == null || codigo == null || !codigo.matches("\\d{6}")) {
             return false;
@@ -105,21 +107,27 @@ public class DoisFatoresService {
         return googleAuthenticator.authorize(segredo, Integer.parseInt(codigo));
     }
 
-    /**
-     * Gera um novo segredo (ainda não ativo) e devolve os dados para o QR Code.
-     * O segredo é gravado cifrado (AesEncryptor na entidade Usuario).
-     */
+    /*
+       Gera um segredo novo pro usuário, ainda não ativo. O segredo em si
+       fica cifrado no banco, o AesEncryptor cuida disso quando salva.
+       Devolve a URI que o frontend usa pra montar o QR Code
+    */
     public ConfiguracaoDoisFatoresResponse gerarNovoSegredo(Usuario usuario) {
         GoogleAuthenticatorKey chave = googleAuthenticator.createCredentials();
         usuario.setDoisFatoresSegredo(chave.getKey());
         usuarioRepository.save(usuario);
 
-        // getOtpAuthTotpURL apenas monta a URI otpauth://; o QR Code é gerado no navegador,
-        // sem enviar o segredo a serviços externos (por isso não se usa getOtpAuthURL).
+        /*
+           Usa o getOtpAuthTotpURL em vez do getOtpAuthURL porque o primeiro
+           só monta a URI no formato otpauth:// e o QR Code é gerado no
+           navegador. O segundo geraria um QR Code chamando um serviço
+           externo, o que mandaria o segredo do usuário pra fora
+        */
         String uri = GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(EMISSOR, usuario.getEmail(), chave);
         return new ConfiguracaoDoisFatoresResponse(uri, chave.getKey());
     }
 
+    // Ativa o 2fa de vez e registra na auditoria
     public void ativar(Usuario usuario, String ipOrigem) {
         usuario.setDoisFatoresAtivo(true);
         usuarioRepository.save(usuario);
@@ -130,6 +138,7 @@ public class DoisFatoresService {
 
     // ===== Gestão pela conta (usuário autenticado) =====
 
+    // Diz se o usuário já tem 2fa ativado e se o perfil dele exige
     @Transactional(readOnly = true)
     public StatusDoisFatoresResponse consultarStatus(String email) {
         Usuario usuario = buscarPorEmail(email);
@@ -139,6 +148,7 @@ public class DoisFatoresService {
         );
     }
 
+    // Gera um segredo novo pra configurar o 2fa, usado quando o usuário tá ativando pela conta
     @Transactional
     public ConfiguracaoDoisFatoresResponse configurar(String email) {
         Usuario usuario = buscarPorEmail(email);
@@ -150,6 +160,12 @@ public class DoisFatoresService {
         return gerarNovoSegredo(usuario);
     }
 
+    /*
+       Ativa o 2fa validando um código primeiro pra confirmar que o usuário
+       conseguiu configurar o app autenticador. O noRollbackFor é porque, se
+       o código tiver errado, a gente já registrou a falha na auditoria e
+       quer que isso persista mesmo com a exceção
+    */
     @Transactional(noRollbackFor = {CodigoDoisFatoresInvalidoException.class, AuthenticationException.class})
     public void ativarPelaConta(String email, String codigo, String ipOrigem) {
         Usuario usuario = buscarPorEmail(email);
@@ -165,6 +181,7 @@ public class DoisFatoresService {
         ativar(usuario, ipOrigem);
     }
 
+    // Desativa o 2fa, mas exige um código válido antes pra confirmar
     @Transactional(noRollbackFor = {CodigoDoisFatoresInvalidoException.class, AuthenticationException.class})
     public void desativar(String email, String codigo, String ipOrigem) {
         Usuario usuario = buscarPorEmail(email);
@@ -176,7 +193,11 @@ public class DoisFatoresService {
             throw new IllegalStateException("A autenticação de dois fatores não está ativa.");
         }
 
-        // Exige código válido: impede que alguém com a sessão aberta desative o 2FA sozinho
+        /*
+           Exige o código mesmo com a sessão aberta. Assim, se alguém pegar
+           o computador do usuário já logado, não consegue simplesmente
+           desativar o 2fa da vítima
+        */
         validarCodigoDaConta(usuario, codigo, ipOrigem);
 
         usuario.setDoisFatoresAtivo(false);
@@ -189,10 +210,11 @@ public class DoisFatoresService {
 
     // ===== Auxiliares =====
 
-    /**
-     * Valida o código compartilhando o limite de tentativas do login,
-     * para impedir adivinhação do código por quem tem a sessão aberta.
-     */
+    /*
+       Valida o código do 2fa compartilhando o mesmo limite de tentativas do
+       login. Isso impede que alguém com a sessão aberta fique testando
+       códigos até acertar, porque depois de 5 erros a conta bloqueia
+    */
     private void validarCodigoDaConta(Usuario usuario, String codigo, String ipOrigem) {
         bloqueioContaService.verificarBloqueio(usuario, "DOIS_FATORES_FALHA", ipOrigem);
 
@@ -207,15 +229,22 @@ public class DoisFatoresService {
         bloqueioContaService.limparFalhas(usuario);
     }
 
+    // Busca o usuário pelo e-mail, usado nos métodos que recebem o e-mail do token
     private Usuario buscarPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
     }
 
+    // Calcula quando o token de pré-autenticação vai expirar
     private OffsetDateTime calcularExpiracao() {
         return OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(minutosPreAutenticacao);
     }
 
+    /*
+       Gera o hash SHA-256 do token antes de salvar no banco. A ideia é
+       a mesma de senha, nunca guardar o valor original, só o hash. Assim
+       mesmo que o banco vaze, o atacante não consegue usar os tokens
+    */
     private String gerarHash(String valor) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

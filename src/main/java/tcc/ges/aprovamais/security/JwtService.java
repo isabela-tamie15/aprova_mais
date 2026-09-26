@@ -12,6 +12,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+// Esse service é quem gera e valida os tokens JWT usados na autenticação
 @Service
 public class JwtService {
 
@@ -20,11 +21,18 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String segredo;
 
+    // Tempo de validade do token em milissegundos, configurado no application.yml
     @Value("${jwt.expiration-ms}")
     private long expiracaoMs;
 
     private SecretKey chaveAssinatura;
 
+    /*
+       Roda uma vez quando a aplicação sobe pra montar a chave de assinatura.
+       O segredo vem do application.yml em texto puro, e aqui ele é convertido
+       pro formato de chave HMAC que a lib JWT usa. Se o segredo for muito curto,
+       a própria lib rejeita e a aplicação nem sobe, o que é bom
+    */
     @PostConstruct
     public void inicializar() {
         if (segredo == null || segredo.isBlank()) {
@@ -35,9 +43,15 @@ public class JwtService {
         );
     }
 
+    // Esse é o método que gera o token no login, com o e-mail e o perfil dentro dele
     public String gerarToken(String email, String perfil) {
         return Jwts.builder()
                 .subject(email)
+                /*
+                   O perfil vai como claim extra pra depois o filtro conseguir
+                   montar a autenticação sem precisar buscar o usuário no banco
+                   de novo
+                */
                 .claim(CLAIM_PERFIL, perfil)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiracaoMs))
@@ -45,14 +59,22 @@ public class JwtService {
                 .compact();
     }
 
+    // Extrai o e-mail do token, que fica no campo subject
     public String extrairEmail(String token) {
         return extrairClaims(token).getSubject();
     }
 
+    // Extrai o perfil que foi gravado como claim no momento da geração
     public String extrairPerfil(String token) {
         return extrairClaims(token).get(CLAIM_PERFIL, String.class);
     }
 
+    /*
+       Verifica se o token é válido e se pertence ao e-mail esperado. Aqui a
+       gente confia no extrairClaims pra validar assinatura e expiração, se
+       qualquer um dos dois estiver errado, ele já lança exceção e a gente
+       devolve false em vez de estourar pra cima
+    */
     public boolean tokenValido(String token, String email) {
         try {
             return extrairEmail(token).equals(email);
@@ -61,6 +83,7 @@ public class JwtService {
         }
     }
 
+    // Auxiliar que faz o trabalho pesado de validar a assinatura e devolver os claims
     private Claims extrairClaims(String token) {
         return Jwts.parser()
                 .verifyWith(chaveAssinatura)

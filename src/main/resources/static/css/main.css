@@ -2,9 +2,12 @@
    Aprova+ - Estilos globais e customizações
    ============================================= */
 
+/* Esconde elementos que usam x-cloak até o Alpine carregar, evita flash visual */
 [x-cloak] { display: none !important; }
 
 /* Base */
+
+/* Aplica a fonte Inter e o box-sizing border-box em tudo */
 * {
     font-family: 'Inter', sans-serif;
     box-sizing: border-box;
@@ -16,7 +19,7 @@ body {
     min-height: 100vh;
 }
 
-/* Layout de dois painéis - exclusivo da tela de login */
+/* Layout de dois painéis, só vale na tela de login */
 body.pagina-login {
     display: flex;
 }
@@ -25,6 +28,7 @@ body.pagina-login {
    Login - Painel esquerdo (azul)
    ============================================= */
 
+/* Painel azul da esquerda, ocupa 60% da tela no desktop */
 .painel-esquerdo {
     background-color: #2B4ECC;
     width: 60%;
@@ -64,6 +68,7 @@ body.pagina-login {
     letter-spacing: -0.01em;
 }
 
+/* Área central com o texto de boas-vindas, ocupa o espaço que sobra */
 .hero-text {
     flex: 1;
     display: flex;
@@ -99,6 +104,7 @@ body.pagina-login {
    Login - Painel direito (branco)
    ============================================= */
 
+/* Painel branco da direita, com o formulário de login */
 .painel-direito {
     width: 40%;
     min-height: 100vh;
@@ -155,11 +161,13 @@ body.pagina-login {
     margin-bottom: 0.4rem;
 }
 
+/* Wrapper que segura o input e o ícone juntos, o ícone fica posicionado em cima */
 .input-wrapper {
     position: relative;
     margin-bottom: 1.2rem;
 }
 
+/* Ícone dentro do input, centralizado verticalmente com o transform */
 .input-icon {
     position: absolute;
     left: 12px;
@@ -170,7 +178,7 @@ body.pagina-login {
     height: 16px;
 }
 
-/* Escopado pelo painel-direito para não sobrescrever o Bootstrap nas outras páginas */
+/* Escopado pelo painel-direito pra não sobrescrever o Bootstrap nas outras páginas */
 .painel-direito .form-control {
     padding-left: 2.4rem;
     height: 48px;
@@ -225,6 +233,7 @@ body.pagina-login {
     letter-spacing: -0.01em;
 }
 
+/* Escurece o botão no hover, mas só quando ele tá clicável */
 .btn-entrar:hover:not(:disabled) {
     background: #2440B0;
     color: white;
@@ -280,6 +289,7 @@ body.pagina-login {
    Responsivo
    ============================================= */
 
+/* No mobile vira uma coluna só, painel azul vira um cabeçalho curto */
 @media (max-width: 768px) {
     body.pagina-login {
         flex-direction: column;

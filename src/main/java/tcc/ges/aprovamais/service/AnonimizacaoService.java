@@ -12,6 +12,7 @@ import tcc.ges.aprovamais.repository.SecretariaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 import java.util.UUID;
 
+// Essa service é quem cuida da anonimização de dados quando o titular pede exclusão pela LGPD
 @Service
 @RequiredArgsConstructor
 public class AnonimizacaoService {
@@ -23,13 +24,29 @@ public class AnonimizacaoService {
     private final PasswordEncoder passwordEncoder;
     private final AuditoriaService auditoriaService;
 
+    /*
+       Esse é o método que faz a anonimização em si. A ideia não é apagar
+       o registro do banco, e sim trocar os dados pessoais por valores
+       genéricos, assim o histórico fica preservado pra fins estatísticos
+       mas ninguém consegue identificar quem era a pessoa
+    */
     @Transactional
     public void anonimizar(String email, String ipOrigem) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
+        /*
+           Gera um sufixo aleatório de 8 caracteres. Ele é usado no e-mail e
+           em outros campos pra garantir que, se dois usuários forem anonimizados,
+           cada um fica com um valor único e não dá conflito de unicidade no banco
+        */
         String sufixo = UUID.randomUUID().toString().substring(0, 8);
 
+        /*
+           Troca os dados principais do usuário. A senha vira um hash de um
+           UUID aleatório, ou seja, ninguém mais consegue logar nessa conta
+           nem que saiba a senha original
+        */
         usuario.setNome("USUÁRIO REMOVIDO");
         usuario.setEmail("removido_" + sufixo + "@anonimizado.br");
         usuario.setSenhaHash(passwordEncoder.encode(UUID.randomUUID().toString()));
@@ -38,6 +55,11 @@ public class AnonimizacaoService {
         usuario.setTokenRecuperacao(null);
         usuario.setDoisFatoresSegredo(null);
 
+        /*
+           Agora trata os campos específicos de cada perfil. Cada tipo de
+           usuário tem dados próprios em tabelas separadas, então aqui a
+           gente limpa essas tabelas também, cada uma do seu jeito
+        */
         switch (usuario.getPerfil()) {
             case ALUNO -> alunoRepository.findById(usuario.getId())
                     .ifPresent(aluno -> {
@@ -62,6 +84,7 @@ public class AnonimizacaoService {
 
         usuarioRepository.save(usuario);
 
+        // Registra na auditoria que a anonimização foi feita, com o IP de quem solicitou
         auditoriaService.registrar(
                 usuario,
                 "ANONIMIZACAO_EXECUTADA",

@@ -11,6 +11,7 @@ import tcc.ges.aprovamais.entity.enums.PerfilAuditoria;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.repository.LogAuditoriaRepository;
 
+// Essa service é quem registra os logs de auditoria do sistema, tipo login, logout, anonimização etc
 @Service
 @RequiredArgsConstructor
 public class AuditoriaService {
@@ -19,6 +20,12 @@ public class AuditoriaService {
 
     private final LogAuditoriaRepository logAuditoriaRepository;
 
+    /*
+       Registra um evento de auditoria vinculado a um usuário. O @Async faz
+       esse método rodar em outra thread, então quem chamou não fica esperando
+       ele terminar. Se a auditoria falhar, o fluxo principal não quebra,
+       por isso o try/catch engole a exceção e só loga o erro
+    */
     @Async
     public void registrar(Usuario usuario,
                           String acao,
@@ -45,6 +52,11 @@ public class AuditoriaService {
         }
     }
 
+    /*
+       Versão usada quando não tem usuário vinculado, tipo tentativa de login
+       com e-mail que nem existe no banco. O sucesso fica fixo em false
+       porque, por definição, esses são eventos de falha
+    */
     @Async
     public void registrarTentativa(String emailTentativa,
                                    String acao,
@@ -67,6 +79,11 @@ public class AuditoriaService {
         }
     }
 
+    /*
+       Converte do enum de perfil usado na entidade pro enum da auditoria.
+       São dois enums separados com os mesmos valores, mas cada um fica na
+       sua camada, então precisa dessa conversão no meio
+    */
     private PerfilAuditoria converterPerfil(PerfilUsuario perfil) {
         if (perfil == null) return null;
         return switch (perfil) {

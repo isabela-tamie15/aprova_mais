@@ -10,21 +10,33 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+// Esse service é quem envia os e-mails transacionais do sistema, usando a API do Resend
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
+    // Chave de API do Resend, configurada no application.yml
     @Value("${resend.api-key}")
     private String apiKey;
 
-    // Remetente padrão do Resend para testes sem domínio verificado
+    /*
+       Remetente padrão do Resend. Como o domínio da UMC não tá verificado
+       na conta, o Resend só permite enviar a partir do próprio domínio de
+       teste deles. Em produção isso vira algo tipo no-reply@aprova.com.br
+    */
     private static final String REMETENTE = "Aprova+ <onboarding@resend.dev>";
 
+    // Esse é o método que envia o e-mail de convite pra quem foi convidado
     @Async
     public void enviarConvite(String destinatario, String nomeDestinatario, String linkConvite) {
         try {
+            /*
+               Cria um cliente novo do Resend a cada chamada. Como o método
+               roda em thread separada por causa do @Async, não dá pra manter
+               uma instância única compartilhada com segurança
+            */
             Resend resend = new Resend(apiKey);
 
             CreateEmailOptions email = CreateEmailOptions.builder()
@@ -39,10 +51,17 @@ public class EmailService {
             log.info("[EMAIL] Convite enviado para: {}", destinatario);
 
         } catch (ResendException e) {
+            /*
+               Se o envio falhar, o erro fica só no log. Faz sentido porque
+               o @Async já desacoplou do fluxo principal, não tem como
+               avisar quem chamou, e o convite continua válido no banco
+               mesmo que o e-mail não tenha ido
+            */
             log.error("[EMAIL] Erro ao enviar convite para {}: {}", destinatario, e.getMessage(), e);
         }
     }
 
+    // Esse é o método que envia o e-mail de recuperação de senha
     @Async
     public void enviarRecuperacaoSenha(String destinatario, String nomeDestinatario, String linkRecuperacao) {
         try {
@@ -64,6 +83,11 @@ public class EmailService {
         }
     }
 
+    /*
+       Monta o HTML do e-mail de convite. O estilo é todo inline porque
+       clientes de e-mail tipo Gmail e Outlook ignoram CSS externo, então
+       a única forma de garantir a aparência é colocar tudo direto nas tags
+    */
     private String montarCorpoConvite(String nome, String link) {
         return """
                 <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -86,6 +110,7 @@ public class EmailService {
                 """.formatted(nome, link);
     }
 
+    // Mesma ideia do convite, mas com texto e prazo de expiração diferentes
     private String montarCorpoRecuperacaoSenha(String nome, String link) {
         return """
                 <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">

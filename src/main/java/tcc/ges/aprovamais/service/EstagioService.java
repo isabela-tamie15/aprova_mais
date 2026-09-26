@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+// Esse service é quem cuida de tudo relacionado ao estágio, desde o cadastro até a aprovação pelo orientador
 @Service
 @RequiredArgsConstructor
 public class EstagioService {
@@ -32,8 +33,15 @@ public class EstagioService {
     private final AuditoriaService auditoriaService;
     private final UsuarioRepository usuarioRepository;
 
+    // Esse é o método que busca o estágio ativo de um aluno, usado quando a gente precisa garantir que existe
     @Transactional(readOnly = true)
     public EstagioResponse buscarEstagioAtivo(String emailAluno) {
+
+        /*
+           Primeiro acha a matrícula ativa do aluno, depois o estágio ativo
+           vinculado a essa matrícula. Se faltar qualquer um dos dois, já
+           para aqui com 404, porque não dá pra continuar sem os dois
+        */
         Matricula matricula = matriculaRepository
                 .findFirstByAlunoEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
                 .orElseThrow(() -> {
@@ -55,6 +63,7 @@ public class EstagioService {
         return paraResponse(estagio);
     }
 
+    // Esse é o método que lista todos os tipos de estágio disponíveis pra escolher no cadastro
     @Transactional(readOnly = true)
     public List<TipoEstagioResponse> listarTiposEstagioDisponiveis() {
         return tipoEstagioRepository.findAll()
@@ -68,6 +77,7 @@ public class EstagioService {
                 .collect(Collectors.toList());
     }
 
+    // Esse é o método que busca o estágio do aluno, mas devolve Optional porque o aluno pode não ter nenhum ainda
     @Transactional(readOnly = true)
     public Optional<EstagioResponse> buscarEstagioDoAluno(String emailAluno) {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
@@ -77,6 +87,7 @@ public class EstagioService {
                 .map(this::paraResponse);
     }
 
+    // Esse é o método que o aluno usa pra cadastrar um estágio novo ou atualizar um que já existe
     @Transactional
     public EstagioResponse cadastrarOuAtualizarEstagio(String emailAluno,
                                                        EstagioCadastroRequest request,
@@ -91,6 +102,12 @@ public class EstagioService {
         Optional<Estagio> estagioExistente =
                 estagioRepository.findByMatriculaId(matricula.getId());
 
+        /*
+           Se já existe um estágio pra essa matrícula, a gente reaproveita
+           o registro e só atualiza os campos. Mas se ele tiver PENDENTE,
+           bloqueia, porque não faz sentido o aluno mudar um estágio que
+           já tá esperando o orientador analisar
+        */
         Estagio estagio;
         if (estagioExistente.isPresent()) {
             estagio = estagioExistente.get();
@@ -108,8 +125,15 @@ public class EstagioService {
         estagio.setNomeEmpresa(request.getNomeEmpresa());
         estagio.setCargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria());
         estagio.setStatus(StatusEstagio.PENDENTE);
+
+        // Limpa qualquer justificativa de rejeição anterior, já que o aluno tá reenviando
         estagio.setJustificativaRejeicao(null);
 
+        /*
+           Tenta achar o orientador da turma do aluno. Se a turma ainda não
+           tem orientador vinculado, deixa null mesmo, o estágio vai ficar
+           pendente até alguém atribuir
+        */
         Orientador orientador = orientadorTurmaRepository
                 .findFirstByTurmaId(matricula.getTurma().getId())
                 .map(OrientadorTurma::getOrientador)
@@ -118,6 +142,12 @@ public class EstagioService {
 
         estagioRepository.save(estagio);
 
+        /*
+           Recarrega o estágio depois de salvar. É meio estranho à primeira
+           vista, mas é porque na hora de montar a response a gente acessa
+           relações que só ficam disponíveis quando o Hibernate carrega de
+           novo do banco
+        */
         Estagio recarregado = estagioRepository.findById(estagio.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
 
@@ -135,6 +165,7 @@ public class EstagioService {
         return paraResponse(recarregado);
     }
 
+    // Esse é o método que lista os estágios pendentes de um orientador, incluindo os que ele já rejeitou
     @Transactional(readOnly = true)
     public List<EstagioResponse> listarPendentes(String emailOrientador) {
         return estagioRepository
@@ -147,10 +178,12 @@ public class EstagioService {
                 .collect(Collectors.toList());
     }
 
+    // Esse é o método que o orientador usa pra aprovar um estágio pendente
     @Transactional
     public EstagioResponse aprovar(Long estagioId, String emailOrientador, String ipOrigem) {
         Estagio estagio = buscarEstagioDoOrientador(estagioId, emailOrientador);
 
+        // Só faz sentido aprovar se estiver pendente, senão é sinal que alguém já mexeu
         if (estagio.getStatus() != StatusEstagio.PENDENTE) {
             throw new IllegalStateException("Apenas estágios pendentes podem ser aprovados");
         }
@@ -160,6 +193,11 @@ public class EstagioService {
 
         Estagio salvo = estagioRepository.save(estagio);
 
+        /*
+           Busca o usuário do orientador só pra registrar na auditoria. Se
+           não achar, não faz nada, porque a aprovação em si já foi feita
+           e a auditoria não pode travar o fluxo
+        */
         Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
                 .orElse(null);
 
@@ -178,6 +216,7 @@ public class EstagioService {
         return paraResponse(salvo);
     }
 
+    // Esse é o método que o orientador usa pra rejeitar um estágio, exige uma justificativa
     @Transactional
     public EstagioResponse rejeitar(Long estagioId, String emailOrientador,
                                     String justificativa, String ipOrigem) {
@@ -192,6 +231,7 @@ public class EstagioService {
 
         Estagio salvo = estagioRepository.save(estagio);
 
+        // Mesma ideia do aprovar, auditoria não pode travar o fluxo
         Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
                 .orElse(null);
 
@@ -209,10 +249,14 @@ public class EstagioService {
         return paraResponse(salvo);
     }
 
-    //métodos auxiliares/universais
+    // métodos auxiliares/universais
 
-    // Busca o estágio somente se ele estiver vinculado ao orientador autenticado.
-    // Retorna 404 (e não 403) para não revelar a existência de estágios de outros orientadores.
+    /*
+       Busca o estágio só se ele estiver vinculado ao orientador autenticado.
+       Se não estiver, devolve 404 em vez de 403 de propósito, assim um
+       orientador não consegue descobrir se um estágio existe só tentando
+       acessar ids aleatórios e vendo a diferença entre os dois erros
+    */
     private Estagio buscarEstagioDoOrientador(Long estagioId, String emailOrientador) {
         return estagioRepository.findByIdAndOrientadorEmail(estagioId, emailOrientador)
                 .orElseThrow(() -> {
@@ -222,11 +266,13 @@ public class EstagioService {
                 });
     }
 
+    // Busca o aluno pelo e-mail, usado como primeiro passo em vários fluxos
     private Aluno buscarAlunoPorEmail(String email) {
         return alunoRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado"));
     }
 
+    // Busca a matrícula ativa do aluno, usada como base pra chegar no estágio
     private Matricula buscarMatriculaAtiva(Aluno aluno) {
         return matriculaRepository
                 .findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)
@@ -234,6 +280,7 @@ public class EstagioService {
                         "Aluno não possui matrícula ativa"));
     }
 
+    // Converte a entidade Estagio pro DTO que vai ser devolvido pro frontend
     private EstagioResponse paraResponse(Estagio estagio) {
         return EstagioResponse.builder()
                 .id(estagio.getId())
