@@ -25,20 +25,21 @@ import java.util.UUID;
 public class ConviteService {
 
     private static final Logger log = LoggerFactory.getLogger(ConviteService.class);
-    private static final String VERSAO_TERMOS = "1.0";
 
     private final ConviteRepository conviteRepository;
     private final UsuarioRepository usuarioRepository;
     private final EmailService emailService;
     private final AlunoRepository alunoRepository;
     private final OrientadorRepository orientadorRepository;
+    private final AuditoriaService auditoriaService;
 
     @Value("${app.url}")
     private String appUrl;
 
     @Transactional
     public void enviarConvite(String emailDestino, PerfilDestino perfil,
-                              String emailRemetente, Curso curso, Turma turma) {
+                              String emailRemetente, Curso curso, Turma turma,
+                              String ipOrigem) {
 
         if (conviteRepository.existsByEmailAndStatus(emailDestino, StatusConvite.PENDENTE)) {
             throw new IllegalStateException(
@@ -96,6 +97,14 @@ public class ConviteService {
 
         String linkConvite = appUrl + "/primeiro-acesso?token=" + token;
         emailService.enviarConvite(emailDestino, emailDestino, linkConvite);
+
+        auditoriaService.registrar(
+                remetente,
+                "CONVITE_ENVIADO",
+                "Convite enviado para: " + emailDestino + " | Perfil: " + perfil,
+                ipOrigem,
+                true
+        );
 
         log.info("[CONVITE] Convite enviado para: {} pelo remetente: {}",
                 emailDestino, emailRemetente);

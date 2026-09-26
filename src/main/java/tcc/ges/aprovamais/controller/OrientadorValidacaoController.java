@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,18 +25,22 @@ public class OrientadorValidacaoController {
     }
 
     @PostMapping("/{id}/aprovar")
-    public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id,
+                                                   Authentication authentication,
+                                                   HttpServletRequest httpRequest) {
         String email = authentication.getName();
-        return ResponseEntity.ok(estagioService.aprovar(id, email));
+        return ResponseEntity.ok(estagioService.aprovar(id, email, httpRequest.getRemoteAddr()));
     }
 
     @PostMapping("/{id}/rejeitar")
     public ResponseEntity<EstagioResponse> rejeitar(
             @PathVariable Long id,
             Authentication authentication,
-            @Valid @RequestBody RejeicaoRequest request) {
+            @Valid @RequestBody RejeicaoRequest request,
+            HttpServletRequest httpRequest) {
 
         String email = authentication.getName();
-        return ResponseEntity.ok(estagioService.rejeitar(id, email, request.getJustificativa()));
+        return ResponseEntity.ok(estagioService.rejeitar(
+                id, email, request.getJustificativa(), httpRequest.getRemoteAddr()));
     }
 }

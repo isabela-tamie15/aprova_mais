@@ -60,7 +60,7 @@ public class AuditoriaService {
 
             logAuditoriaRepository.save(registro);
 
-            log.warn("[AUDITORIA] Tentativa com email inexistente: {} | {}", emailTentativa, acao);
+            log.warn("[AUDITORIA] {} | {} | {} | sem usuário ativo vinculado", emailTentativa, acao, detalhes);
 
         } catch (Exception e) {
             log.error("[AUDITORIA] Erro ao registrar auditoria: {}", e.getMessage(), e);

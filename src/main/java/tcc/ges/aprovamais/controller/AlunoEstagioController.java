@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -42,10 +43,12 @@ public class AlunoEstagioController {
     @PostMapping
     public ResponseEntity<EstagioResponse> cadastrarOuAtualizar(
             Authentication authentication,
-            @Valid @RequestBody EstagioCadastroRequest request) {
+            @Valid @RequestBody EstagioCadastroRequest request,
+            HttpServletRequest httpRequest) {
 
         String email = authentication.getName();
-        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(email, request);
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(
+                email, request, httpRequest.getRemoteAddr());
         return ResponseEntity.ok(resposta);
     }
 }

@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +21,16 @@ public class ConviteController {
     @PreAuthorize("hasRole('SECRETARIA')")
     public ResponseEntity<Void> enviarConvite(
             @Valid @RequestBody ConviteRequest request,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
 
         conviteService.enviarConvite(
                 request.getEmailDestino(),
                 request.getPerfil(),
                 authentication.getName(),
                 null,
-                null
+                null,
+                httpRequest.getRemoteAddr()
         );
 
         return ResponseEntity.ok().build();
