@@ -56,6 +56,16 @@ public class GlobalExceptionHandler {
                 .body(construirErro(HttpStatus.LOCKED, ex.getMessage()));
     }
 
+    // 400 código do 2FA inválido, então é ativar/desativar pela conta
+    @ExceptionHandler(CodigoDoisFatoresInvalidoException.class)
+    public ResponseEntity<ErroResposta> handleCodigoDoisFatoresInvalido(
+            CodigoDoisFatoresInvalidoException ex) {
+        log.warn("[EXCEPTION] Código 2FA inválido");
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(construirErro(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
     // 400 falha na validação do @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(
@@ -70,7 +80,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erros);
     }
 
-    // 409 regra de negócio violada (ex.: estágio já pendente, já analisado)
+    // 409 regra de negócio violada (exemplo, estágio já pendente, já analisado etc)
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErroResposta> handleIllegalState(IllegalStateException ex) {
         log.warn("[EXCEPTION] Regra de negócio violada: {}", ex.getMessage());
