@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.TrilhaService;
@@ -37,6 +38,26 @@ public class PaginaController {
     @GetMapping("/privacidade")
     public String privacidade() {
         return "privacidade";
+    }
+
+    //rotas de qualquer usuário autenticado (anyRequest().authenticated() no SecurityConfig)
+    @GetMapping("/conta/seguranca")
+    public String segurancaConta() {
+        return "conta/seguranca";
+    }
+
+    // Redireciona o usuário autenticado para a página inicial do seu perfil
+    @GetMapping("/inicio")
+    public String inicio(Authentication authentication) {
+        String authority = authentication.getAuthorities().iterator().next().getAuthority();
+        return "redirect:" + PerfilUsuario.deAuthority(authority).getRotaInicial();
+    }
+
+    //rotas do coordenador
+    @GetMapping("/coordenador/dashboard")
+    @PreAuthorize("hasRole('COORDENADOR')")
+    public String dashboardCoordenador() {
+        return "coordenador/dashboard";
     }
 
     //rotas do aluno

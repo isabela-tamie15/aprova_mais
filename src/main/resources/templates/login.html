@@ -7,6 +7,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="/css/main.css" rel="stylesheet">
+    <!-- Gera o QR Code do 2FA no próprio navegador (o segredo não é enviado a terceiros).
+         integrity (SRI): o navegador recusa o arquivo se o conteúdo do CDN for alterado -->
+    <script defer src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"
+            integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
+            crossorigin="anonymous"></script>
     <script defer src="/js/app.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -43,7 +48,8 @@
         <div x-data="loginForm()">
             <div class="alerta-erro" role="alert" x-show="erro" x-text="erro" x-cloak></div>
 
-            <form @submit.prevent="entrar">
+            <!-- Etapa 1: e-mail e senha -->
+            <form @submit.prevent="entrar" x-show="etapa === 'credenciais'">
                 <div>
                     <label for="email" class="form-label">E-mail Institucional</label>
                     <div class="input-wrapper">
@@ -95,6 +101,59 @@
                     </span>
                 </button>
             </form>
+
+            <!-- Etapa 2: configuração obrigatória do 2FA (perfis que exigem segundo fator) -->
+            <div x-show="etapa === 'configuracao'" x-cloak>
+                <p class="mb-2"><strong>Configure a verificação em duas etapas</strong></p>
+                <p class="text-muted small mb-3">
+                    Seu perfil exige verificação em duas etapas. Escaneie o QR Code com um aplicativo
+                    autenticador (Google Authenticator, Microsoft Authenticator ou similar).
+                </p>
+                <div class="d-flex justify-content-center mb-3" x-ref="qrcode"></div>
+                <p class="text-muted small mb-3">
+                    Não consegue escanear? Digite esta chave no aplicativo:
+                    <code class="d-block text-break mt-1" x-text="segredo"></code>
+                </p>
+            </div>
+
+            <!-- Etapa 2 (comum): digitar o código de 6 dígitos -->
+            <form @submit.prevent="confirmarCodigo" x-show="etapa !== 'credenciais'" x-cloak>
+                <p class="text-muted small mb-3" x-show="etapa === 'codigo'">
+                    Digite o código de 6 dígitos exibido no seu aplicativo autenticador.
+                </p>
+                <div>
+                    <label for="codigo" class="form-label">Código de verificação</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 3L4 7v5c0 5.25 3.4 10.15 8 11.35C16.6 22.15 20 17.25 20 12V7L12 3z"/>
+                        </svg>
+                        <input
+                                id="codigo"
+                                type="text"
+                                class="form-control"
+                                inputmode="numeric"
+                                pattern="[0-9]{6}"
+                                maxlength="6"
+                                placeholder="000000"
+                                x-model="codigo"
+                                x-ref="campoCodigo"
+                                required
+                                autocomplete="one-time-code">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-entrar mt-3" :disabled="carregando || codigo.length !== 6">
+                    <span x-show="!carregando">Verificar</span>
+                    <span x-show="carregando" x-cloak>
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Verificando...
+                    </span>
+                </button>
+
+                <span class="link-recuperar mt-3">
+                    <a href="#" @click.prevent="reiniciar()">Voltar ao login</a>
+                </span>
+            </form>
         </div>
     </div>
 
@@ -102,6 +161,7 @@
     <div class="rodape-direito">
         Dúvidas no acesso?
         <a href="#" @click.prevent>Contate a Secretaria</a>
+        <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
     </div>
 </div>
 

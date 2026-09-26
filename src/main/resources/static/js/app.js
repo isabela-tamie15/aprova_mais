@@ -16,13 +16,49 @@ async function logout() {
 }
 
 /**
- * Componente Alpine.js do formulário de login
- * Gerencia estado do formulário, chamada à API e redirecionamento por perfil
+ * Desenha o QR Code do 2FA dentro do elemento informado.
+ * A geração é feita no navegador (qrcodejs), sem enviar o segredo a serviços externos.
+ */
+function desenharQrCode(elemento, texto) {
+    elemento.innerHTML = '';
+    new QRCode(elemento, {
+        text: texto,
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.M
+    });
+}
+
+/**
+ * Converte a resposta de erro da API em mensagem para o usuário.
+ */
+function mensagemDeErro(resposta, dados, mensagemPadrao) {
+    if (resposta.status >= 500) {
+        return 'Erro interno no servidor. Tente novamente em instantes.';
+    }
+    if (resposta.status === 423) {
+        return dados.mensagem || 'Conta bloqueada. Tente novamente em alguns minutos.';
+    }
+    return dados.mensagem || mensagemPadrao;
+}
+
+/**
+ * Componente Alpine.js do formulário de login.
+ * Etapas:
+ *  - 'credenciais': e-mail e senha;
+ *  - 'codigo': conta com 2FA ativo informa o código do aplicativo autenticador;
+ *  - 'configuracao': perfil que exige 2FA e ainda não configurou escaneia o QR Code
+ *    e confirma o primeiro código.
+ * O token de pré-autenticação fica apenas em memória (nunca em localStorage).
  */
 function loginForm() {
     return {
+        etapa: 'credenciais',
         email: '',
         senha: '',
+        codigo: '',
+        preAuthToken: '',
+        segredo: '',
         erro: '',
         carregando: false,
 
@@ -49,34 +85,108 @@ function loginForm() {
                 const dados = await resposta.json().catch(() => ({}));
 
                 if (!resposta.ok) {
-                    if (resposta.status >= 500) {
-                        this.erro = 'Erro interno no servidor. Tente novamente em instantes.';
-                    } else {
-                        this.erro = dados.mensagem || 'E-mail ou senha inválidos.';
-                    }
+                    this.erro = mensagemDeErro(resposta, dados, 'E-mail ou senha inválidos.');
                     return;
                 }
 
-                const rotas = {
-                    'COORDENADOR': '/coordenador/dashboard',
-                    'SECRETARIA': '/secretaria/dashboard',
-                    'ORIENTADOR': '/orientador/validacoes',
-                    'ALUNO': '/aluno/dashboard'
-                };
-
-                const destino = rotas[dados.perfil];
-                if (!destino) {
-                    this.erro = 'Perfil de usuário não reconhecido. Contate o suporte.';
+                if (dados.requer2FA) {
+                    this.preAuthToken = dados.token;
+                    this.senha = '';
+                    this.etapa = 'codigo';
+                    this.$nextTick(() => this.$refs.campoCodigo.focus());
                     return;
                 }
 
-                window.location.href = destino;
+                if (dados.requerConfiguracao2FA) {
+                    this.preAuthToken = dados.token;
+                    this.senha = '';
+                    await this.iniciarConfiguracao();
+                    return;
+                }
+
+                this.redirecionar();
 
             } catch (e) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
             }
+        },
+
+        async iniciarConfiguracao() {
+            const resposta = await fetch('/api/v1/auth/2fa/configuracao/iniciar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: this.preAuthToken })
+            });
+            const dados = await resposta.json().catch(() => ({}));
+
+            if (!resposta.ok) {
+                this.reiniciar();
+                this.erro = 'Não foi possível iniciar a verificação em duas etapas. Faça login novamente.';
+                return;
+            }
+
+            this.segredo = dados.segredo;
+            this.etapa = 'configuracao';
+            this.$nextTick(() => desenharQrCode(this.$refs.qrcode, dados.otpauthUri));
+        },
+
+        async confirmarCodigo() {
+            this.erro = '';
+            this.carregando = true;
+
+            const url = this.etapa === 'configuracao'
+                ? '/api/v1/auth/2fa/configuracao/confirmar'
+                : '/api/v1/auth/2fa/verificar';
+
+            try {
+                const resposta = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ token: this.preAuthToken, codigo: this.codigo })
+                });
+                const dados = await resposta.json().catch(() => ({}));
+
+                if (!resposta.ok) {
+                    this.codigo = '';
+                    if (resposta.status === 423) {
+                        // Conta bloqueada por excesso de tentativas: recomeça do login
+                        this.reiniciar();
+                        this.erro = mensagemDeErro(resposta, dados, '');
+                        return;
+                    }
+                    // 401: código errado ou token de pré-autenticação expirado.
+                    // O backend responde de forma genérica, então a mensagem cobre os dois casos.
+                    this.erro = resposta.status === 401
+                        ? 'Código inválido ou verificação expirada. Se o problema persistir, volte e faça login novamente.'
+                        : mensagemDeErro(resposta, dados, 'Não foi possível verificar o código.');
+                    return;
+                }
+
+                this.redirecionar();
+
+            } catch (e) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.carregando = false;
+            }
+        },
+
+        reiniciar() {
+            this.etapa = 'credenciais';
+            this.senha = '';
+            this.codigo = '';
+            this.preAuthToken = '';
+            this.segredo = '';
+            this.erro = '';
+        },
+
+        // O servidor redireciona para a página inicial do perfil (/inicio, PerfilUsuario.getRotaInicial),
+        // mantendo o mapeamento perfil -> página em um único lugar
+        redirecionar() {
+            window.location.href = '/inicio';
         }
     }
 }
@@ -218,6 +328,115 @@ function validacao(id) {
             } finally {
                 this.processando = false;
             }
+        }
+    }
+}
+
+/**
+ * Componente Alpine.js da tela de segurança da conta (/conta/seguranca).
+ * Permite ativar o 2FA (QR Code + confirmação do primeiro código) e, para perfis
+ * em que ele é opcional, desativá-lo mediante um código válido.
+ * As regras (perfil obrigatório, limite de tentativas) são aplicadas pelo backend.
+ */
+function segurancaConta() {
+    return {
+        carregado: false,
+        ativo: false,
+        obrigatorio: false,
+        modo: '',          // '' | 'ativando' | 'desativando'
+        segredo: '',
+        codigo: '',
+        erro: '',
+        sucesso: '',
+        processando: false,
+
+        async init() {
+            await this.carregarStatus();
+        },
+
+        async carregarStatus() {
+            try {
+                const resposta = await fetch('/api/v1/conta/2fa', { credentials: 'include' });
+                if (!resposta.ok) {
+                    this.erro = 'Não foi possível carregar a configuração de segurança.';
+                    return;
+                }
+                const dados = await resposta.json();
+                this.ativo = dados.ativo;
+                this.obrigatorio = dados.obrigatorio;
+            } catch (e) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.carregado = true;
+            }
+        },
+
+        async iniciarAtivacao() {
+            this.limparMensagens();
+            this.processando = true;
+            try {
+                const resposta = await fetch('/api/v1/conta/2fa/configurar', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const dados = await resposta.json().catch(() => ({}));
+                if (!resposta.ok) {
+                    this.erro = mensagemDeErro(resposta, dados, 'Não foi possível gerar o QR Code.');
+                    return;
+                }
+                this.segredo = dados.segredo;
+                this.modo = 'ativando';
+                this.$nextTick(() => desenharQrCode(this.$refs.qrcode, dados.otpauthUri));
+            } catch (e) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.processando = false;
+            }
+        },
+
+        iniciarDesativacao() {
+            this.limparMensagens();
+            this.modo = 'desativando';
+        },
+
+        async confirmar() {
+            this.limparMensagens();
+            this.processando = true;
+            const acao = this.modo === 'ativando' ? 'ativar' : 'desativar';
+            try {
+                const resposta = await fetch('/api/v1/conta/2fa/' + acao, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ codigo: this.codigo })
+                });
+                const dados = await resposta.json().catch(() => ({}));
+                if (!resposta.ok) {
+                    this.codigo = '';
+                    this.erro = mensagemDeErro(resposta, dados, 'Não foi possível concluir a operação.');
+                    return;
+                }
+                this.sucesso = acao === 'ativar'
+                    ? 'Verificação em duas etapas ativada.'
+                    : 'Verificação em duas etapas desativada.';
+                this.cancelar();
+                await this.carregarStatus();
+            } catch (e) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.processando = false;
+            }
+        },
+
+        cancelar() {
+            this.modo = '';
+            this.segredo = '';
+            this.codigo = '';
+        },
+
+        limparMensagens() {
+            this.erro = '';
+            this.sucesso = '';
         }
     }
 }
