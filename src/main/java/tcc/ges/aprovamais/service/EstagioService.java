@@ -32,7 +32,6 @@ public class EstagioService {
     private final AuditoriaService auditoriaService;
     private final UsuarioRepository usuarioRepository;
 
-    // Leo - trilha personalizada
     @Transactional(readOnly = true)
     public EstagioResponse buscarEstagioAtivo(String emailAluno) {
         Matricula matricula = matriculaRepository
@@ -56,7 +55,6 @@ public class EstagioService {
         return paraResponse(estagio);
     }
 
-    //Isa - cadastro e validação de estaágio
     @Transactional(readOnly = true)
     public List<TipoEstagioResponse> listarTiposEstagioDisponiveis() {
         return tipoEstagioRepository.findAll()
@@ -81,7 +79,8 @@ public class EstagioService {
 
     @Transactional
     public EstagioResponse cadastrarOuAtualizarEstagio(String emailAluno,
-                                                       EstagioCadastroRequest request) {
+                                                       EstagioCadastroRequest request,
+                                                       String ipOrigem) {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
         Matricula matricula = buscarMatriculaAtiva(aluno);
 
@@ -126,7 +125,7 @@ public class EstagioService {
                 aluno,
                 "ESTAGIO_CADASTRADO",
                 "Estágio cadastrado para empresa: " + request.getNomeEmpresa(),
-                null,
+                ipOrigem,
                 true
         );
 
@@ -149,9 +148,8 @@ public class EstagioService {
     }
 
     @Transactional
-    public EstagioResponse aprovar(Long estagioId, String emailOrientador) {
-        Estagio estagio = estagioRepository.findById(estagioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
+    public EstagioResponse aprovar(Long estagioId, String emailOrientador, String ipOrigem) {
+        Estagio estagio = buscarEstagioDoOrientador(estagioId, emailOrientador);
 
         if (estagio.getStatus() != StatusEstagio.PENDENTE) {
             throw new IllegalStateException("Apenas estágios pendentes podem ser aprovados");
@@ -171,7 +169,7 @@ public class EstagioService {
                     "ESTAGIO_APROVADO",
                     "Estágio id=" + estagioId + " aprovado para aluno: "
                             + estagio.getMatricula().getAluno().getNome(),
-                    null,
+                    ipOrigem,
                     true
             );
         }
@@ -182,9 +180,8 @@ public class EstagioService {
 
     @Transactional
     public EstagioResponse rejeitar(Long estagioId, String emailOrientador,
-                                    String justificativa) {
-        Estagio estagio = estagioRepository.findById(estagioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado"));
+                                    String justificativa, String ipOrigem) {
+        Estagio estagio = buscarEstagioDoOrientador(estagioId, emailOrientador);
 
         if (estagio.getStatus() != StatusEstagio.PENDENTE) {
             throw new IllegalStateException("Apenas estágios pendentes podem ser rejeitados");
@@ -202,8 +199,8 @@ public class EstagioService {
             auditoriaService.registrar(
                     orientador,
                     "ESTAGIO_REJEITADO",
-                    "Estágio id=" + estagioId + " rejeitado. Justificativa: " + justificativa,
-                    null,
+                    "Estágio id=" + estagioId + " rejeitado com justificativa",
+                    ipOrigem,
                     true
             );
         }
@@ -213,6 +210,18 @@ public class EstagioService {
     }
 
     //métodos auxiliares/universais
+
+    // Busca o estágio somente se ele estiver vinculado ao orientador autenticado.
+    // Retorna 404 (e não 403) para não revelar a existência de estágios de outros orientadores.
+    private Estagio buscarEstagioDoOrientador(Long estagioId, String emailOrientador) {
+        return estagioRepository.findByIdAndOrientadorEmail(estagioId, emailOrientador)
+                .orElseThrow(() -> {
+                    log.warn("[ESTÁGIO] Orientador {} tentou acessar estágio {} fora da sua responsabilidade",
+                            emailOrientador, estagioId);
+                    return new ResourceNotFoundException("Estágio não encontrado");
+                });
+    }
+
     private Aluno buscarAlunoPorEmail(String email) {
         return alunoRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado"));
