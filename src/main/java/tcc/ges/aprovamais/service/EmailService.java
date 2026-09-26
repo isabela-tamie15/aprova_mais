@@ -30,7 +30,7 @@ public class EmailService {
             CreateEmailOptions email = CreateEmailOptions.builder()
                     .from(REMETENTE)
                     .to(destinatario)
-                    .subject("Convite de acesso — Aprova+")
+                    .subject("Convite de acesso - Aprova+")
                     .html(montarCorpoConvite(nomeDestinatario, linkConvite))
                     .build();
 
@@ -51,7 +51,7 @@ public class EmailService {
             CreateEmailOptions email = CreateEmailOptions.builder()
                     .from(REMETENTE)
                     .to(destinatario)
-                    .subject("Recuperação de senha — Aprova+")
+                    .subject("Recuperação de senha - Aprova+")
                     .html(montarCorpoRecuperacaoSenha(nomeDestinatario, linkRecuperacao))
                     .build();
 
@@ -81,7 +81,7 @@ public class EmailService {
                         Este link expira em 24 horas. Se você não esperava este convite, ignore este email.
                     </p>
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
-                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ — UMC Gestão de Estágios</p>
+                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
                 """.formatted(nome, link);
     }
@@ -103,7 +103,7 @@ public class EmailService {
                         Este link expira em 30 minutos. Se você não solicitou a recuperação, ignore este email.
                     </p>
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
-                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ — UMC Gestão de Estágios</p>
+                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
                 """.formatted(nome, link);
     }
