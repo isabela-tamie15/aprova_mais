@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface CursoRepository extends JpaRepository<Curso, Long> {
 
+    // Busca um curso pelo código do MEC, usado pra vincular dados importados ou validar cadastro
     Optional<Curso> findByCodigoMec(String codigoMec);
 }

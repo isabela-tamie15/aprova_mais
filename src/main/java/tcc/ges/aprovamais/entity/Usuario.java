@@ -7,6 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.security.AesEncryptor;
 
 import java.time.OffsetDateTime;
 
@@ -38,6 +39,7 @@ public abstract class Usuario {
     @Column(name = "dois_fatores_ativo")
     private Boolean doisFatoresAtivo = false;
 
+    @Convert(converter = AesEncryptor.class)
     @Column(name = "dois_fatores_segredo")
     private String doisFatoresSegredo;
 

@@ -16,6 +16,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
+// Esse handler centraliza o tratamento de exceções, é quem transforma os erros em respostas JSON padronizadas
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -29,6 +30,7 @@ public class GlobalExceptionHandler {
             OffsetDateTime timestamp
     ) {}
 
+    // Monta a resposta de erro no formato padrão, evitando repetição em cada handler
     private ErroResposta construirErro(HttpStatus status, String mensagem) {
         return new ErroResposta(
                 status.value(),
@@ -56,11 +58,26 @@ public class GlobalExceptionHandler {
                 .body(construirErro(HttpStatus.LOCKED, ex.getMessage()));
     }
 
+    // 400 código do 2FA inválido, então é ativar/desativar pela conta
+    @ExceptionHandler(CodigoDoisFatoresInvalidoException.class)
+    public ResponseEntity<ErroResposta> handleCodigoDoisFatoresInvalido(
+            CodigoDoisFatoresInvalidoException ex) {
+        log.warn("[EXCEPTION] Código 2FA inválido");
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(construirErro(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
     // 400 falha na validação do @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(
             MethodArgumentNotValidException ex) {
 
+        /*
+           Cada campo com erro vira uma entrada no mapa, o nome do campo
+           como chave e a mensagem de validação como valor. Assim o frontend
+           consegue exibir o erro embaixo do campo certo
+        */
         Map<String, String> erros = new HashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             erros.put(fieldError.getField(), fieldError.getDefaultMessage());
@@ -70,7 +87,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erros);
     }
 
-    // 409 regra de negócio violada (ex.: estágio já pendente, já analisado)
+    // 409 regra de negócio violada (exemplo, estágio já pendente, já analisado etc)
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErroResposta> handleIllegalState(IllegalStateException ex) {
         log.warn("[EXCEPTION] Regra de negócio violada: {}", ex.getMessage());
@@ -91,6 +108,13 @@ public class GlobalExceptionHandler {
     // 500 erro genérico nao tratado
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroResposta> handleGeneric(Exception ex) {
+
+        /*
+           Esse é o último handler da cadeia, se cair aqui é porque alguma
+           coisa estourou e não foi tratada em nenhum outro lugar. Registra
+           o stack completo com log.error e devolve uma mensagem genérica
+           pro cliente, sem expor detalhes internos
+        */
         log.error("[EXCEPTION] Erro inesperado: {}", ex.getMessage(), ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

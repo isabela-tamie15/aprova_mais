@@ -8,5 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface OrientadorTurmaRepository extends JpaRepository<OrientadorTurma, Long> {
+
+    // Pega a primeira relação de uma turma, usado quando a regra é que a turma tenha só um orientador
     Optional<OrientadorTurma> findFirstByTurmaId(Long turmaId);
 }
