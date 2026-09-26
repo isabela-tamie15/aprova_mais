@@ -9,9 +9,6 @@ import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-
 @Service
 @RequiredArgsConstructor
 public class PrimeiroAcessoService {
@@ -20,8 +17,7 @@ public class PrimeiroAcessoService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditoriaService auditoriaService;
-
-    private static final String VERSAO_TERMOS = "1.0";
+    private final ConsentimentoService consentimentoService;
 
     @Transactional
     public void concluirCadastro(String token, String senha, String ip) {
@@ -31,9 +27,7 @@ public class PrimeiroAcessoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         usuario.setSenhaHash(passwordEncoder.encode(senha));
-        usuario.setConsentimentoDado(true);
-        usuario.setDataConsentimento(OffsetDateTime.now(ZoneOffset.UTC));
-        usuario.setVersaoConsentimento(VERSAO_TERMOS);
+        consentimentoService.aplicarAceite(usuario);
         usuario.setPrimeiroAcesso(false);
         usuario.setAtivo(true);
 
@@ -43,7 +37,7 @@ public class PrimeiroAcessoService {
         auditoriaService.registrar(
                 usuario,
                 "PRIMEIRO_ACESSO_ACEITO",
-                "Termos aceitos e cadastro concluído. Versão: " + VERSAO_TERMOS,
+                "Termos aceitos e cadastro concluído. Versão: " + ConsentimentoService.VERSAO_TERMOS_ATUAL,
                 ip,
                 true
         );
