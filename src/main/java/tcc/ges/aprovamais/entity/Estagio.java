@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
+import tcc.ges.aprovamais.security.AesEncryptor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -61,7 +62,10 @@ public class Estagio {
     @Column(name = "motivo_encerramento")
     private MotivoEncerramento motivoEncerramento;
 
-    @Column(name = "justificativa_rejeicao")
+    // Texto livre do orientador sobre o aluno: cifrado em repouso com AES-256-GCM.
+    // TEXT porque o valor cifrado (IV + tag + Base64) é maior que o texto original.
+    @Convert(converter = AesEncryptor.class)
+    @Column(name = "justificativa_rejeicao", columnDefinition = "TEXT")
     private String justificativaRejeicao;
 
     @CreatedDate
