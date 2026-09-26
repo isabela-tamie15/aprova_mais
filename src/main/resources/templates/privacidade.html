@@ -29,6 +29,11 @@
         .table-doc { font-size: 0.82rem; }
         .table-doc th { background: #F9FAFB; color: #374151; font-weight: 600; font-size: 0.78rem; }
         .table-doc td { color: #4B5563; vertical-align: top; padding: 0.6rem 0.75rem; line-height: 1.6; }
+        .btn-doc-ver { display: inline-block; font-size: 0.85rem; font-weight: 600; color: #2B4ECC;
+                       border: 1px solid #2B4ECC; border-radius: 8px; padding: 0.5rem 1.2rem;
+                       text-decoration: none; background: white; cursor: pointer; }
+        .btn-doc-ver:hover { background: #EEF2FF; color: #2B4ECC; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body>
@@ -61,10 +66,11 @@
     <p class="doc-intro">
         Nesta Política, quando mencionarmos "dados" ou "dados pessoais", estamos nos referindo a
         qualquer informação que identifique ou possa levar à sua identificação, como nome, e-mail
-        e RGM. Quando falarmos em "Aprova+" ou "sistema", estamos nos referindo à plataforma de
-        gestão de estágio supervisionado desenvolvida pela UMC. Quando mencionarmos "você" ou
-        "usuário", estamos nos referindo à pessoa cadastrada no sistema, seja aluno, orientador,
-        coordenador ou secretaria.
+        e identificador institucional (RGM para alunos; matrícula institucional para orientadores,
+        coordenadores e secretaria). Quando falarmos em "Aprova+" ou "sistema", estamos nos referindo
+        à plataforma de gestão de estágio supervisionado desenvolvida pela UMC. Quando mencionarmos
+        "você" ou "usuário", estamos nos referindo à pessoa cadastrada no sistema, seja aluno,
+        orientador, coordenador ou secretaria.
     </p>
 
     <hr class="doc-divider">
@@ -91,7 +97,7 @@
             <tr><td>Nome completo</td><td>Identificação nos registros acadêmicos do estágio</td><td>Obrigação legal (Lei 11.788/2008)</td></tr>
             <tr><td>E-mail institucional</td><td>Autenticação no sistema e envio de notificações</td><td>Legítimo interesse acadêmico</td></tr>
             <tr><td>CPF</td><td>Identificação e vínculo com registros institucionais</td><td>Obrigação legal</td></tr>
-            <tr><td>RGM (matrícula)</td><td>Vínculo do aluno com a turma</td><td>Obrigação legal</td></tr>
+            <tr><td>Identificador institucional (RGM / matrícula)</td><td>Vínculo do usuário com a instituição</td><td>Obrigação legal</td></tr>
             <tr><td>Nome e endereço da empresa</td><td>Registro oficial do local do estágio</td><td>Obrigação legal (Lei 11.788/2008)</td></tr>
             <tr><td>Data de início do estágio</td><td>Cálculo de prazo e carga horária</td><td>Obrigação legal</td></tr>
             <tr><td>Horas trabalhadas e atividades</td><td>Validação da carga horária mínima</td><td>Obrigação legal</td></tr>
@@ -138,7 +144,7 @@
     <div class="doc-section">
         <h2>Por quanto tempo guardamos seus dados</h2>
         <p>Dados de estágio estão sujeitos à obrigação legal de retenção prevista na Lei 11.788/2008 e nas normas do MEC. Por isso, os registros acadêmicos não podem ser simplesmente deletados após a conclusão do estágio.</p>
-        <p>Quando você solicita a exclusão dos seus dados, aplicamos a <strong>anonimização</strong>: os dados pessoais identificáveis (nome, e-mail, CPF, RGM) são substituídos por valores neutros, mantendo os registros acadêmicos intactos. Após a anonimização, você não é mais identificável no sistema.</p>
+        <p>Quando você solicita a exclusão dos seus dados, aplicamos a <strong>anonimização</strong>: os dados pessoais identificáveis (nome, e-mail, CPF e identificador institucional) são substituídos por valores neutros, mantendo os registros acadêmicos intactos. Após a anonimização, você não é mais identificável no sistema.</p>
     </div>
     <hr class="doc-divider">
 
@@ -146,9 +152,10 @@
         <h2>Com quem compartilhamos seus dados</h2>
         <p>Seus dados são acessíveis apenas dentro do sistema, por pessoas com perfil autorizado:</p>
         <ul>
-            <li>Dados do aluno: visíveis para o orientador da turma e para a coordenação</li>
-            <li>Dados do orientador: visíveis para a coordenação</li>
-            <li>Dados de estágio: visíveis para o aluno, o orientador e a coordenação</li>
+            <li>Dados do aluno: visíveis para o orientador da turma, coordenação e secretaria</li>
+            <li>Dados do orientador: visíveis para a coordenação e secretaria</li>
+            <li>Dados da secretaria: visíveis apenas para a coordenação</li>
+            <li>Dados de estágio: visíveis para o aluno, o orientador, a coordenação e a secretaria</li>
         </ul>
         <p>O Aprova+ utiliza os seguintes serviços externos, que podem ter acesso a dados para o funcionamento do sistema: <strong>Cloudflare R2</strong> para armazenamento de arquivos de entregas do estágio, e <strong>SMTP</strong> para envio de notificações e convites de acesso. Nenhum dado é vendido, cedido ou compartilhado com terceiros para fins comerciais.</p>
         <p>O Cloudflare R2 opera com infraestrutura distribuída globalmente, o que pode envolver transferência de dados pessoais para fora do Brasil. Adotamos as medidas previstas no Art. 33 da LGPD para garantir nível de proteção equivalente ao da legislação brasileira.</p>
@@ -190,9 +197,52 @@
     </div>
     <hr class="doc-divider">
 
-    <div class="doc-section">
-        <h2>Como exercer seus direitos</h2>
-        <p>Para exercer qualquer um dos direitos listados acima, envie e-mail para a secretaria acadêmica da UMC informando seu nome completo, RGM e o direito que deseja exercer, ou utilize o canal de suporte disponível dentro do próprio sistema. O prazo de resposta é de até 15 dias úteis, conforme previsto na LGPD.</p>
+    <div class="doc-section" x-data="{ direito: '' }">
+        <h2>Exercer meus direitos</h2>
+        <p>Selecione o direito que deseja exercer:</p>
+
+        <div class="mb-3">
+            <select class="form-select" x-model="direito">
+                <option value="">Selecione...</option>
+                <option value="acesso">Acesso: quero ver todos os meus dados</option>
+                <option value="correcao">Correção: quero corrigir um dado incorreto</option>
+                <option value="exclusao">Exclusão: quero remover meus dados pessoais</option>
+            </select>
+        </div>
+
+        <div x-show="direito === 'acesso' || direito === 'correcao'" x-cloak>
+            <p>Clique no botão abaixo para enviar sua solicitação à secretaria acadêmica da UMC. Você receberá uma resposta em até 15 dias úteis.</p>
+            <button class="btn-doc-ver"
+                    @click="
+                    fetch('/api/v1/lgpd/' + (direito === 'acesso' ? 'solicitar-acesso' : 'solicitar-correcao'), {
+                        method: 'POST',
+                        credentials: 'include'
+                    }).finally(() => {
+                        window.open('mailto:secretaria@umc.br?subject=Aprova%2B%20—%20Solicitação%20de%20' + (direito === 'acesso' ? 'Acesso%20aos%20Dados' : 'Correção%20de%20Dados'))
+                    })
+                ">
+                Enviar solicitação por e-mail
+            </button>
+        </div>
+
+        <div x-show="direito === 'exclusao'" x-cloak>
+            <div class="alert alert-warning mt-2">
+                <strong>Importante:</strong> pela Lei 11.788/2008, os registros acadêmicos do estágio não podem ser deletados. Por isso, aplicamos a <strong>anonimização</strong>: seus dados pessoais identificáveis (nome, e-mail e identificador institucional) são substituídos por valores neutros. Você deixa de ser identificável, mas os registros do estágio permanecem intactos para fins legais.
+            </div>
+            <button class="btn btn-danger mt-2"
+                    onclick="if(confirm('Confirma a anonimização dos seus dados pessoais? Esta ação não pode ser desfeita.')) {
+                    fetch('/api/v1/lgpd/meus-dados', { method: 'DELETE', credentials: 'include' })
+                    .then(r => r.ok
+                        ? fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' })
+                            .finally(() => {
+                                alert('Seus dados foram anonimizados com sucesso.')
+                                window.location.href = '/login'
+                            })
+                        : alert('Erro ao processar. Tente novamente.'))
+                }">
+                Solicitar anonimização dos meus dados
+            </button>
+        </div>
     </div>
     <hr class="doc-divider">
 
@@ -211,5 +261,6 @@
 
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>
