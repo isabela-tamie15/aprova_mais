@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    Rodapé LGPD reutilizado em todas as páginas (th:replace="~{fragments/rodape-lgpd :: rodape}").
+    Art. 41, § 1º da LGPD: a identidade e as informações de contato do encarregado
+    devem ser divulgadas publicamente, de forma clara e objetiva.
+    Para alterar o contato do encarregado, altere apenas este arquivo.
+-->
+<footer th:fragment="rodape" class="text-center text-muted small mt-4 mb-3 px-3">
+    Encarregado de proteção de dados (DPO): Coordenação do Curso de Engenharia de Software da UMC
+    · <a href="mailto:secretaria@umc.br">secretaria@umc.br</a>
+    · <a href="/privacidade">Política de Privacidade</a>
+    · <a href="/termos">Termos de Uso</a>
+</footer>
+
+</body>
+</html>
