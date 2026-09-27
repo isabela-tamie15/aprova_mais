@@ -4,5 +4,6 @@ public enum StatusConvite {
     PENDENTE,
     ACEITO,
     EXPIRADO,
-    CANCELADO
+    CANCELADO,
+    RECUSADO
 }

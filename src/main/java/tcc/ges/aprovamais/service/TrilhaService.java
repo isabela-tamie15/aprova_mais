@@ -21,6 +21,7 @@ import tcc.ges.aprovamais.repository.TrilhaRepository;
 
 import java.util.List;
 
+// Esse service é quem monta a trilha de tarefas do aluno baseado no estágio ativo dele
 @Service
 @RequiredArgsConstructor
 public class TrilhaService {
@@ -32,9 +33,15 @@ public class TrilhaService {
     private final TrilhaRepository trilhaRepository;
     private final TarefaRepository tarefaRepository;
 
+    // Esse é o método principal, monta a trilha completa do aluno seguindo a cadeia matrícula → estágio → trilha → tarefas
     @Transactional(readOnly = true)
     public TrilhaResponse buscarTrilhaDoAluno(String emailAluno) {
 
+        /*
+           Cada passo depende do anterior, então se qualquer um falhar a
+           gente já para ali com 404. A ordem importa, se não tiver matrícula
+           ativa não faz sentido procurar estágio, e por aí vai
+        */
         Matricula matricula = buscarMatriculaAtiva(emailAluno);
         Estagio estagio = buscarEstagioAtivo(matricula.getId());
         Trilha trilha = buscarTrilhaPorTipo(estagio.getTipoEstagio().getId());
@@ -50,11 +57,13 @@ public class TrilhaService {
                 .build();
     }
 
+    // Esse é o método usado quando só tem o id do tipo de estágio em mãos, só repassa pro auxiliar
     @Transactional(readOnly = true)
     public Trilha buscarTrilhaPorTipoEstagio(Long tipoEstagioId) {
         return buscarTrilhaPorTipo(tipoEstagioId);
     }
 
+    // Busca a matrícula ativa do aluno, primeiro passo pra chegar na trilha
     private Matricula buscarMatriculaAtiva(String emailAluno) {
         return matriculaRepository
                 .findFirstByAlunoEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
@@ -64,6 +73,7 @@ public class TrilhaService {
                 });
     }
 
+    // Busca o estágio ativo da matrícula, segundo passo pra chegar na trilha
     private Estagio buscarEstagioAtivo(Long matriculaId) {
         return estagioRepository
                 .findByMatriculaIdAndStatus(matriculaId, StatusEstagio.ATIVO)
@@ -73,6 +83,7 @@ public class TrilhaService {
                 });
     }
 
+    // Busca a trilha vinculada ao tipo de estágio, terceiro passo pra chegar nas tarefas
     private Trilha buscarTrilhaPorTipo(Long tipoEstagioId) {
         return trilhaRepository
                 .findByTipoEstagioId(tipoEstagioId)
@@ -83,6 +94,7 @@ public class TrilhaService {
                 });
     }
 
+    // Busca as tarefas da trilha já na ordem certa, e converte cada uma pro DTO de resposta
     private List<TarefaResponse> buscarTarefas(Long trilhaId) {
         return tarefaRepository
                 .findByTrilhaIdOrderByOrdem(trilhaId)
@@ -91,6 +103,7 @@ public class TrilhaService {
                 .toList();
     }
 
+    // Converte a entidade Tarefa pro DTO que vai ser devolvido pro frontend
     private TarefaResponse toTarefaResponse(Tarefa tarefa) {
         return TarefaResponse.builder()
                 .id(tarefa.getId())
