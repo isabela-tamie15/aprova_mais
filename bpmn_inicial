@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" 
+                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" 
+                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" 
+                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI" 
+                   id="sample_diagram" targetNamespace="http://camunda.org/schema/1.0/bpmn" 
+                   xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+
+  <!-- ===== PROCESSO 1: CONVITE E PRIMEIRO ACESSO ===== -->
+  <bpmn2:process id="ProcessoConviteEPrimeiroAcesso" name="Convite e Primeiro Acesso">
+    <bpmn2:startEvent id="StartConvite" name="Secretaria Convida Usuário"/>
+    <bpmn2:task id="EnviarConvite" name="Enviar Convite via E-mail (Resend)">
+      <bpmn2:incoming>Flow1</bpmn2:incoming>
+      <bpmn2:outgoing>Flow2</bpmn2:outgoing>
+    </bpmn2:task>
+    <bpmn2:task id="ValidarToken" name="Usuário Clica no Link (Token Válido?)"/>
+    <bpmn2:exclusiveGateway id="TokenValido" name="Token Válido e Não Expirado?"/>
+    <bpmn2:task id="AbrirPrimeiroAcesso" name="Exibir Tela de Primeiro Acesso"/>
+    <bpmn2:exclusiveGateway id="AceitaTermos" name="Usuário Aceita Termos?"/>
+    <bpmn2:task id="DefinirSenha" name="Definir Senha (8+ caracteres)"/>
+    <bpmn2:task id="AtivarConta" name="Ativar Conta e Aceitar Consentimento"/>
+    <bpmn2:task id="MarcarConviteAceito" name="Marcar Convite como ACEITO"/>
+    <bpmn2:endEvent id="EndAceito" name="Usuário Ativado - Pronto para Login"/>
+    
+    <bpmn2:task id="MarcarConviteRecusado" name="Marcar Convite como RECUSADO"/>
+    <bpmn2:endEvent id="EndRecusado" name="Convite Recusado"/>
+    
+    <bpmn2:task id="MarcarConviteExpirado" name="Marcar Convite como EXPIRADO"/>
+    <bpmn2:endEvent id="EndExpirado" name="Convite Expirado (24h)"/>
+    
+    <bpmn2:sequenceFlow id="Flow1" sourceRef="StartConvite" targetRef="EnviarConvite"/>
+    <bpmn2:sequenceFlow sourceRef="EnviarConvite" targetRef="ValidarToken"/>
+    <bpmn2:sequenceFlow sourceRef="ValidarToken" targetRef="TokenValido"/>
+    <bpmn2:sequenceFlow sourceRef="TokenValido" targetRef="AbrirPrimeiroAcesso" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="AbrirPrimeiroAcesso" targetRef="AceitaTermos"/>
+    <bpmn2:sequenceFlow sourceRef="AceitaTermos" targetRef="DefinirSenha" name="Aceita"/>
+    <bpmn2:sequenceFlow sourceRef="DefinirSenha" targetRef="AtivarConta"/>
+    <bpmn2:sequenceFlow sourceRef="AtivarConta" targetRef="MarcarConviteAceito"/>
+    <bpmn2:sequenceFlow sourceRef="MarcarConviteAceito" targetRef="EndAceito"/>
+    <bpmn2:sequenceFlow sourceRef="AceitaTermos" targetRef="MarcarConviteRecusado" name="Recusa"/>
+    <bpmn2:sequenceFlow sourceRef="MarcarConviteRecusado" targetRef="EndRecusado"/>
+    <bpmn2:sequenceFlow sourceRef="TokenValido" targetRef="MarcarConviteExpirado" name="Não / Expirado"/>
+    <bpmn2:sequenceFlow sourceRef="MarcarConviteExpirado" targetRef="EndExpirado"/>
+  </bpmn2:process>
+
+  <!-- ===== PROCESSO 2: LOGIN E AUTENTICAÇÃO ===== -->
+  <bpmn2:process id="ProcessoLoginAutenticacao" name="Login e Autenticação">
+    <bpmn2:startEvent id="StartLogin" name="Usuário Tenta Fazer Login"/>
+    <bpmn2:task id="VerificarEmail" name="Verificar E-mail no Sistema"/>
+    <bpmn2:exclusiveGateway id="EmailExiste" name="E-mail Existe?"/>
+    <bpmn2:task id="VerificarBloqueio" name="Verificar se Conta está Bloqueada"/>
+    <bpmn2:exclusiveGateway id="ContaBloqueada" name="Conta Bloqueada?"/>
+    <bpmn2:task id="VerificarSenha" name="Validar Senha (BCrypt)"/>
+    <bpmn2:exclusiveGateway id="SenhaCorreta" name="Senha Correta?"/>
+    <bpmn2:task id="RegistrarFalha" name="Registrar Tentativa Falha (contador++)"/>
+    <bpmn2:exclusiveGateway id="AtingiuMaxTentativas" name="5 Tentativas?"/>
+    <bpmn2:task id="BloquearConta" name="Bloquear Conta (5 min)"/>
+    <bpmn2:endEvent id="EndBloqueado" name="Acesso Negado - Conta Bloqueada"/>
+    <bpmn2:endEvent id="EndFalha" name="Acesso Negado - Credenciais Inválidas"/>
+    
+    <bpmn2:exclusiveGateway id="Tem2FA" name="2FA Ativo?"/>
+    <bpmn2:task id="Gerar2FAObrigatorio" name="2FA Obrigatório? Gerar Token Pré-Auth"/>
+    <bpmn2:endEvent id="End2FARequerido" name="Requer Verificação 2FA"/>
+    
+    <bpmn2:task id="GerarJWT" name="Gerar JWT (8h validade)"/>
+    <bpmn2:task id="LimparFalhas" name="Limpar Contador de Tentativas"/>
+    <bpmn2:task id="RegistrarLoginSucesso" name="Registrar Login na Auditoria"/>
+    <bpmn2:endEvent id="EndLoginSucesso" name="Login Bem-Sucedido - JWT no Cookie"/>
+    
+    <bpmn2:sequenceFlow sourceRef="StartLogin" targetRef="VerificarEmail"/>
+    <bpmn2:sequenceFlow sourceRef="VerificarEmail" targetRef="EmailExiste"/>
+    <bpmn2:sequenceFlow sourceRef="EmailExiste" targetRef="VerificarBloqueio" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="VerificarBloqueio" targetRef="ContaBloqueada"/>
+    <bpmn2:sequenceFlow sourceRef="ContaBloqueada" targetRef="EndBloqueado" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="ContaBloqueada" targetRef="VerificarSenha" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="VerificarSenha" targetRef="SenhaCorreta"/>
+    <bpmn2:sequenceFlow sourceRef="SenhaCorreta" targetRef="Tem2FA" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="SenhaCorreta" targetRef="RegistrarFalha" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="RegistrarFalha" targetRef="AtingiuMaxTentativas"/>
+    <bpmn2:sequenceFlow sourceRef="AtingiuMaxTentativas" targetRef="BloquearConta" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="BloquearConta" targetRef="EndBloqueado"/>
+    <bpmn2:sequenceFlow sourceRef="AtingiuMaxTentativas" targetRef="EndFalha" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="EmailExiste" targetRef="EndFalha" name="Não"/>
+    
+    <bpmn2:sequenceFlow sourceRef="Tem2FA" targetRef="End2FARequerido" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="Tem2FA" targetRef="Gerar2FAObrigatorio" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="Gerar2FAObrigatorio" targetRef="End2FARequerido" name="Perfil Exige"/>
+    <bpmn2:sequenceFlow sourceRef="Gerar2FAObrigatorio" targetRef="LimparFalhas" name="Não Exige"/>
+    
+    <bpmn2:sequenceFlow sourceRef="LimparFalhas" targetRef="GerarJWT"/>
+    <bpmn2:sequenceFlow sourceRef="GerarJWT" targetRef="RegistrarLoginSucesso"/>
+    <bpmn2:sequenceFlow sourceRef="RegistrarLoginSucesso" targetRef="EndLoginSucesso"/>
+  </bpmn2:process>
+
+  <!-- ===== PROCESSO 3: VERIFICAÇÃO 2FA ===== -->
+  <bpmn2:process id="ProcessoVerificacao2FA" name="Verificação em Duas Etapas (2FA)">
+    <bpmn2:startEvent id="Start2FA" name="Usuário Insere Código TOTP"/>
+    <bpmn2:task id="ValidarPreAuthToken" name="Validar Token Pré-Autenticação"/>
+    <bpmn2:exclusiveGateway id="TokenValido2FA" name="Token Válido?"/>
+    <bpmn2:task id="VerificarBloqueio2FA" name="Verificar se Conta está Bloqueada"/>
+    <bpmn2:exclusiveGateway id="ContaBloqueada2FA" name="Conta Bloqueada?"/>
+    <bpmn2:task id="ValidarCodigo2FA" name="Validar Código TOTP (RFC 6238)"/>
+    <bpmn2:exclusiveGateway id="CodigoValido" name="Código Válido?"/>
+    <bpmn2:task id="RegistrarFalha2FA" name="Registrar Falha 2FA (contador++)"/>
+    <bpmn2:exclusiveGateway id="AtingiuMax2FA" name="5 Tentativas?"/>
+    <bpmn2:task id="InvalidarPreAuth" name="Invalidar Token Pré-Auth"/>
+    <bpmn2:task id="LimparFalhas2FA" name="Limpar Contador de Tentativas"/>
+    <bpmn2:task id="GerarJWT2FA" name="Gerar JWT (8h validade)"/>
+    <bpmn2:task id="RegistrarSucesso2FA" name="Registrar Login na Auditoria"/>
+    <bpmn2:endEvent id="End2FASucesso" name="Login Completo - JWT no Cookie"/>
+    <bpmn2:endEvent id="End2FAFalha" name="Código Inválido - Acesso Negado"/>
+    
+    <bpmn2:sequenceFlow sourceRef="Start2FA" targetRef="ValidarPreAuthToken"/>
+    <bpmn2:sequenceFlow sourceRef="ValidarPreAuthToken" targetRef="TokenValido2FA"/>
+    <bpmn2:sequenceFlow sourceRef="TokenValido2FA" targetRef="VerificarBloqueio2FA" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="VerificarBloqueio2FA" targetRef="ContaBloqueada2FA"/>
+    <bpmn2:sequenceFlow sourceRef="ContaBloqueada2FA" targetRef="End2FAFalha" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="ContaBloqueada2FA" targetRef="ValidarCodigo2FA" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="ValidarCodigo2FA" targetRef="CodigoValido"/>
+    <bpmn2:sequenceFlow sourceRef="CodigoValido" targetRef="InvalidarPreAuth" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="InvalidarPreAuth" targetRef="LimparFalhas2FA"/>
+    <bpmn2:sequenceFlow sourceRef="LimparFalhas2FA" targetRef="GerarJWT2FA"/>
+    <bpmn2:sequenceFlow sourceRef="GerarJWT2FA" targetRef="RegistrarSucesso2FA"/>
+    <bpmn2:sequenceFlow sourceRef="RegistrarSucesso2FA" targetRef="End2FASucesso"/>
+    
+    <bpmn2:sequenceFlow sourceRef="CodigoValido" targetRef="RegistrarFalha2FA" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="RegistrarFalha2FA" targetRef="AtingiuMax2FA"/>
+    <bpmn2:sequenceFlow sourceRef="AtingiuMax2FA" targetRef="BloquearConta2FA" name="Sim"/>
+    <bpmn2:task id="BloquearConta2FA" name="Bloquear Conta (5 min)"/>
+    <bpmn2:sequenceFlow sourceRef="BloquearConta2FA" targetRef="End2FAFalha"/>
+    <bpmn2:sequenceFlow sourceRef="AtingiuMax2FA" targetRef="End2FAFalha" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="TokenValido2FA" targetRef="End2FAFalha" name="Não"/>
+  </bpmn2:process>
+
+  <!-- ===== PROCESSO 4: CADASTRO E VALIDAÇÃO DE ESTÁGIO ===== -->
+  <bpmn2:process id="ProcessoCadastroEstagio" name="Cadastro e Validação de Estágio">
+    <bpmn2:startEvent id="StartEstagio" name="Aluno Inicia Cadastro de Estágio"/>
+    <bpmn2:task id="ListarTipos" name="Listar Tipos de Estágio Disponíveis"/>
+    <bpmn2:task id="EscolherTipo" name="Aluno Escolhe Tipo + Empresa + Data"/>
+    <bpmn2:exclusiveGateway id="EstagioExistente" name="Já Existe Estágio?"/>
+    <bpmn2:exclusiveGateway id="StatusAtual" name="Status Atual?"/>
+    <bpmn2:task id="BuscaOrientador" name="Buscar Orientador da Turma"/>
+    <bpmn2:task id="CriarEstagio" name="Criar Estágio com Status=PENDENTE"/>
+    <bpmn2:task id="AtualizarEstagio" name="Atualizar Estágio com Novos Dados"/>
+    <bpmn2:task id="SalvarEstagio" name="Salvar Estágio no Banco"/>
+    <bpmn2:task id="RegistrarAuditoria" name="Registrar na Auditoria: ESTAGIO_CADASTRADO"/>
+    <bpmn2:endEvent id="EndEstagioEnviado" name="Estágio Enviado para Validação"/>
+    <bpmn2:endEvent id="EndEstagioRejeitado" name="Erro: Rejeição Anterior - Bloqueia"/>
+    
+    <bpmn2:sequenceFlow sourceRef="StartEstagio" targetRef="ListarTipos"/>
+    <bpmn2:sequenceFlow sourceRef="ListarTipos" targetRef="EscolherTipo"/>
+    <bpmn2:sequenceFlow sourceRef="EscolherTipo" targetRef="EstagioExistente"/>
+    <bpmn2:sequenceFlow sourceRef="EstagioExistente" targetRef="StatusAtual" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="StatusAtual" targetRef="AtualizarEstagio" name="REJEITADO"/>
+    <bpmn2:sequenceFlow sourceRef="StatusAtual" targetRef="EndEstagioRejeitado" name="PENDENTE"/>
+    <bpmn2:sequenceFlow sourceRef="EstagioExistente" targetRef="CriarEstagio" name="Não"/>
+    <bpmn2:sequenceFlow sourceRef="AtualizarEstagio" targetRef="BuscaOrientador"/>
+    <bpmn2:sequenceFlow sourceRef="CriarEstagio" targetRef="BuscaOrientador"/>
+    <bpmn2:sequenceFlow sourceRef="BuscaOrientador" targetRef="SalvarEstagio"/>
+    <bpmn2:sequenceFlow sourceRef="SalvarEstagio" targetRef="RegistrarAuditoria"/>
+    <bpmn2:sequenceFlow sourceRef="RegistrarAuditoria" targetRef="EndEstagioEnviado"/>
+  </bpmn2:process>
+
+  <!-- ===== PROCESSO 5: VALIDAÇÃO DE ESTÁGIO (ORIENTADOR) ===== -->
+  <bpmn2:process id="ProcessoValidacaoEstagio" name="Validação de Estágio (Orientador)">
+    <bpmn2:startEvent id="StartValidacao" name="Orientador Acessa Lista de Validações"/>
+    <bpmn2:task id="ListarPendentes" name="Listar Estágios PENDENTE + REJEITADO"/>
+    <bpmn2:exclusiveGateway id="EstagiosEncontrados" name="Há Estágios para Validar?"/>
+    <bpmn2:task id="SelecionarEstagio" name="Orientador Seleciona um Estágio"/>
+    <bpmn2:exclusiveGateway id="DecisaoOrientador" name="Aprovação ou Rejeição?"/>
+    <bpmn2:task id="AprovarEstagio" name="Marcar Status = ATIVO"/>
+    <bpmn2:task id="RegistrarAprovacao" name="Registrar Auditoria: ESTAGIO_APROVADO"/>
+    <bpmn2:endEvent id="EndEstagioAprovado" name="Estágio Aprovado - Aluno Acessa Trilha"/>
+    
+    <bpmn2:task id="ColetarJustificativa" name="Orientador Escreve Justificativa (max 1000 car)"/>
+    <bpmn2:task id="RejeitarEstagio" name="Marcar Status = REJEITADO + Guardar Justificativa (AES-256-GCM)"/>
+    <bpmn2:task id="RegistrarRejeicao" name="Registrar Auditoria: ESTAGIO_REJEITADO"/>
+    <bpmn2:endEvent id="EndEstagioRejeitado2" name="Estágio Rejeitado - Aluno Pode Reenviar"/>
+    
+    <bpmn2:endEvent id="EndSemEstagios" name="Nenhum Estágio Pendente"/>
+    
+    <bpmn2:sequenceFlow sourceRef="StartValidacao" targetRef="ListarPendentes"/>
+    <bpmn2:sequenceFlow sourceRef="ListarPendentes" targetRef="EstagiosEncontrados"/>
+    <bpmn2:sequenceFlow sourceRef="EstagiosEncontrados" targetRef="SelecionarEstagio" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="SelecionarEstagio" targetRef="DecisaoOrientador"/>
+    <bpmn2:sequenceFlow sourceRef="DecisaoOrientador" targetRef="AprovarEstagio" name="Aprova"/>
+    <bpmn2:sequenceFlow sourceRef="AprovarEstagio" targetRef="RegistrarAprovacao"/>
+    <bpmn2:sequenceFlow sourceRef="RegistrarAprovacao" targetRef="EndEstagioAprovado"/>
+    <bpmn2:sequenceFlow sourceRef="DecisaoOrientador" targetRef="ColetarJustificativa" name="Rejeita"/>
+    <bpmn2:sequenceFlow sourceRef="ColetarJustificativa" targetRef="RejeitarEstagio"/>
+    <bpmn2:sequenceFlow sourceRef="RejeitarEstagio" targetRef="RegistrarRejeicao"/>
+    <bpmn2:sequenceFlow sourceRef="RegistrarRejeicao" targetRef="EndEstagioRejeitado2"/>
+    <bpmn2:sequenceFlow sourceRef="EstagiosEncontrados" targetRef="EndSemEstagios" name="Não"/>
+  </bpmn2:process>
+
+  <!-- ===== PROCESSO 6: TRILHA PERSONALIZADA (ALUNO) ===== -->
+  <bpmn2:process id="ProcessoTrilhaPersonalizada" name="Acesso à Trilha Personalizada">
+    <bpmn2:startEvent id="StartTrilha" name="Aluno com Estágio ATIVO Acessa Trilha"/>
+    <bpmn2:task id="BuscarMatricula" name="Buscar Matrícula Ativa do Aluno"/>
+    <bpmn2:task id="BuscarEstagioAtivo" name="Buscar Estágio ATIVO"/>
+    <bpmn2:exclusiveGateway id="EstagioAtivoTrilha" name="Estágio Ativo Encontrado?"/>
+    <bpmn2:task id="BuscarTrilha" name="Buscar Trilha Vinculada ao Tipo de Estágio"/>
+    <bpmn2:task id="ListarTarefas" name="Listar Tarefas em Ordem (ordenadas)"/>
+    <bpmn2:task id="MontarResposta" name="Montar Resposta com Nome, Trilha e Tarefas"/>
+    <bpmn2:endEvent id="EndTrilhaExibida" name="Trilha Personalizada Exibida"/>
+    <bpmn2:endEvent id="EndSemEstagioAtivo" name="Erro: Sem Estágio ATIVO"/>
+    
+    <bpmn2:sequenceFlow sourceRef="StartTrilha" targetRef="BuscarMatricula"/>
+    <bpmn2:sequenceFlow sourceRef="BuscarMatricula" targetRef="BuscarEstagioAtivo"/>
+    <bpmn2:sequenceFlow sourceRef="BuscarEstagioAtivo" targetRef="EstagioAtivoTrilha"/>
+    <bpmn2:sequenceFlow sourceRef="EstagioAtivoTrilha" targetRef="BuscarTrilha" name="Sim"/>
+    <bpmn2:sequenceFlow sourceRef="BuscarTrilha" targetRef="ListarTarefas"/>
+    <bpmn2:sequenceFlow sourceRef="ListarTarefas" targetRef="MontarResposta"/>
+    <bpmn2:sequenceFlow sourceRef="MontarResposta" targetRef="EndTrilhaExibida"/>
+    <bpmn2:sequenceFlow sourceRef="EstagioAtivoTrilha" targetRef="EndSemEstagioAtivo" name="Não"/>
+  </bpmn2:process>
+
+</bpmn2:definitions>
