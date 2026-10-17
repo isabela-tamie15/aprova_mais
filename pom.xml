@@ -79,7 +79,14 @@
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
 
-		<!-- ===== SEGURANÇA ===== -->
+        <!-- ====== H2 é só para testes -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ===== SEGURANÇA ===== -->
 
 		<!-- JJWT — jjwt-gson substitui jjwt-jackson por incompatibilidade com Jackson 3 do Spring Boot 4 -->
 		<dependency>
