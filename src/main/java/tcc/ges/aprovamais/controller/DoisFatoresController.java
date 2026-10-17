@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import tcc.ges.aprovamais.service.DoisFatoresService;
 
 
 // Esse controller é quem recebe as requisições de gerenciamento de 2fa da conta do usuário logado
+@Tag(name = "Verificação em duas etapas", description = "Consulta, configuração e desativação do 2FA da conta logada")
 @RestController
 @RequestMapping("/api/v1/conta/2fa")
 @RequiredArgsConstructor

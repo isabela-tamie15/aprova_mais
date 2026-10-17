@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -10,6 +11,7 @@ import tcc.ges.aprovamais.dto.TrilhaResponse;
 import tcc.ges.aprovamais.service.TrilhaService;
 
 // Esse controller é quem recebe a requisição do aluno pra buscar a trilha dele
+@Tag(name = "Trilha", description = "Consulta da trilha de tarefas do estágio do aluno")
 @RestController
 @RequestMapping("/api/v1/aluno")
 @RequiredArgsConstructor

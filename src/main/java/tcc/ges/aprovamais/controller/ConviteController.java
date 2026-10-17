@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import tcc.ges.aprovamais.dto.ConviteRequest;
 import tcc.ges.aprovamais.service.ConviteService;
 
 // Esse controller é quem recebe as requisições de convite, usado pela secretaria pra liberar acesso
+@Tag(name = "Convites", description = "Envio de convites de acesso pela secretaria")
 @RestController
 @RequestMapping("/api/v1/convites")
 @RequiredArgsConstructor

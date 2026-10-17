@@ -1,5 +1,7 @@
 package tcc.ges.aprovamais.auth;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -14,6 +16,8 @@ import tcc.ges.aprovamais.dto.LoginResponse;
 import tcc.ges.aprovamais.dto.PreAutenticacaoRequest;
 import tcc.ges.aprovamais.dto.VerificacaoDoisFatoresRequest;
 
+@Tag(name = "Autenticação", description = "Login em duas etapas, segundo fator e logout. Rotas públicas")
+@SecurityRequirements
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

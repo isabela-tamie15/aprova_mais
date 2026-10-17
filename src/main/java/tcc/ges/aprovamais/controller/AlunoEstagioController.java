@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 // Esse controller é quem recebe as requisições do aluno relacionadas ao estágio
+@Tag(name = "Estágio do aluno", description = "Cadastro, consulta e reenvio do estágio pelo aluno")
 @RestController
 @RequestMapping("/api/v1/aluno/estagio")
 @RequiredArgsConstructor

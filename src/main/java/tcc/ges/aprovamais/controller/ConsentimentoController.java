@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tcc.ges.aprovamais.service.ConsentimentoService;
 
 // Esse controller é quem recebe o aceite dos termos de consentimento do usuário logado
+@Tag(name = "LGPD", description = "Aceite dos Termos de Uso e da Política de Privacidade")
 @RestController
 @RequestMapping("/api/v1/consentimento")
 @RequiredArgsConstructor
