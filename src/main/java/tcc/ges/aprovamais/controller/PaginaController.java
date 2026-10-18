@@ -116,7 +116,7 @@ public class PaginaController {
         */
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
-        model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis());
+        model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis(email));
         return "aluno/estagio";
     }
 

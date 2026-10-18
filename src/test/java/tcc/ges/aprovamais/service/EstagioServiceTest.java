@@ -10,7 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.EstagioResponse;
+import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.entity.Aluno;
+import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.Matricula;
 import tcc.ges.aprovamais.entity.Orientador;
@@ -29,6 +31,7 @@ import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,6 +71,7 @@ class EstagioServiceTest {
     private Orientador orientador;
     private Matricula matricula;
     private TipoEstagio tipoEstagio;
+    private Curso curso;
 
     @BeforeEach
     void setUp() {
@@ -86,8 +90,12 @@ class EstagioServiceTest {
 
 
 
+        curso = new Curso();
+        curso.setId(4L);
+
         Turma turma = new Turma();
         turma.setId(3L);
+        turma.setCurso(curso);
 
         matricula = new Matricula();
         matricula.setId(10L);
@@ -99,6 +107,7 @@ class EstagioServiceTest {
 
         tipoEstagio = new TipoEstagio();
         tipoEstagio.setId(5L);
+        tipoEstagio.setCurso(curso);
         tipoEstagio.setNome("Estagiário");
         tipoEstagio.setCargaHorariaNecessaria(new BigDecimal("270"));
         tipoEstagio.setJornadaSemanal(new BigDecimal("30"));
@@ -134,7 +143,7 @@ class EstagioServiceTest {
     private void prepararCadastro(Estagio estagioExistente) {
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
-        when(tipoEstagioRepository.findById(tipoEstagio.getId())).thenReturn(Optional.of(tipoEstagio));
+        when(tipoEstagioRepository.findByIdAndCursoId(tipoEstagio.getId(), curso.getId())).thenReturn(Optional.of(tipoEstagio));
         when(estagioRepository.findByMatriculaId(matricula.getId())).thenReturn(Optional.ofNullable(estagioExistente));
     }
 
@@ -221,7 +230,6 @@ class EstagioServiceTest {
     @Test
     @DisplayName("Cadastro copia a carga total e a jornada do tipo e calcula a data prevista")
     void deveCongelarCargaEJornadaDoTipoNoCadastro() {
-
         // arrange
         prepararCadastro(null);
         when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
@@ -243,7 +251,7 @@ class EstagioServiceTest {
         assertEquals(LocalDate.of(2026, 12, 3), salvo.getDataPrevistaConclusao());
         assertEquals(LocalDate.of(2026, 12, 3), resposta.getDataPrevistaConclusao());
 
-        //mudar o tipo depois não mexe no estágio já cadastrado
+        // mudar o tipo depois não mexe no estágio já cadastrado
         tipoEstagio.setCargaHorariaNecessaria(new BigDecimal("300"));
         tipoEstagio.setJornadaSemanal(new BigDecimal("20"));
         assertEquals(new BigDecimal("270"), salvo.getCargaHorariaNecessaria());
@@ -253,7 +261,6 @@ class EstagioServiceTest {
     @Test
     @DisplayName("Tipo sem jornada semanal impede o cadastro do estágio")
     void deveBloquearCadastroQuandoTipoNaoTemJornada() {
-        
         // arrange
         tipoEstagio.setJornadaSemanal(null);
         prepararCadastro(null);
@@ -265,6 +272,44 @@ class EstagioServiceTest {
         // assert
         assertEquals("Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação",
                 excecao.getMessage());
+        verify(estagioRepository, never()).save(any());
+
+    }
+
+    @Test
+    @DisplayName("Lista só os tipos de estágio do curso da matrícula do aluno")
+    void deveListarTiposDoCursoDoAluno() {
+
+        // arrange
+        when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
+        when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
+        when(tipoEstagioRepository.findByCursoIdOrderByNomeAsc(curso.getId())).thenReturn(List.of(tipoEstagio));
+
+        // act
+        List<TipoEstagioResponse> tipos = estagioService.listarTiposEstagioDisponiveis(EMAIL_ALUNO);
+
+        // assert
+        assertEquals(1, tipos.size());
+        assertEquals("Estagiário", tipos.get(0).getNome());
+        assertEquals(new BigDecimal("30"), tipos.get(0).getJornadaSemanal());
+        verify(tipoEstagioRepository, never()).findAll();
+    }
+
+    @Test
+    @DisplayName("Tipo de estágio de outro curso é tratado como inexistente no cadastro")
+    void deveBloquearCadastroComTipoDeOutroCurso() {
+
+        // arrange: a busca filtrada pelo curso do aluno não acha o tipo
+        when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
+        when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
+        when(tipoEstagioRepository.findByIdAndCursoId(tipoEstagio.getId(), curso.getId())).thenReturn(Optional.empty());
+
+        // act
+        ResourceNotFoundException excecao = assertThrows(ResourceNotFoundException.class,
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+
+        //assert
+        assertEquals("Perfil de estágio não encontrado", excecao.getMessage());
         verify(estagioRepository, never()).save(any());
 
     }

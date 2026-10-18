@@ -65,10 +65,15 @@ public class EstagioService {
         return paraResponse(estagio);
     }
 
-    // Esse é o método que lista todos os tipos de estágio disponíveis pra escolher no cadastro
+    /*
+       Esse é o método que lista os tipos de estágio que o aluno pode escolher no cadastro.
+       Só entram os tipos do curso da matrícula ativa dele (RN30) porque cada curso define os próprios tipos, com carga e jornada próprias
+    */
     @Transactional(readOnly = true)
-    public List<TipoEstagioResponse> listarTiposEstagioDisponiveis() {
-        return tipoEstagioRepository.findAll()
+    public List<TipoEstagioResponse> listarTiposEstagioDisponiveis(String emailAluno) {
+        Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
+
+        return tipoEstagioRepository.findByCursoIdOrderByNomeAsc(idDoCurso(matricula))
                 .stream()
                 .map(tipo -> TipoEstagioResponse.builder()
                         .id(tipo.getId())
@@ -98,7 +103,13 @@ public class EstagioService {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
         Matricula matricula = buscarMatriculaAtiva(aluno);
 
-        TipoEstagio tipoEstagio = tipoEstagioRepository.findById(request.getTipoEstagioId())
+        /*
+           Busca o tipo já filtrando pelo curso do aluno. Se o id for de um tipo
+           de outro curso, responde igual a um id que não existe, assim não dá
+           pra cadastrar com tipo alheio mandando o id direto na API
+        */
+        TipoEstagio tipoEstagio = tipoEstagioRepository
+                .findByIdAndCursoId(request.getTipoEstagioId(), idDoCurso(matricula))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Perfil de estágio não encontrado"));
 
@@ -286,6 +297,11 @@ public class EstagioService {
     private Aluno buscarAlunoPorEmail(String email) {
         return alunoRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado"));
+    }
+
+    // Curso da matrícula, que é quem define os tipos de estágio disponíveis
+    private Long idDoCurso(Matricula matricula) {
+        return matricula.getTurma().getCurso().getId();
     }
 
     // Busca a matrícula ativa do aluno, usada como base pra chegar no estágio

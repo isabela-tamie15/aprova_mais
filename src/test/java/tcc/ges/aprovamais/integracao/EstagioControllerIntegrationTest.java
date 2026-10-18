@@ -114,4 +114,39 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(jsonPath("$[0].nomeEmpresa").value("Empresa Integracao"))
                 .andExpect(jsonPath("$[0].status").value("PENDENTE"));
     }
+
+    @Test
+    @DisplayName("GET /tipos devolve só os tipos do curso do aluno e barra cadastro com tipo de outro curso")
+    void deveFiltrarTiposPeloCursoDoAluno() throws Exception {
+
+        // um segundo curso com um tipo próprio, que o aluno não pode ver nem usar
+        Curso outroCurso = new Curso();
+        outroCurso.setNome("Administração");
+        outroCurso.setCodigoMec("MEC-TESTE-002");
+        entityManager.persist(outroCurso);
+        TipoEstagio tipoDeOutroCurso = criarTipoEstagio(outroCurso);
+        tipoDeOutroCurso.setNome("CLT Administração");
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio/tipos").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(tipoEstagio.getId()));
+
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Integracao"
+                }
+                """.formatted(tipoDeOutroCurso.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isNotFound());
+
+        assertTrue(estagioRepository.findByMatriculaId(matricula.getId()).isEmpty());
+    }
 }

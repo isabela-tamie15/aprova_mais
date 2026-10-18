@@ -24,10 +24,10 @@ public class AlunoEstagioController {
 
     private final EstagioService estagioService;
 
-    // Esse é o endpoint que devolve a lista de tipos de estágio que o aluno pode escolher
+    // Esse é o endpoint que devolve a lista de tipos de estágio que o aluno pode escolher, só os do curso dele
     @GetMapping("/tipos")
-    public ResponseEntity<List<TipoEstagioResponse>> listarTiposEstagio() {
-        List<TipoEstagioResponse> tipos = estagioService.listarTiposEstagioDisponiveis();
+    public ResponseEntity<List<TipoEstagioResponse>> listarTiposEstagio(Authentication authentication) {
+        List<TipoEstagioResponse> tipos = estagioService.listarTiposEstagioDisponiveis(authentication.getName());
         return ResponseEntity.ok(tipos);
     }
 
