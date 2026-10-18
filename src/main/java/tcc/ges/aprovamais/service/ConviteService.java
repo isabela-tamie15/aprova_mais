@@ -138,11 +138,12 @@ public class ConviteService {
         /*
            Se o prazo já venceu, marca como expirado no banco antes de lançar.
            Assim o registro fica atualizado e a pessoa sabe que o convite
-           realmente passou da validade, não que o token tá errado
+           realmente passou da validade, não que o token tá errado.
+           A transação é só leitura e a exceção logo abaixo desfaz tudo, então o update roda numa transação própria
         */
         if (OffsetDateTime.now(ZoneOffset.UTC).isAfter(convite.getExpiracaoToken())) {
             convite.setStatus(StatusConvite.EXPIRADO);
-            conviteRepository.save(convite);
+            conviteRepository.atualizarStatus(convite.getId(), StatusConvite.EXPIRADO);
             throw new IllegalStateException("Este convite expirou. Solicite um novo convite à secretaria");
         }
 

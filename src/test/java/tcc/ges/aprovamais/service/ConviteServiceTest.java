@@ -145,7 +145,8 @@ class ConviteServiceTest {
         assertEquals("Este convite expirou. Solicite um novo convite à secretaria",
                 excecao.getMessage());
         assertEquals(StatusConvite.EXPIRADO, convite.getStatus());
-        verify(conviteRepository).save(convite);
+        verify(conviteRepository).atualizarStatus(convite.getId(), StatusConvite.EXPIRADO);
+        verify(conviteRepository, never()).save(any());
     }
 
     @Test
