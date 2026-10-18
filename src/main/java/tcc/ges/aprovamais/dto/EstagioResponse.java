@@ -14,6 +14,9 @@ public class EstagioResponse {
     private final LocalDate dataInicio;
     private final String nomeTipoEstagio;
     private final BigDecimal cargaHorariaNecessaria;
+    private final BigDecimal jornadaSemanal;
+    private final BigDecimal cargaHorariaCumprida;
+    private final LocalDate dataPrevistaConclusao;
     private final String nomeOrientador;
     private final String nomeAluno;
     private final String nomeEmpresa;

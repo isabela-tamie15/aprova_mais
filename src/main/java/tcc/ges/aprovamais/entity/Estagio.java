@@ -51,8 +51,12 @@ public class Estagio {
     @Column(name = "data_prevista_conclusao")
     private LocalDate dataPrevistaConclusao;
 
+    // Carga total e jornada semanal copiadas do tipo no cadastro (RN31)
     @Column(name = "carga_horaria_necessaria", nullable = false)
     private BigDecimal cargaHorariaNecessaria;
+
+    @Column(name = "jornada_semanal", nullable = false)
+    private BigDecimal jornadaSemanal;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

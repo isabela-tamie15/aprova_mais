@@ -52,7 +52,8 @@ abstract class IntegracaoTestBase {
         TipoEstagio tipo = new TipoEstagio();
         tipo.setCurso(curso);
         tipo.setNome("Estagiario");
-        tipo.setCargaHorariaNecessaria(new BigDecimal("400"));
+        tipo.setCargaHorariaNecessaria(new BigDecimal("270"));
+        tipo.setJornadaSemanal(new BigDecimal("30"));
         entityManager.persist(tipo);
         return tipo;
     }
@@ -113,6 +114,7 @@ abstract class IntegracaoTestBase {
         estagio.setNomeEmpresa("Empresa Teste");
         estagio.setDataInicio(LocalDate.of(2026, 8, 1));
         estagio.setCargaHorariaNecessaria(tipo.getCargaHorariaNecessaria());
+        estagio.setJornadaSemanal(tipo.getJornadaSemanal());
         estagio.setStatus(status);
         entityManager.persist(estagio);
         entityManager.flush();

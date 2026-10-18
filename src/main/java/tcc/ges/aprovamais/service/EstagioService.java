@@ -14,6 +14,8 @@ import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,6 +75,7 @@ public class EstagioService {
                         .nome(tipo.getNome())
                         .descricao(tipo.getDescricao())
                         .cargaHorariaNecessaria(tipo.getCargaHorariaNecessaria())
+                        .jornadaSemanal(tipo.getJornadaSemanal())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -120,13 +123,26 @@ public class EstagioService {
             estagio.setMatricula(matricula);
         }
 
+        // Sem jornada não dá pra calcular a carga nem a data prevista, então nem deixa cadastrar
+        if (tipoEstagio.getJornadaSemanal() == null || tipoEstagio.getJornadaSemanal().signum() <= 0) {
+            throw new IllegalStateException(
+                    "Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação");
+        }
+
         estagio.setTipoEstagio(tipoEstagio);
         estagio.setDataInicio(request.getDataInicio());
         estagio.setNomeEmpresa(request.getNomeEmpresa());
+
+        // RN31: copia a carga total e a jornada do tipo, o aluno não informa horas
         estagio.setCargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria());
+        estagio.setJornadaSemanal(tipoEstagio.getJornadaSemanal());
+
+        // RN54: data prevista de conclusão a partir do início, da carga e da jornada
+        estagio.setDataPrevistaConclusao(CalculadoraCargaHoraria.calcularDataPrevista(
+                estagio.getDataInicio(), estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal()));
         estagio.setStatus(StatusEstagio.PENDENTE);
 
-        // Limpa qualquer justificativa de rejeição anterior, já que o aluno tá reenviando
+        // Limpa qualquer justificativa de rejeição anterior, já que o aluno esta reenviando
         estagio.setJustificativaRejeicao(null);
 
         /*
@@ -280,14 +296,40 @@ public class EstagioService {
                         "Aluno não possui matrícula ativa"));
     }
 
+    /*
+       Carga cumprida só conta enquanto o estágio está ativo, e o
+       concluido já tem a carga toda. Pendente, rejeitado, suspenso e
+       encerrado ficam com zero por enquanto. Descontar as semanas de
+       suspensão depende do histórico de status, que ainda vai ser feito
+    */
+    private BigDecimal calcularCargaCumprida(Estagio estagio) {
+        return switch (estagio.getStatus()) {
+            case ATIVO -> CalculadoraCargaHoraria.calcularCargaCumprida(
+                    estagio.getDataInicio(), estagio.getCargaHorariaNecessaria(),
+                    estagio.getJornadaSemanal(), LocalDate.now());
+            case CONCLUIDO -> estagio.getCargaHorariaNecessaria();
+            default -> BigDecimal.ZERO;
+        };
+    }
+
     // Converte a entidade Estagio pro DTO que vai ser devolvido pro frontend
     private EstagioResponse paraResponse(Estagio estagio) {
+
+        // Estágios antigos podem não ter a data prevista gravada, então calcula na hora
+        LocalDate dataPrevista = estagio.getDataPrevistaConclusao() != null
+                ? estagio.getDataPrevistaConclusao()
+                : CalculadoraCargaHoraria.calcularDataPrevista(estagio.getDataInicio(),
+                        estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal());
+
         return EstagioResponse.builder()
                 .id(estagio.getId())
                 .status(estagio.getStatus().name())
                 .dataInicio(estagio.getDataInicio())
                 .nomeTipoEstagio(estagio.getTipoEstagio().getNome())
                 .cargaHorariaNecessaria(estagio.getCargaHorariaNecessaria())
+                .jornadaSemanal(estagio.getJornadaSemanal())
+                .cargaHorariaCumprida(calcularCargaCumprida(estagio))
+                .dataPrevistaConclusao(dataPrevista)
                 .nomeAluno(estagio.getMatricula().getAluno().getNome())
                 .nomeEmpresa(estagio.getNomeEmpresa())
                 .nomeOrientador(estagio.getOrientador() != null

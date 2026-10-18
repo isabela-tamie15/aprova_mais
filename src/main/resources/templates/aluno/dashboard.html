@@ -48,8 +48,15 @@
         <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
         <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
         <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
-        <p><strong>Carga horária necessária:</strong>
-            <span th:text="${estagio.cargaHorariaNecessaria}"></span>h
+        <p><strong>Carga horária cumprida:</strong>
+            <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0)}"></span>h de
+            <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0)}"></span>h
+            <span class="text-muted" th:if="${estagio.jornadaSemanal}">
+                (<span th:text="${#numbers.formatDecimal(estagio.jornadaSemanal, 1, 0)}"></span>h por semana)
+            </span>
+        </p>
+        <p th:if="${estagio.dataPrevistaConclusao}"><strong>Conclusão prevista:</strong>
+            <span th:text="${#temporals.format(estagio.dataPrevistaConclusao, 'dd/MM/yyyy')}"></span>
         </p>
         <p><strong>Orientador:</strong>
             <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
