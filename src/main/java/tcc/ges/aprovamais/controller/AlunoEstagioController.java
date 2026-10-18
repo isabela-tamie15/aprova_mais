@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
+import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.service.EstagioService;
 
 import java.util.List;
@@ -69,5 +70,11 @@ public class AlunoEstagioController {
         EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(
                 email, request, httpRequest.getRemoteAddr());
         return ResponseEntity.ok(resposta);
+    }
+
+    // Esse endpoint que devolve as aprovações e rejeições do estágio do aluno logado, da mais antiga pra mais recente
+    @GetMapping("/historico")
+    public ResponseEntity<List<ValidacaoEstagioResponse>> historico(Authentication authentication) {
+        return ResponseEntity.ok(estagioService.listarHistoricoDoAluno(authentication.getName()));
     }
 }

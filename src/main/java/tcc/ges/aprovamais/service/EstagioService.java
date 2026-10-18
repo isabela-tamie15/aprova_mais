@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
+import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
@@ -34,6 +35,7 @@ public class EstagioService {
     private final OrientadorTurmaRepository orientadorTurmaRepository;
     private final AuditoriaService auditoriaService;
     private final UsuarioRepository usuarioRepository;
+    private final ValidacaoEstagioRepository validacaoEstagioRepository;
 
     // Esse é o método que busca o estágio ativo de um aluno, usado quando a gente precisa garantir que existe
     @Transactional(readOnly = true)
@@ -67,7 +69,7 @@ public class EstagioService {
 
     /*
        Esse é o método que lista os tipos de estágio que o aluno pode escolher no cadastro.
-       Só entram os tipos do curso da matrícula ativa dele (RN30) porque cada curso define os próprios tipos, com carga e jornada próprias
+       Só entram os tipos do curso da matrícula ativa dele (RN30), porque cada curso define os próprios tipos, com carga e jornada próprias
     */
     @Transactional(readOnly = true)
     public List<TipoEstagioResponse> listarTiposEstagioDisponiveis(String emailAluno) {
@@ -153,7 +155,7 @@ public class EstagioService {
                 estagio.getDataInicio(), estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal()));
         estagio.setStatus(StatusEstagio.PENDENTE);
 
-        // Limpa qualquer justificativa de rejeição anterior, já que o aluno esta reenviando
+        // Limpa qualquer justificativa de rejeição anterior, já que o aluno tá reenviando
         estagio.setJustificativaRejeicao(null);
 
         /*
@@ -205,9 +207,14 @@ public class EstagioService {
                 .collect(Collectors.toList());
     }
 
-    // Esse é o método que o orientador usa pra aprovar um estágio pendente
+    /*
+       Esse é o método que o orientador usa pra aprovar um estágio pendente.
+       A dataInicioConfirmada é a data que ele conferiu no termo de compromisso (RF21).
+       Se vier diferente da que o aluno informou, ela passa a valer e a data prevista é recalculada, porque a carga é contada a partir dela
+    */
     @Transactional
-    public EstagioResponse aprovar(Long estagioId, String emailOrientador, String ipOrigem) {
+    public EstagioResponse aprovar(Long estagioId, String emailOrientador,
+                                   LocalDate dataInicioConfirmada, String ipOrigem) {
         Estagio estagio = buscarEstagioDoOrientador(estagioId, emailOrientador);
 
         // Só faz sentido aprovar se estiver pendente, senão é sinal que alguém já mexeu
@@ -215,15 +222,23 @@ public class EstagioService {
             throw new IllegalStateException("Apenas estágios pendentes podem ser aprovados");
         }
 
+        if (dataInicioConfirmada != null && !dataInicioConfirmada.equals(estagio.getDataInicio())) {
+            log.info("[ESTÁGIO] Orientador ajustou a data de início do estágio {} de {} para {}",
+                    estagioId, estagio.getDataInicio(), dataInicioConfirmada);
+            estagio.setDataInicio(dataInicioConfirmada);
+            estagio.setDataPrevistaConclusao(CalculadoraCargaHoraria.calcularDataPrevista(
+                    dataInicioConfirmada, estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal()));
+        }
+
         estagio.setStatus(StatusEstagio.ATIVO);
         estagio.setJustificativaRejeicao(null);
 
         Estagio salvo = estagioRepository.save(estagio);
+        registrarDecisao(salvo, true, null);
 
         /*
-           Busca o usuário do orientador só pra registrar na auditoria. Se
-           não achar, não faz nada, porque a aprovação em si já foi feita
-           e a auditoria não pode travar o fluxo
+           Busca o usuário do orientador só pra registrar na auditoria.
+           Se não achar, não faz nada, porque a aprovação em si já foi feita e a auditoria não pode travar o fluxo
         */
         Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
                 .orElse(null);
@@ -257,6 +272,7 @@ public class EstagioService {
         estagio.setJustificativaRejeicao(justificativa);
 
         Estagio salvo = estagioRepository.save(estagio);
+        registrarDecisao(salvo, false, justificativa);
 
         // Mesma ideia do aprovar, auditoria não pode travar o fluxo
         Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
@@ -276,7 +292,47 @@ public class EstagioService {
         return paraResponse(salvo);
     }
 
+    // Esse é o método que devolve o histórico de decisões do estágio do aluno logado (RF22)
+    @Transactional(readOnly = true)
+    public List<ValidacaoEstagioResponse> listarHistoricoDoAluno(String emailAluno) {
+        Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
+
+        // Aluno sem estágio ainda não tem histórico, devolve lista vazia em vez de erro
+        return estagioRepository.findByMatriculaId(matricula.getId())
+                .map(estagio -> listarHistorico(estagio.getId()))
+                .orElse(List.of());
+    }
+
+    // Esse é o método que devolve o histórico de um estágio pro orientador, só se o estágio for dele
+    @Transactional(readOnly = true)
+    public List<ValidacaoEstagioResponse> listarHistoricoDoOrientador(Long estagioId, String emailOrientador) {
+        Estagio estagio = buscarEstagioDoOrientador(estagioId, emailOrientador);
+        return listarHistorico(estagio.getId());
+    }
+
     // métodos auxiliares/universais
+
+    // Grava a decisão do orientador no histórico. Nunca é sobrescrita, cada decisão é uma linha nova
+    private void registrarDecisao(Estagio estagio, boolean aprovado, String justificativa) {
+        ValidacaoEstagio validacao = new ValidacaoEstagio();
+        validacao.setEstagio(estagio);
+        validacao.setOrientador(estagio.getOrientador());
+        validacao.setAprovado(aprovado);
+        validacao.setJustificativa(justificativa);
+        validacaoEstagioRepository.save(validacao);
+    }
+
+    private List<ValidacaoEstagioResponse> listarHistorico(Long estagioId) {
+        return validacaoEstagioRepository.findByEstagioIdOrderByDataDecisaoAscIdAsc(estagioId)
+                .stream()
+                .map(v -> ValidacaoEstagioResponse.builder()
+                        .aprovado(v.getAprovado())
+                        .justificativa(v.getJustificativa())
+                        .dataDecisao(v.getDataDecisao())
+                        .nomeOrientador(v.getOrientador().getNome())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     /*
        Busca o estágio só se ele estiver vinculado ao orientador autenticado.
@@ -313,8 +369,8 @@ public class EstagioService {
     }
 
     /*
-       Carga cumprida só conta enquanto o estágio está ativo, e o
-       concluido já tem a carga toda. Pendente, rejeitado, suspenso e
+       Carga cumprida (RN53). Só conta enquanto o estágio está ATIVO, e o
+       CONCLUIDO já tem a carga toda. Pendente, rejeitado, suspenso e
        encerrado ficam com zero por enquanto. Descontar as semanas de
        suspensão depende do histórico de status, que ainda vai ser feito
     */

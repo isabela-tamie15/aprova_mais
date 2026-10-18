@@ -17,6 +17,7 @@ import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.Matricula;
 import tcc.ges.aprovamais.entity.Orientador;
 import tcc.ges.aprovamais.entity.TipoEstagio;
+import tcc.ges.aprovamais.entity.ValidacaoEstagio;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
@@ -28,6 +29,7 @@ import tcc.ges.aprovamais.repository.MatriculaRepository;
 import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+import tcc.ges.aprovamais.repository.ValidacaoEstagioRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -40,6 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -65,6 +68,8 @@ class EstagioServiceTest {
     private AuditoriaService auditoriaService;
     @Mock
     private UsuarioRepository usuarioRepository;
+    @Mock
+    private ValidacaoEstagioRepository validacaoEstagioRepository;
     @InjectMocks
     private EstagioService estagioService;
     private Aluno aluno;
@@ -162,7 +167,7 @@ class EstagioServiceTest {
         when(usuarioRepository.findByEmail(EMAIL_ORIENTADOR)).thenReturn(Optional.of(orientador));
 
         // act
-        EstagioResponse resposta = estagioService.aprovar(ESTAGIO_ID, EMAIL_ORIENTADOR, IP);
+        EstagioResponse resposta = estagioService.aprovar(ESTAGIO_ID, EMAIL_ORIENTADOR, null, IP);
 
         // assert
         assertEquals("ATIVO", resposta.getStatus());
@@ -193,7 +198,7 @@ class EstagioServiceTest {
                 .thenReturn(Optional.empty());
 
         // act
-        ResourceNotFoundException excecao = assertThrows(ResourceNotFoundException.class, () -> estagioService.aprovar(ESTAGIO_ID, EMAIL_ORIENTADOR, IP));
+        ResourceNotFoundException excecao = assertThrows(ResourceNotFoundException.class, () -> estagioService.aprovar(ESTAGIO_ID, EMAIL_ORIENTADOR, null, IP));
 
         // 404 em vez de 403
         assertEquals("Estágio não encontrado", excecao.getMessage());
@@ -273,13 +278,11 @@ class EstagioServiceTest {
         assertEquals("Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação",
                 excecao.getMessage());
         verify(estagioRepository, never()).save(any());
-
     }
 
     @Test
     @DisplayName("Lista só os tipos de estágio do curso da matrícula do aluno")
     void deveListarTiposDoCursoDoAluno() {
-
         // arrange
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
@@ -298,7 +301,6 @@ class EstagioServiceTest {
     @Test
     @DisplayName("Tipo de estágio de outro curso é tratado como inexistente no cadastro")
     void deveBloquearCadastroComTipoDeOutroCurso() {
-
         // arrange: a busca filtrada pelo curso do aluno não acha o tipo
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
@@ -308,10 +310,53 @@ class EstagioServiceTest {
         ResourceNotFoundException excecao = assertThrows(ResourceNotFoundException.class,
                 () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
 
-        //assert
+        // assert
         assertEquals("Perfil de estágio não encontrado", excecao.getMessage());
         verify(estagioRepository, never()).save(any());
-
     }
 
+    @Test
+    @DisplayName("Aprovação e rejeição ficam gravadas no histórico de validações")
+    void deveRegistrarDecisoesNoHistorico() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.PENDENTE);
+        when(estagioRepository.findByIdAndOrientadorEmail(ESTAGIO_ID, EMAIL_ORIENTADOR))
+                .thenReturn(Optional.of(estagio));
+        when(estagioRepository.save(estagio)).then(returnsFirstArg());
+        ArgumentCaptor<ValidacaoEstagio> captor = ArgumentCaptor.forClass(ValidacaoEstagio.class);
+
+        // act rejeita, o aluno corrige (volta a PENDENTE) e o orientador aprova
+        estagioService.rejeitar(ESTAGIO_ID, EMAIL_ORIENTADOR, "Data não confere com o termo", IP);
+        estagio.setStatus(StatusEstagio.PENDENTE);
+        estagioService.aprovar(ESTAGIO_ID, EMAIL_ORIENTADOR, null, IP);
+
+        // assert duas linhas no histórico, a justificativa da rejeição continua lá
+        verify(validacaoEstagioRepository, times(2)).save(captor.capture());
+        ValidacaoEstagio rejeicao = captor.getAllValues().get(0);
+        ValidacaoEstagio aprovacao = captor.getAllValues().get(1);
+        assertFalse(rejeicao.getAprovado());
+        assertEquals("Data não confere com o termo", rejeicao.getJustificativa());
+        assertEquals(orientador, rejeicao.getOrientador());
+        assertTrue(aprovacao.getAprovado());
+        assertNull(aprovacao.getJustificativa());
+    }
+
+    @Test
+    @DisplayName("Data de início conferida pelo orientador substitui a do aluno e recalcula a data prevista")
+    void deveAjustarDataInicioNaAprovacao() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.PENDENTE);
+        when(estagioRepository.findByIdAndOrientadorEmail(ESTAGIO_ID, EMAIL_ORIENTADOR))
+                .thenReturn(Optional.of(estagio));
+        when(estagioRepository.save(estagio)).then(returnsFirstArg());
+
+        // act
+        EstagioResponse resposta = estagioService.aprovar(
+                ESTAGIO_ID, EMAIL_ORIENTADOR, LocalDate.of(2026, 3, 2), IP);
+
+        // assert 270h com 30h por semana, 9 semanas depois de 02/03
+        assertEquals(LocalDate.of(2026, 3, 2), estagio.getDataInicio());
+        assertEquals(LocalDate.of(2026, 5, 4), estagio.getDataPrevistaConclusao());
+        assertEquals(LocalDate.of(2026, 5, 4), resposta.getDataPrevistaConclusao());
+    }
 }

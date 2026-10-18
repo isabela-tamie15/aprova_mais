@@ -40,14 +40,34 @@
             <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
             <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
 
-            <div th:if="${estagio.status == 'REJEITADO'}" class="alert alert-danger py-2 mb-3">
-                <strong>Justificativa anterior:</strong>
-                <span th:text="${estagio.justificativaRejeicao}"></span>
+            <!-- Decisões anteriores sobre esse estágio, inclusive as rejeições de envios passados -->
+            <th:block th:with="historico=${historicos.get(estagio.id)}">
+            <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="mb-3">
+                <strong>Decisões anteriores:</strong>
+                <ul class="list-unstyled small mb-0 mt-1">
+                    <li th:each="decisao : ${historico}" class="mb-1">
+                        <span th:if="${decisao.aprovado}" class="badge bg-success">Aprovado</span>
+                        <span th:unless="${decisao.aprovado}" class="badge bg-danger">Rejeitado</span>
+                        <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
+                        <span th:if="${decisao.justificativa}" th:text="${' - ' + decisao.justificativa}"></span>
+                    </li>
+                </ul>
             </div>
+            </th:block>
 
             <!-- Ações para estágios pendentes -->
             <div th:if="${estagio.status == 'PENDENTE'}">
                 <div class="alert alert-danger py-2 mb-3" x-show="mensagem" x-text="mensagem"></div>
+
+                <div class="mb-2" style="max-width: 320px;">
+                    <label class="form-label small mb-1" th:for="${'dataInicio-' + estagio.id}">
+                        Data de início conferida no termo de compromisso
+                    </label>
+                    <input type="date" class="form-control form-control-sm"
+                           th:id="${'dataInicio-' + estagio.id}"
+                           th:value="${estagio.dataInicio}"
+                           x-ref="dataInicio">
+                </div>
 
                 <div class="d-flex gap-2 align-items-start">
                     <button class="btn btn-success"
@@ -85,7 +105,9 @@
                 try {
                     const resp = await fetch(`/api/v1/orientador/validacoes/${id}/aprovar`, {
                         method: 'POST',
-                        credentials: 'include'
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ dataInicio: this.$refs.dataInicio.value || null })
                     });
                     if (resp.ok) {
                         window.location.reload();

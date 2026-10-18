@@ -64,6 +64,20 @@
         </p>
         <a href="/aluno/trilha" class="btn btn-primary mt-2">Ver minha trilha de tarefas</a>
     </div>
+
+    <!-- Histórico das decisões do orientador (RF22) -->
+    <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="card p-4 mt-3">
+        <h6 class="card-title mb-3">Histórico de validações</h6>
+        <ul class="list-group list-group-flush">
+            <li th:each="decisao : ${historico}" class="list-group-item px-0">
+                <span th:if="${decisao.aprovado}" class="badge bg-success me-2">Aprovado</span>
+                <span th:unless="${decisao.aprovado}" class="badge bg-danger me-2">Rejeitado</span>
+                <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
+                <span class="text-muted">por <span th:text="${decisao.nomeOrientador}"></span></span>
+                <div th:if="${decisao.justificativa}" class="small mt-1" th:text="${decisao.justificativa}"></div>
+            </li>
+        </ul>
+    </div>
 </div>
 
 <script>
