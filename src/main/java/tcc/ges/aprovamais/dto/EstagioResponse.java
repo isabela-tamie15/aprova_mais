@@ -11,6 +11,7 @@ import java.time.LocalDate;
 public class EstagioResponse {
     private final Long id;
     private final String status;
+    private final String motivoEncerramento;
     private final LocalDate dataInicio;
     private final String nomeTipoEstagio;
     private final BigDecimal cargaHorariaNecessaria;

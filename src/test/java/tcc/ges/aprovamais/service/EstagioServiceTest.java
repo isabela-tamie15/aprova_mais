@@ -149,7 +149,8 @@ class EstagioServiceTest {
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
         when(tipoEstagioRepository.findByIdAndCursoId(tipoEstagio.getId(), curso.getId())).thenReturn(Optional.of(tipoEstagio));
-        when(estagioRepository.findByMatriculaId(matricula.getId())).thenReturn(Optional.ofNullable(estagioExistente));
+        when(estagioRepository.findFirstByMatriculaIdAndStatusInOrderByIdDesc(matricula.getId(), EstagioService.STATUS_EM_ABERTO))
+                .thenReturn(Optional.ofNullable(estagioExistente));
     }
 
 
@@ -249,7 +250,7 @@ class EstagioServiceTest {
         // act
         EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
 
-        // assert 270h com 30h por semana são 9 semanas a partir de 01/10/26
+        // assert: 270 h com 30 h por semana são 9 semanas a partir de 01/10/2026
         Estagio salvo = captor.getValue();
         assertEquals(new BigDecimal("270"), salvo.getCargaHorariaNecessaria());
         assertEquals(new BigDecimal("30"), salvo.getJornadaSemanal());
@@ -325,12 +326,12 @@ class EstagioServiceTest {
         when(estagioRepository.save(estagio)).then(returnsFirstArg());
         ArgumentCaptor<ValidacaoEstagio> captor = ArgumentCaptor.forClass(ValidacaoEstagio.class);
 
-        // act rejeita, o aluno corrige (volta a PENDENTE) e o orientador aprova
+        // act: rejeita, o aluno corrige (volta a PENDENTE) e o orientador aprova
         estagioService.rejeitar(ESTAGIO_ID, EMAIL_ORIENTADOR, "Data não confere com o termo", IP);
         estagio.setStatus(StatusEstagio.PENDENTE);
         estagioService.aprovar(ESTAGIO_ID, EMAIL_ORIENTADOR, null, IP);
 
-        // assert duas linhas no histórico, a justificativa da rejeição continua lá
+        // assert: duas linhas no histórico, a justificativa da rejeição continua lá
         verify(validacaoEstagioRepository, times(2)).save(captor.capture());
         ValidacaoEstagio rejeicao = captor.getAllValues().get(0);
         ValidacaoEstagio aprovacao = captor.getAllValues().get(1);
@@ -354,9 +355,27 @@ class EstagioServiceTest {
         EstagioResponse resposta = estagioService.aprovar(
                 ESTAGIO_ID, EMAIL_ORIENTADOR, LocalDate.of(2026, 3, 2), IP);
 
-        // assert 270h com 30h por semana, 9 semanas depois de 02/03
+        // assert: 270 h com 30 h por semana, 9 semanas depois de 02/03
         assertEquals(LocalDate.of(2026, 3, 2), estagio.getDataInicio());
         assertEquals(LocalDate.of(2026, 5, 4), estagio.getDataPrevistaConclusao());
         assertEquals(LocalDate.of(2026, 5, 4), resposta.getDataPrevistaConclusao());
+    }
+
+    @Test
+    @DisplayName("Estágio ATIVO não pode ser reenviado, o caminho é a troca de modalidade")
+    void deveBloquearReenvioDeEstagioAtivo() {
+        // arrange
+        Estagio ativo = criarEstagio(StatusEstagio.ATIVO);
+        prepararCadastro(ativo);
+
+        // act
+        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+
+        // assert
+        assertTrue(excecao.getMessage().contains("troca de modalidade"));
+        assertEquals(StatusEstagio.ATIVO, ativo.getStatus());
+        assertEquals("Empresa Antiga", ativo.getNomeEmpresa());
+        verify(estagioRepository, never()).save(any());
     }
 }

@@ -98,6 +98,11 @@ public class PaginaController {
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         model.addAttribute("historico", estagioService.listarHistoricoDoAluno(email));
+
+        // Estagios que já sairam de aberto (concluidos ou encerrados) ficam listados como anteriores
+        model.addAttribute("estagiosAnteriores", estagioService.listarEstagiosDoAluno(email).stream()
+                .filter(e -> e.getStatus().equals("CONCLUIDO") || e.getStatus().equals("ENCERRADO"))
+                .toList());
         return "aluno/dashboard";
     }
 

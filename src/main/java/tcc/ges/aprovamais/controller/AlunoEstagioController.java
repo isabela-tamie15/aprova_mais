@@ -77,4 +77,10 @@ public class AlunoEstagioController {
     public ResponseEntity<List<ValidacaoEstagioResponse>> historico(Authentication authentication) {
         return ResponseEntity.ok(estagioService.listarHistoricoDoAluno(authentication.getName()));
     }
+
+    // Esse é o endpoint que lista todos os estágios da matrícula do aluno, o atual e os já concluídos ou encerrados
+    @GetMapping("/todos")
+    public ResponseEntity<List<EstagioResponse>> listarTodos(Authentication authentication) {
+        return ResponseEntity.ok(estagioService.listarEstagiosDoAluno(authentication.getName()));
+    }
 }

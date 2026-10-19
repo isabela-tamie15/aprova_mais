@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,8 +15,12 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
     // Lista estágios por status, usado em painéis e relatórios do coordenador
     List<Estagio> findByStatus(StatusEstagio status);
 
-    // Busca o estágio pela matrícula, usado quando só pode existir um por matrícula
-    Optional<Estagio> findByMatriculaId(Long matriculaId);
+    //Esse busca o atual, passando os status em aberto. Esse OrderByIdDesc é só garantia
+    Optional<Estagio> findFirstByMatriculaIdAndStatusInOrderByIdDesc(Long matriculaId,
+                                                                     Collection<StatusEstagio> statuses);
+
+    // Histórico completo de estágios da matrícula, do mais antigo pro mais recente
+    List<Estagio> findByMatriculaIdOrderByIdAsc(Long matriculaId);
 
     // Busca estágio por matrícula e status, útil pra pegar o ativo de um aluno
     Optional<Estagio> findByMatriculaIdAndStatus(Long matriculaId, StatusEstagio status);

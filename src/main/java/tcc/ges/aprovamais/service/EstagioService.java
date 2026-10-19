@@ -17,8 +17,10 @@ import tcc.ges.aprovamais.repository.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 // Esse service é quem cuida de tudo relacionado ao estágio, desde o cadastro até a aprovação pelo orientador
@@ -27,6 +29,10 @@ import java.util.stream.Collectors;
 public class EstagioService {
 
     private static final Logger log = LoggerFactory.getLogger(EstagioService.class);
+
+    // Status em que o estágio ainda está em aberto (RN35 e RN36). Só pode existir um assim por matrícula
+    static final Set<StatusEstagio> STATUS_EM_ABERTO = EnumSet.of(
+            StatusEstagio.PENDENTE, StatusEstagio.ATIVO, StatusEstagio.REJEITADO, StatusEstagio.SUSPENSO);
 
     private final EstagioRepository estagioRepository;
     private final MatriculaRepository matriculaRepository;
@@ -93,8 +99,18 @@ public class EstagioService {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
         Matricula matricula = buscarMatriculaAtiva(aluno);
 
-        return estagioRepository.findByMatriculaId(matricula.getId())
-                .map(this::paraResponse);
+        return buscarEstagioEmAberto(matricula).map(this::paraResponse);
+    }
+
+    // Esse é o método que lista todos os estágios da matrícula do aluno, inclusive os concluídos e encerrados
+    @Transactional(readOnly = true)
+    public List<EstagioResponse> listarEstagiosDoAluno(String emailAluno) {
+        Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
+
+        return estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId())
+                .stream()
+                .map(this::paraResponse)
+                .collect(Collectors.toList());
     }
 
     // Esse é o método que o aluno usa pra cadastrar um estágio novo ou atualizar um que já existe
@@ -115,22 +131,20 @@ public class EstagioService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Perfil de estágio não encontrado"));
 
-        Optional<Estagio> estagioExistente =
-                estagioRepository.findByMatriculaId(matricula.getId());
+        Optional<Estagio> estagioExistente = buscarEstagioEmAberto(matricula);
 
         /*
-           Se já existe um estágio pra essa matrícula, a gente reaproveita
-           o registro e só atualiza os campos. Mas se ele tiver PENDENTE,
-           bloqueia, porque não faz sentido o aluno mudar um estágio que
-           já tá esperando o orientador analisar
+           Se já existe um estágio em aberto, só dá pra reenviar se ele foi
+           rejeitado e aí a gente reaproveita o registro. Em pendente já
+           tá com o orientador, ativo já foi aprovado e só muda pela solicitação
+           de troca de modalidade e SUSPENSO tá parado por trancamento.
+           Se não tem nenhum em aberto (nunca teve, ou os anteriores foram
+           concluídos ou encerrados), cria um novo e os antigos ficam no histórico
         */
         Estagio estagio;
         if (estagioExistente.isPresent()) {
             estagio = estagioExistente.get();
-            if (estagio.getStatus() == StatusEstagio.PENDENTE) {
-                throw new IllegalStateException(
-                        "Já existe uma solicitação aguardando aprovação do orientador");
-            }
+            validarReenvio(estagio);
         } else {
             estagio = new Estagio();
             estagio.setMatricula(matricula);
@@ -297,8 +311,8 @@ public class EstagioService {
     public List<ValidacaoEstagioResponse> listarHistoricoDoAluno(String emailAluno) {
         Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
 
-        // Aluno sem estágio ainda não tem histórico, devolve lista vazia em vez de erro
-        return estagioRepository.findByMatriculaId(matricula.getId())
+        // Aluno sem estágio em aberto não tem histórico pra mostrar, devolve lista vazia em vez de erro
+        return buscarEstagioEmAberto(matricula)
                 .map(estagio -> listarHistorico(estagio.getId()))
                 .orElse(List.of());
     }
@@ -311,6 +325,27 @@ public class EstagioService {
     }
 
     // métodos auxiliares/universais
+
+    private Optional<Estagio> buscarEstagioEmAberto(Matricula matricula) {
+        return estagioRepository.findFirstByMatriculaIdAndStatusInOrderByIdDesc(
+                matricula.getId(), STATUS_EM_ABERTO);
+    }
+
+    // é a RN42, só o estágio rejeitado pode ser reenviado, cada outro status explica o motivo
+    private void validarReenvio(Estagio estagio) {
+        switch (estagio.getStatus()) {
+            case REJEITADO -> {
+                // pode reenviar
+            }
+            case PENDENTE -> throw new IllegalStateException(
+                    "Já existe uma solicitação aguardando aprovação do orientador");
+            case ATIVO -> throw new IllegalStateException(
+                    "Seu estágio já foi aprovado e não pode ser reenviado. "
+                            + "Para mudar o tipo, faça uma solicitação de troca de modalidade");
+            default -> throw new IllegalStateException(
+                    "Seu estágio está suspenso e não pode ser reenviado");
+        }
+    }
 
     // Grava a decisão do orientador no histórico. Nunca é sobrescrita, cada decisão é uma linha nova
     private void registrarDecisao(Estagio estagio, boolean aprovado, String justificativa) {
@@ -396,6 +431,9 @@ public class EstagioService {
         return EstagioResponse.builder()
                 .id(estagio.getId())
                 .status(estagio.getStatus().name())
+                .motivoEncerramento(estagio.getMotivoEncerramento() != null
+                        ? estagio.getMotivoEncerramento().name()
+                        : null)
                 .dataInicio(estagio.getDataInicio())
                 .nomeTipoEstagio(estagio.getTipoEstagio().getNome())
                 .cargaHorariaNecessaria(estagio.getCargaHorariaNecessaria())

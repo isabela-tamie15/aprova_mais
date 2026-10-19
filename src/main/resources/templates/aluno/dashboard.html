@@ -19,7 +19,7 @@
     <h4 class="mb-4">Bem-vindo ao Aprova+</h4>
 
     <div th:if="${estagio == null}" class="card p-4 text-center">
-        <p class="text-muted">Você ainda não possui um estágio cadastrado.</p>
+        <p class="text-muted">Você não possui um estágio em andamento.</p>
         <a href="/estagio" class="btn btn-primary mt-2">Cadastrar estágio</a>
     </div>
 
@@ -63,6 +63,22 @@
             <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
         </p>
         <a href="/aluno/trilha" class="btn btn-primary mt-2">Ver minha trilha de tarefas</a>
+    </div>
+
+    <!-- Estágios anteriores da matrícula, concluídos ou encerrados (RN36) -->
+    <div th:if="${estagiosAnteriores != null and !#lists.isEmpty(estagiosAnteriores)}" class="card p-4 mt-3">
+        <h6 class="card-title mb-3">Estágios anteriores</h6>
+        <ul class="list-group list-group-flush">
+            <li th:each="anterior : ${estagiosAnteriores}" class="list-group-item px-0">
+                <span th:if="${anterior.status == 'CONCLUIDO'}" class="badge bg-primary me-2">Concluído</span>
+                <span th:if="${anterior.status == 'ENCERRADO'}" class="badge bg-secondary me-2">Encerrado</span>
+                <span th:text="${anterior.nomeTipoEstagio + ' - ' + anterior.nomeEmpresa}"></span>
+                <span class="text-muted">desde <span th:text="${#temporals.format(anterior.dataInicio, 'dd/MM/yyyy')}"></span></span>
+                <div th:if="${anterior.motivoEncerramento}" class="small text-muted mt-1">
+                    Motivo: <span th:text="${anterior.motivoEncerramento}"></span>
+                </div>
+            </li>
+        </ul>
     </div>
 
     <!-- Histórico das decisões do orientador (RF22) -->

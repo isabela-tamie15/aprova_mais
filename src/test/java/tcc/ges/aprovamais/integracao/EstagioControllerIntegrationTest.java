@@ -9,10 +9,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import tcc.ges.aprovamais.entity.*;
+import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.repository.EstagioRepository;
 
-import java.util.Optional;
+import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -100,9 +101,9 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
 
 
         // ficou gravado no banco como pendente
-        Optional<Estagio> gravado = estagioRepository.findByMatriculaId(matricula.getId());
-        assertTrue(gravado.isPresent());
-        assertEquals(StatusEstagio.PENDENTE, gravado.get().getStatus());
+        List<Estagio> gravados = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId());
+        assertEquals(1, gravados.size());
+        assertEquals(StatusEstagio.PENDENTE, gravados.get(0).getStatus());
 
 
 
@@ -146,7 +147,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                         .content(corpo))
                 .andExpect(status().isNotFound());
 
-        assertTrue(estagioRepository.findByMatriculaId(matricula.getId()).isEmpty());
+        assertTrue(estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).isEmpty());
     }
 
     @Test
@@ -181,7 +182,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dataInicio").value("2026-08-03"));
 
-        // o aluno ve as duas decisões, a rejeição com a justificativa
+        // o aluno vê as duas decisões, a rejeição com a justificativa
         mockMvc.perform(get("/api/v1/aluno/estagio/historico").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -195,5 +196,53 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         mockMvc.perform(get("/api/v1/orientador/validacoes/{id}/historico", estagio.getId())
                         .with(user("outro@teste.com").roles("ORIENTADOR")))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Estágio encerrado fica no histórico e a matrícula aceita um novo, mas não reenvio de um ATIVO")
+    void deveManterHistoricoDeEstagiosDaMatricula() throws Exception {
+        // estágio anterior já encerrado, por exemplo numa troca de modalidade
+        Estagio anterior = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ENCERRADO);
+        anterior.setMotivoEncerramento(MotivoEncerramento.TROCA_MODALIDADE);
+        entityManager.flush();
+
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Nova"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        // com o anterior encerrado, o aluno consegue abrir um novo estágio
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDENTE"));
+
+        // o estágio atual é o novo, e a lista completa traz os dois
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomeEmpresa").value("Empresa Nova"));
+        mockMvc.perform(get("/api/v1/aluno/estagio/todos").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].status").value("ENCERRADO"))
+                .andExpect(jsonPath("$[0].motivoEncerramento").value("TROCA_MODALIDADE"))
+                .andExpect(jsonPath("$[1].status").value("PENDENTE"));
+
+        // depois de aprovado, o reenvio é recusado com 409
+        Estagio novo = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).get(1);
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", novo.getId())
+                        .with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensagem", containsString("troca de modalidade")));
     }
 }
