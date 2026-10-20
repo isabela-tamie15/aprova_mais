@@ -158,7 +158,7 @@ public class EstagioService {
 
         estagio.setTipoEstagio(tipoEstagio);
         estagio.setDataInicio(request.getDataInicio());
-        estagio.setNomeEmpresa(request.getNomeEmpresa());
+        estagio.setNomeEmpresa(request.getNomeEmpresa().trim());
 
         // RN31: copia a carga total e a jornada do tipo, o aluno não informa horas
         estagio.setCargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria());

@@ -245,4 +245,48 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensagem", containsString("troca de modalidade")));
     }
+
+    @Test
+    @DisplayName("Formulário inválido volta 400 com a mensagem e o erro de cada campo")
+    void deveRetornar400ComErrosPorCampo() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "2099-01-01",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": " "
+                }
+                """.formatted(tipoEstagio.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.mensagem").isNotEmpty())
+                .andExpect(jsonPath("$.campos.nomeEmpresa").isNotEmpty())
+                .andExpect(jsonPath("$.campos.dataInicio")
+                        .value("A data de início não pode ser mais de 1 ano no futuro"));
+
+        assertTrue(estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Data fora do formato volta 400 com mensagem clara, e não 500")
+    void deveRetornar400QuandoJsonInvalido() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "31/02/2026",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Teste"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem", containsString("formato inválido")));
+    }
 }

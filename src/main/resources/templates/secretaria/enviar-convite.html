@@ -83,17 +83,22 @@
                    class="form-control"
                    placeholder="nome@email.com"
                    x-model="form.emailDestino"
+                   maxlength="254"
+                   :class="{ 'is-invalid': erros.emailDestino }"
                    required
                    autofocus>
+            <div class="invalid-feedback" x-text="erros.emailDestino"></div>
         </div>
 
         <div class="mb-4">
             <label for="perfil" class="form-label fw-semibold">Perfil de acesso</label>
-            <select id="perfil" class="form-select" x-model="form.perfil">
+            <select id="perfil" class="form-select" x-model="form.perfil"
+                    :class="{ 'is-invalid': erros.perfil }">
                 <option value="">Selecione o perfil...</option>
                 <option value="ALUNO">Aluno</option>
                 <option value="ORIENTADOR">Orientador</option>
             </select>
+            <div class="invalid-feedback" x-text="erros.perfil"></div>
         </div>
 
         <button class="btn btn-enviar w-100"
@@ -114,15 +119,36 @@
             form: { emailDestino: '', perfil: '' },
             enviando: false,
             erro: '',
+            erros: {},
             sucesso: false,
 
             podoEnviar() {
                 return this.form.emailDestino && this.form.perfil;
             },
 
+            // Conferência simples do formato, a validação completa é feita no backend
+            validar() {
+                const erros = {};
+                const email = this.form.emailDestino.trim();
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    erros.emailDestino = 'Informe um e-mail válido.';
+                } else if (email.length > 254) {
+                    erros.emailDestino = 'O e-mail deve ter no máximo 254 caracteres.';
+                }
+                if (!this.form.perfil) {
+                    erros.perfil = 'Selecione o perfil de acesso.';
+                }
+                this.erros = erros;
+                return Object.keys(erros).length === 0;
+            },
+
             async enviar() {
                 this.erro = '';
                 this.sucesso = false;
+                if (!this.validar()) {
+                    return;
+                }
+                this.form.emailDestino = this.form.emailDestino.trim();
                 this.enviando = true;
 
                 try {
@@ -139,6 +165,9 @@
                         if (resp.status >= 500) {
                             this.erro = 'Erro interno no servidor. Tente novamente.';
                         } else {
+                            if (dados.campos) {
+                                this.erros = dados.campos;
+                            }
                             this.erro = dados.mensagem || 'Erro ao enviar convite.';
                         }
                         return;

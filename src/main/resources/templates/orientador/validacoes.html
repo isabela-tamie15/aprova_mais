@@ -66,7 +66,7 @@
                     <input type="date" class="form-control form-control-sm"
                            th:id="${'dataInicio-' + estagio.id}"
                            th:value="${estagio.dataInicio}"
-                           x-ref="dataInicio">
+                           x-ref="dataInicio" :max="dataMaxima()">
                 </div>
 
                 <div class="d-flex gap-2 align-items-start">
@@ -77,10 +77,14 @@
                     </button>
 
                     <div class="d-flex gap-2 flex-grow-1">
-                        <input type="text"
-                               class="form-control"
-                               x-model="justificativa"
-                               placeholder="Justificativa para rejeição">
+                        <div class="flex-grow-1">
+                            <input type="text"
+                                   class="form-control"
+                                   x-model="justificativa"
+                                   maxlength="1000"
+                                   placeholder="Justificativa para rejeição">
+                            <div class="form-text" x-text="justificativa.length + '/1000'"></div>
+                        </div>
                         <button class="btn btn-danger"
                                 @click="rejeitar()"
                                 :disabled="processando">
@@ -98,9 +102,24 @@
         return {
             justificativa: '',
             mensagem: '',
+
+            // Mesmo limite do backend para a data de início confirmada
+            dataMaxima() {
+                const data = new Date();
+                data.setFullYear(data.getFullYear() + 1);
+                // ajusta o fuso pra pegar a data local, e não a UTC
+                return new Date(data.getTime() - data.getTimezoneOffset() * 60000)
+                        .toISOString().slice(0, 10);
+            },
             processando: false,
 
             async aprovar() {
+                const dataInicio = this.$refs.dataInicio.value;
+                if (dataInicio && dataInicio > this.dataMaxima()) {
+                    this.mensagem = 'A data de início não pode ser mais de 1 ano no futuro.';
+                    return;
+                }
+                this.mensagem = '';
                 this.processando = true;
                 try {
                     const resp = await fetch(`/api/v1/orientador/validacoes/${id}/aprovar`, {
@@ -125,6 +144,10 @@
             async rejeitar() {
                 if (!this.justificativa.trim()) {
                     this.mensagem = 'Informe a justificativa antes de rejeitar.';
+                    return;
+                }
+                if (this.justificativa.length > 1000) {
+                    this.mensagem = 'A justificativa deve ter no máximo 1000 caracteres.';
                     return;
                 }
                 this.processando = true;

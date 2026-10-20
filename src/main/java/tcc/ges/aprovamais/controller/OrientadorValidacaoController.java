@@ -38,11 +38,13 @@ public class OrientadorValidacaoController {
 
     // Esse é o endpoint que o orientador usa pra aprovar um estágio pendente
     @PostMapping("/{id}/aprovar")
-    public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication, @RequestBody(required = false) AprovacaoRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication, @Valid @RequestBody(required = false) AprovacaoRequest request, HttpServletRequest httpRequest) {
 
         /*
-           O id do estágio vem pela URL e o e-mail vem do token. Os dois juntos vão pro service, que confirma se aquele estágio realmente
-           pertence a esse orientador antes de aprovar. O corpo é opcional e só traz a data de início conferida no termo de compromisso
+           O id do estágio vem pela URL e o e-mail vem do token. Os dois
+           juntos vão pro service, que confirma se aquele estágio realmente
+           pertence a esse orientador antes de aprovar. O corpo é opcional
+           e só traz a data de início conferida no termo de compromisso
         */
         String email = authentication.getName();
         LocalDate dataInicio = request != null ? request.getDataInicio() : null;
