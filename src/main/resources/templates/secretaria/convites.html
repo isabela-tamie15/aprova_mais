@@ -6,27 +6,7 @@
     <title>Aprova+ | Meus Convites</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background-color: #f8f9fa; }
-        .navbar-aprovamais { background-color: #2B4ECC; }
-        .card-lista {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-        }
-        .badge-PENDENTE { background-color: #FEF3C7; color: #92400E; }
-        .badge-ACEITO { background-color: #D1FAE5; color: #065F46; }
-        .badge-RECUSADO { background-color: #FEE2E2; color: #991B1B; }
-        .badge-EXPIRADO { background-color: #F3F4F6; color: #6B7280; }
-        .badge-CANCELADO { background-color: #F3F4F6; color: #6B7280; }
-        .badge-status {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-        }
-    </style>
+    <link th:href="@{/css/paginas/secretaria-convites.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -84,12 +64,7 @@
     </div>
 </div>
 
-<script>
-    async function logout() {
-        await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-        window.location.href = '/login';
-    }
-</script>
+<script th:src="@{/js/comum.js}"></script>
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

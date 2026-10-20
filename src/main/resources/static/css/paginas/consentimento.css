@@ -1,0 +1,64 @@
+/* Estilos da página consentimento.html */
+
+body {
+    background: #F9FAFB;
+    font-family: 'Inter', sans-serif;
+}
+
+.doc-card {
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    background: white;
+}
+
+.doc-titulo {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.doc-texto {
+    font-size: 0.83rem;
+    color: #6B7280;
+    line-height: 1.6;
+}
+
+.btn-ver {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #2B4ECC;
+    border: 1px solid #2B4ECC;
+    border-radius: 6px;
+    padding: 0.25rem 0.7rem;
+    text-decoration: none;
+}
+
+.btn-ver:hover {
+    background: #EEF2FF;
+    color: #2B4ECC;
+}
+
+.checkbox-label {
+    font-size: 0.85rem;
+    color: #374151;
+}
+
+.checkbox-label a {
+    color: #2B4ECC;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.checkbox-label a:hover {
+    text-decoration: underline;
+}
+
+.alerta-erro {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #DC2626;
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}

@@ -7,51 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background-color: #f8f9fa; }
-        .navbar-aprovamais { background-color: #2B4ECC; }
-        [x-cloak] { display: none !important; }
-        .card-form {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-        }
-        .btn-enviar {
-            background: #2B4ECC;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            height: 48px;
-            font-weight: 600;
-            transition: background 0.15s;
-        }
-        .btn-enviar:hover:not(:disabled) {
-            background: #2440B0;
-            color: white;
-        }
-        .btn-enviar:disabled { opacity: 0.6; }
-        .form-control:focus, .form-select:focus {
-            border-color: #2B4ECC;
-            box-shadow: 0 0 0 3px rgba(43,78,204,0.08);
-        }
-        .alerta-erro {
-            background: #FEF2F2;
-            border: 1px solid #FECACA;
-            color: #DC2626;
-            border-radius: 8px;
-            padding: 0.7rem 1rem;
-            font-size: 0.85rem;
-        }
-        .alerta-sucesso {
-            background: #F0FDF4;
-            border: 1px solid #BBF7D0;
-            color: #16a34a;
-            border-radius: 8px;
-            padding: 0.7rem 1rem;
-            font-size: 0.85rem;
-        }
-    </style>
+    <link th:href="@{/css/paginas/secretaria-enviar-convite.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -113,83 +69,8 @@
     </div>
 </div>
 
-<script>
-    function conviteForm() {
-        return {
-            form: { emailDestino: '', perfil: '' },
-            enviando: false,
-            erro: '',
-            erros: {},
-            sucesso: false,
-
-            podoEnviar() {
-                return this.form.emailDestino && this.form.perfil;
-            },
-
-            // Conferência simples do formato, a validação completa é feita no backend
-            validar() {
-                const erros = {};
-                const email = this.form.emailDestino.trim();
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    erros.emailDestino = 'Informe um e-mail válido.';
-                } else if (email.length > 254) {
-                    erros.emailDestino = 'O e-mail deve ter no máximo 254 caracteres.';
-                }
-                if (!this.form.perfil) {
-                    erros.perfil = 'Selecione o perfil de acesso.';
-                }
-                this.erros = erros;
-                return Object.keys(erros).length === 0;
-            },
-
-            async enviar() {
-                this.erro = '';
-                this.sucesso = false;
-                if (!this.validar()) {
-                    return;
-                }
-                this.form.emailDestino = this.form.emailDestino.trim();
-                this.enviando = true;
-
-                try {
-                    const resp = await fetch('/api/v1/convites', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify(this.form)
-                    });
-
-                    const dados = await resp.json().catch(() => ({}));
-
-                    if (!resp.ok) {
-                        if (resp.status >= 500) {
-                            this.erro = 'Erro interno no servidor. Tente novamente.';
-                        } else {
-                            if (dados.campos) {
-                                this.erros = dados.campos;
-                            }
-                            this.erro = dados.mensagem || 'Erro ao enviar convite.';
-                        }
-                        return;
-                    }
-
-                    this.sucesso = true;
-                    this.form = { emailDestino: '', perfil: '' };
-
-                } catch (e) {
-                    this.erro = 'Não foi possível conectar ao servidor.';
-                } finally {
-                    this.enviando = false;
-                }
-            }
-        }
-    }
-
-    async function logout() {
-        await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-        window.location.href = '/login';
-    }
-</script>
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/secretaria-enviar-convite.js}"></script>
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
