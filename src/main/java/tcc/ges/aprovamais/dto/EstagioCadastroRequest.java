@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import tcc.ges.aprovamais.service.ValidadorCnpj;
 
 import java.time.LocalDate;
 
@@ -22,6 +23,12 @@ public class EstagioCadastroRequest {
     @Positive(message = "Perfil de estágio inválido")
     private Long tipoEstagioId;
 
+    // Aceita com ou sem pontuação
+    // 11.111.111/0001-11 ou 11111111111111
+    @NotBlank(message = "Informe o CNPJ da empresa")
+    @Size(max = 18, message = "CNPJ inválido")
+    private String cnpjEmpresa;
+
     @NotBlank(message = "Informe o nome da empresa")
     @Size(min = 2, max = 150, message = "O nome da empresa deve ter entre 2 e 150 caracteres")
     private String nomeEmpresa;
@@ -34,6 +41,12 @@ public class EstagioCadastroRequest {
     @AssertTrue(message = "A data de início não pode ser mais de 1 ano no futuro")
     public boolean isDataInicioDentroDoLimite() {
         return dataInicioDentroDoLimite(dataInicio);
+    }
+
+    // Confere os dígitos verificadores. Valor vazio fica com o @NotBlank
+    @AssertTrue(message = "CNPJ inválido. Confira os números digitados")
+    public boolean isCnpjComDigitosValidos() {
+        return cnpjEmpresa == null || cnpjEmpresa.isBlank() || ValidadorCnpj.valido(cnpjEmpresa);
     }
 
     public static boolean dataInicioDentroDoLimite(LocalDate data) {

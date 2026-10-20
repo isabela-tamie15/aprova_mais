@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
 import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
@@ -42,6 +43,7 @@ public class EstagioService {
     private final AuditoriaService auditoriaService;
     private final UsuarioRepository usuarioRepository;
     private final ValidacaoEstagioRepository validacaoEstagioRepository;
+    private final ConsultaCnpjService consultaCnpjService;
 
     // Esse é o método que busca o estágio ativo de um aluno, usado quando a gente precisa garantir que existe
     @Transactional(readOnly = true)
@@ -156,9 +158,23 @@ public class EstagioService {
                     "Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação");
         }
 
+        /*
+           é a nossa RN67, consulta o CNPJ na Receita pela BrasilAPI. Se a Receita disser que
+           o CNPJ não existe, recusa. Se a consulta não for possível, segue sem a
+           situação, e o orientador confere o CNPJ no termo de compromisso
+        */
+        String cnpj = ValidadorCnpj.normalizar(request.getCnpjEmpresa());
+        ConsultaCnpjResponse consulta = consultaCnpjService.consultar(cnpj);
+        if (consulta.status() == ConsultaCnpjResponse.Status.NAO_ENCONTRADO) {
+            throw new IllegalStateException(
+                    "CNPJ não encontrado na Receita Federal. Confira o número digitado");
+        }
+
         estagio.setTipoEstagio(tipoEstagio);
         estagio.setDataInicio(request.getDataInicio());
         estagio.setNomeEmpresa(request.getNomeEmpresa().trim());
+        estagio.setCnpjEmpresa(cnpj);
+        estagio.setSituacaoCnpj(consulta.situacao());
 
         // RN31: copia a carga total e a jornada do tipo, o aluno não informa horas
         estagio.setCargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria());
@@ -442,6 +458,10 @@ public class EstagioService {
                 .dataPrevistaConclusao(dataPrevista)
                 .nomeAluno(estagio.getMatricula().getAluno().getNome())
                 .nomeEmpresa(estagio.getNomeEmpresa())
+                .cnpjEmpresa(estagio.getCnpjEmpresa() != null
+                        ? ValidadorCnpj.formatar(estagio.getCnpjEmpresa())
+                        : null)
+                .situacaoCnpj(estagio.getSituacaoCnpj())
                 .nomeOrientador(estagio.getOrientador() != null
                         ? estagio.getOrientador().getNome()
                         : null)

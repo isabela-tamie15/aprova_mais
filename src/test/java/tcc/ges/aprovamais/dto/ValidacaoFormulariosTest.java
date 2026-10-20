@@ -45,6 +45,7 @@ class ValidacaoFormulariosTest {
         EstagioCadastroRequest request = new EstagioCadastroRequest();
         request.setTipoEstagioId(1L);
         request.setNomeEmpresa("Empresa Teste");
+        request.setCnpjEmpresa("11.222.333/0001-81");
         request.setDataInicio(LocalDate.now());
         return request;
     }
@@ -70,6 +71,18 @@ class ValidacaoFormulariosTest {
             request.setNomeEmpresa(nome);
             assertTrue(camposComErro(request).contains("nomeEmpresa"), "deveria recusar: '" + nome + "'");
         }
+    }
+
+    @Test
+    @DisplayName("CNPJ vazio ou com dígito verificador errado é recusado")
+    void deveValidarCnpj() {
+        EstagioCadastroRequest vazio = estagioValido();
+        vazio.setCnpjEmpresa("");
+        assertEquals(Set.of("cnpjEmpresa"), camposComErro(vazio));
+
+        EstagioCadastroRequest digitoErrado = estagioValido();
+        digitoErrado.setCnpjEmpresa("11.222.333/0001-80");
+        assertEquals(Set.of("cnpjComDigitosValidos"), camposComErro(digitoErrado));
     }
 
     @Test

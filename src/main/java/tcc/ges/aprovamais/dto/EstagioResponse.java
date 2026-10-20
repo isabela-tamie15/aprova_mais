@@ -21,5 +21,7 @@ public class EstagioResponse {
     private final String nomeOrientador;
     private final String nomeAluno;
     private final String nomeEmpresa;
+    private final String cnpjEmpresa;
+    private final String situacaoCnpj;
     private final String justificativaRejeicao;
 }

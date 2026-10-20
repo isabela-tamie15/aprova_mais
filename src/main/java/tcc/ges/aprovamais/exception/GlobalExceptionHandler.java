@@ -117,6 +117,7 @@ public class GlobalExceptionHandler {
     private String nomeDoCampo(String campo) {
         return switch (campo) {
             case "dataInicioDentroDoLimite" -> "dataInicio";
+            case "cnpjComDigitosValidos" -> "cnpjEmpresa";
             case "senhasConferem" -> "confirmacaoSenha";
             default -> campo;
         };
@@ -130,6 +131,15 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(construirErro(HttpStatus.BAD_REQUEST,
                         "Dados enviados em formato inválido. Confira os campos e tente novamente."));
+    }
+
+    // 400 parâmetro inválido que não passa pelo @Valid (ex: CNPJ na URL)
+    @ExceptionHandler(DadoInvalidoException.class)
+    public ResponseEntity<ErroResposta> handleDadoInvalido(DadoInvalidoException ex) {
+        log.warn("[EXCEPTION] Parâmetro inválido: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(construirErro(HttpStatus.BAD_REQUEST, ex.getMessage()));
     }
 
     // 409 regra de negócio violada (exemplo, estágio já pendente, já analisado etc)

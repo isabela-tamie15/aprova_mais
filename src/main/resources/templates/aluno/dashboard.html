@@ -27,7 +27,9 @@
         <h5 class="card-title mb-3">Meu Estágio</h5>
         <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
         <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
-        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span>
+            <span th:if="${estagio.cnpjEmpresa}" class="text-muted" th:text="${'(' + estagio.cnpjEmpresa + ')'}"></span>
+        </p>
         <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
         <p><strong>Orientador:</strong>
             <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
@@ -46,7 +48,9 @@
         <h5 class="card-title mb-3">Meu Estágio</h5>
         <span class="badge bg-success mb-3">Ativo</span>
         <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
-        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span>
+            <span th:if="${estagio.cnpjEmpresa}" class="text-muted" th:text="${'(' + estagio.cnpjEmpresa + ')'}"></span>
+        </p>
         <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
         <p><strong>Carga horária cumprida:</strong>
             <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0)}"></span>h de

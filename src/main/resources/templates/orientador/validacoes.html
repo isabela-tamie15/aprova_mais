@@ -38,6 +38,15 @@
 
             <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
             <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+            <p><strong>CNPJ:</strong>
+                <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
+                <!-- RN67: situação na Receita. Sem situação, a consulta não foi possível e o orientador confere no termo -->
+                <span th:if="${estagio.situacaoCnpj == 'ATIVA'}" class="badge bg-success ms-1">Ativa na Receita</span>
+                <span th:if="${estagio.situacaoCnpj != null and estagio.situacaoCnpj != 'ATIVA'}"
+                      class="badge bg-danger ms-1" th:text="${'Situação na Receita: ' + estagio.situacaoCnpj}"></span>
+                <span th:if="${estagio.cnpjEmpresa != null and estagio.situacaoCnpj == null}"
+                      class="badge bg-warning text-dark ms-1">Não verificado, conferir no termo</span>
+            </p>
             <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
 
             <!-- Decisões anteriores sobre esse estágio, inclusive as rejeições de envios passados -->

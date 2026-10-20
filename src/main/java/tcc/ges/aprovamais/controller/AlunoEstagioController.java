@@ -7,11 +7,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
+import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.service.ConsultaCnpjService;
 import tcc.ges.aprovamais.service.EstagioService;
+import tcc.ges.aprovamais.service.ValidadorCnpj;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +28,7 @@ import java.util.Optional;
 public class AlunoEstagioController {
 
     private final EstagioService estagioService;
+    private final ConsultaCnpjService consultaCnpjService;
 
     // Esse é o endpoint que devolve a lista de tipos de estágio que o aluno pode escolher, só os do curso dele
     @GetMapping("/tipos")
@@ -82,5 +87,15 @@ public class AlunoEstagioController {
     @GetMapping("/todos")
     public ResponseEntity<List<EstagioResponse>> listarTodos(Authentication authentication) {
         return ResponseEntity.ok(estagioService.listarEstagiosDoAluno(authentication.getName()));
+    }
+
+
+    //Esse é o endpoint que a tela de cadastro chama quando o aluno termina de digitar o CNPJ, pra já preencher o nome da empresa com a razão social.
+    @GetMapping("/cnpj/{cnpj}")
+    public ResponseEntity<ConsultaCnpjResponse> consultarCnpj(@PathVariable String cnpj) {
+        if (!ValidadorCnpj.valido(cnpj)) {
+            throw new DadoInvalidoException("CNPJ inválido. Confira os números digitados");
+        }
+        return ResponseEntity.ok(consultaCnpjService.consultar(cnpj));
     }
 }

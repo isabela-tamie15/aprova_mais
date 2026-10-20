@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
@@ -18,6 +19,10 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -84,6 +89,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         String corpo = """
                 {
                   "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
                   "tipoEstagioId": %d,
                   "nomeEmpresa": "Empresa Integracao"
                 }
@@ -136,6 +142,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         String corpo = """
                 {
                   "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
                   "tipoEstagioId": %d,
                   "nomeEmpresa": "Empresa Integracao"
                 }
@@ -166,6 +173,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         String corpo = """
                 {
                   "dataInicio": "2026-08-03",
+                  "cnpjEmpresa": "11.222.333/0001-81",
                   "tipoEstagioId": %d,
                   "nomeEmpresa": "Empresa Teste"
                 }
@@ -209,6 +217,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         String corpo = """
                 {
                   "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
                   "tipoEstagioId": %d,
                   "nomeEmpresa": "Empresa Nova"
                 }
@@ -252,6 +261,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         String corpo = """
                 {
                   "dataInicio": "2099-01-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
                   "tipoEstagioId": %d,
                   "nomeEmpresa": " "
                 }
@@ -277,6 +287,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         String corpo = """
                 {
                   "dataInicio": "31/02/2026",
+                  "cnpjEmpresa": "11.222.333/0001-81",
                   "tipoEstagioId": %d,
                   "nomeEmpresa": "Empresa Teste"
                 }
@@ -288,5 +299,68 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                         .content(corpo))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensagem", containsString("formato inválido")));
+    }
+
+    @Test
+    @DisplayName("CNPJ inexistente na Receita é recusado e CNPJ ativo fica gravado com a situação")
+    void deveVerificarCnpjNaReceita() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Teste"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        // a Receita diz que o CNPJ não existe: 409 e nada gravado
+        when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.naoEncontrado());
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensagem", containsString("não encontrado na Receita")));
+        assertTrue(estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).isEmpty());
+
+        // a Receita encontra: grava o CNPJ sem pontuação e a situação
+        when(consultaCnpjService.consultar("11222333000181"))
+                .thenReturn(ConsultaCnpjResponse.encontrado("EMPRESA TESTE LTDA", null, "ATIVA"));
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cnpjEmpresa").value("11.222.333/0001-81"))
+                .andExpect(jsonPath("$.situacaoCnpj").value("ATIVA"));
+
+        Estagio gravado = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).get(0);
+        assertEquals("11222333000181", gravado.getCnpjEmpresa());
+    }
+
+    @Test
+    @DisplayName("CNPJ com dígito verificador errado volta 400 no campo, sem consultar a Receita")
+    void deveRecusarCnpjComDigitoErrado() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-80",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Teste"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.cnpjEmpresa").value("CNPJ inválido. Confira os números digitados"));
+
+        mockMvc.perform(get("/api/v1/aluno/estagio/cnpj/{cnpj}", "11222333000180")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isBadRequest());
+
+        verify(consultaCnpjService, never()).consultar(anyString());
     }
 }

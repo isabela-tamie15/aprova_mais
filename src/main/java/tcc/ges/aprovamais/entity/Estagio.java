@@ -45,13 +45,23 @@ public class Estagio {
     @Column(name = "local_empresa")
     private String localEmpresa;
 
+    // CNPJ só com números e letras, sem pontuação (14 caracteres). Fica nulo nos estágios cadastrados antes do campo existir
+    @Column(name = "cnpj_empresa", length = 14)
+    private String cnpjEmpresa;
+
+
+    //Situação cadastral que a Receita devolveu no cadastro, fica nulo quando a consulta não foi possível, aí o orientador confere manualmente
+    @Column(name = "situacao_cnpj", length = 40)
+    private String situacaoCnpj;
+
     @Column(name = "data_inicio", nullable = false)
     private LocalDate dataInicio;
 
     @Column(name = "data_prevista_conclusao")
     private LocalDate dataPrevistaConclusao;
 
-    // Carga total e jornada semanal copiadas do tipo no cadastro (RN31)
+    // Carga total e jornada semanal copiadas do tipo no cadastro (RN31).
+    // Ficam congeladas aqui, então mudar o tipo depois não afeta esse estágio
     @Column(name = "carga_horaria_necessaria", nullable = false)
     private BigDecimal cargaHorariaNecessaria;
 

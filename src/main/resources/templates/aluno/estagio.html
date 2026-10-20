@@ -28,7 +28,7 @@
         <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
     </div>
 
-    <div th:if="${estagio == null or estagio.status == 'REJEITADO'}" x-data="estagioForm()" x-init="init()" th:attr="data-nome-empresa=${estagio != null ? estagio.nomeEmpresa : ''},data-data-inicio=${estagio != null ? estagio.dataInicio : ''}, data-tipo-estagio-nome=${estagio != null ? estagio.nomeTipoEstagio : ''}">
+    <div th:if="${estagio == null or estagio.status == 'REJEITADO'}" x-data="estagioForm()" x-init="init()" th:attr="data-nome-empresa=${estagio != null ? estagio.nomeEmpresa : ''},data-data-inicio=${estagio != null ? estagio.dataInicio : ''},data-cnpj-empresa=${estagio != null ? estagio.cnpjEmpresa : ''}, data-tipo-estagio-nome=${estagio != null ? estagio.nomeTipoEstagio : ''}">
 
         <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="alert alert-danger mb-4">
             <strong>Estágio rejeitado.</strong>
@@ -57,6 +57,19 @@
                         </template>
                     </select>
                     <div class="invalid-feedback" x-text="erros.tipoEstagioId"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="cnpjEmpresa">CNPJ da Empresa</label>
+                    <input id="cnpjEmpresa" type="text" class="form-control" x-model="form.cnpjEmpresa"
+                           placeholder="00.000.000/0000-00" maxlength="18" required
+                           @input="form.cnpjEmpresa = mascararCnpj(form.cnpjEmpresa)"
+                           @blur="consultarCnpj()"
+                           :class="{ 'is-invalid': erros.cnpjEmpresa }">
+                    <div class="invalid-feedback" x-text="erros.cnpjEmpresa"></div>
+                    <div class="form-text" x-show="!erros.cnpjEmpresa && consultandoCnpj">Consultando na Receita Federal...</div>
+                    <div class="form-text" x-show="!erros.cnpjEmpresa && !consultandoCnpj && avisoCnpj"
+                         :class="avisoCnpjOk ? 'text-success' : 'text-warning'" x-text="avisoCnpj"></div>
                 </div>
 
                 <div class="mb-3">
@@ -96,7 +109,11 @@
             enviando: false,
             erro: '',
             erros: {},
+            consultandoCnpj: false,
+            avisoCnpj: '',
+            avisoCnpjOk: false,
             form: {
+                cnpjEmpresa: '',
                 tipoEstagioId: '',
                 nomeEmpresa: '',
                 dataInicio: ''
@@ -109,6 +126,8 @@
                 const nomeEmpresa = el.dataset.nomeEmpresa;
                 const dataInicio = el.dataset.dataInicio;
                 const tipoEstagioNome = el.dataset.tipoEstagioNome;
+                const cnpjEmpresa = el.dataset.cnpjEmpresa;
+                if (cnpjEmpresa) this.form.cnpjEmpresa = cnpjEmpresa;
 
                 if (nomeEmpresa) this.form.nomeEmpresa = nomeEmpresa;
                 if (dataInicio) this.form.dataInicio = dataInicio;
@@ -132,6 +151,75 @@
                 }
             },
 
+            // Vai colocando pontos, barra e traço enquanto o aluno digita (aceita letras, por causa do CNPJ alfanumérico)
+            mascararCnpj(valor) {
+                const v = valor.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 14);
+                return v.replace(/^(.{2})(.{0,3})/, '$1.$2')
+                        .replace(/^(.{2})\.(.{3})(.{0,3})/, '$1.$2.$3')
+                        .replace(/^(.{2})\.(.{3})\.(.{3})(.{0,4})/, '$1.$2.$3/$4')
+                        .replace(/^(.{2})\.(.{3})\.(.{3})\/(.{4})(.{0,2})/, '$1.$2.$3/$4-$5')
+                        .replace(/[./-]+$/, '');
+            },
+
+            // Mesma conta do ValidadorCnpj do backend: cada caractere vale o código ASCII menos 48
+            cnpjValido(valor) {
+                const v = valor.toUpperCase().replace(/[.\-\/\s]/g, '');
+                if (!/^[0-9A-Z]{12}[0-9]{2}$/.test(v) || /^(.)\1+$/.test(v)) {
+                    return false;
+                }
+                const digito = (pesos) => {
+                    let soma = 0;
+                    pesos.forEach((peso, i) => { soma += (v.charCodeAt(i) - 48) * peso; });
+                    const resto = soma % 11;
+                    return resto < 2 ? 0 : 11 - resto;
+                };
+                const primeiro = digito([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+                const segundo = digito([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+                return Number(v[12]) === primeiro && Number(v[13]) === segundo;
+            },
+
+            /*
+               Consulta o CNPJ quando o aluno sai do campo. Se a Receita conhecer,
+               preenche o nome da empresa (se ainda estiver vazio) e mostra a situação.
+               Se a consulta falhar, só avisa: o cadastro continua e o orientador confere
+            */
+            async consultarCnpj() {
+                this.avisoCnpj = '';
+                delete this.erros.cnpjEmpresa;
+                if (!this.form.cnpjEmpresa) {
+                    return;
+                }
+                if (!this.cnpjValido(this.form.cnpjEmpresa)) {
+                    this.erros = { ...this.erros, cnpjEmpresa: 'CNPJ inválido. Confira os números digitados.' };
+                    return;
+                }
+
+                this.consultandoCnpj = true;
+                try {
+                    const cnpj = this.form.cnpjEmpresa.replace(/[^0-9A-Za-z]/g, '');
+                    const resp = await fetch('/api/v1/aluno/estagio/cnpj/' + cnpj, { credentials: 'include' });
+                    const dados = await resp.json().catch(() => ({}));
+
+                    if (dados.status === 'ENCONTRADO') {
+                        if (!this.form.nomeEmpresa.trim() && dados.razaoSocial) {
+                            this.form.nomeEmpresa = dados.razaoSocial.slice(0, 150);
+                        }
+                        this.avisoCnpjOk = dados.situacao === 'ATIVA';
+                        this.avisoCnpj = 'Empresa encontrada na Receita Federal. Situação: ' + (dados.situacao || 'não informada') + '.';
+                    } else if (dados.status === 'NAO_ENCONTRADO') {
+                        this.erros = { ...this.erros, cnpjEmpresa: 'CNPJ não encontrado na Receita Federal.' };
+                    } else {
+                        this.avisoCnpjOk = false;
+                        this.avisoCnpj = 'Não foi possível consultar a Receita agora. Você pode continuar, o orientador vai conferir o CNPJ.';
+                    }
+                } catch (e) {
+                    this.avisoCnpjOk = false;
+                    this.avisoCnpj = 'Não foi possível consultar a Receita agora. Você pode continuar, o orientador vai conferir o CNPJ.';
+                } finally {
+                    this.consultandoCnpj = false;
+                }
+            },
+
             // Mesmo limite do backend: a data de início pode ir no máximo 1 ano pra frente
             dataMaxima() {
                 const data = new Date();
@@ -151,6 +239,11 @@
 
                 if (!this.form.tipoEstagioId) {
                     erros.tipoEstagioId = 'Selecione o tipo de estágio.';
+                }
+                if (!this.form.cnpjEmpresa) {
+                    erros.cnpjEmpresa = 'Informe o CNPJ da empresa.';
+                } else if (!this.cnpjValido(this.form.cnpjEmpresa)) {
+                    erros.cnpjEmpresa = 'CNPJ inválido. Confira os números digitados.';
                 }
                 if (!nome) {
                     erros.nomeEmpresa = 'Informe o nome da empresa.';
@@ -181,6 +274,7 @@
                         body: JSON.stringify({
                             tipoEstagioId: Number(this.form.tipoEstagioId),
                             nomeEmpresa: this.form.nomeEmpresa.trim(),
+                            cnpjEmpresa: this.form.cnpjEmpresa,
                             dataInicio: this.form.dataInicio
                         })
                     });

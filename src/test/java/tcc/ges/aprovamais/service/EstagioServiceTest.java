@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
 import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
@@ -41,6 +42,7 @@ import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -70,6 +72,8 @@ class EstagioServiceTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private ValidacaoEstagioRepository validacaoEstagioRepository;
+    @Mock
+    private ConsultaCnpjService consultaCnpjService;
     @InjectMocks
     private EstagioService estagioService;
     private Aluno aluno;
@@ -137,6 +141,7 @@ class EstagioServiceTest {
         EstagioCadastroRequest request = new EstagioCadastroRequest();
         request.setTipoEstagioId(tipoEstagio.getId());
         request.setNomeEmpresa("Empresa Nova");
+        request.setCnpjEmpresa("11.222.333/0001-81");
         request.setDataInicio(LocalDate.of(2026, 10, 1));
         return request;
     }
@@ -151,6 +156,9 @@ class EstagioServiceTest {
         when(tipoEstagioRepository.findByIdAndCursoId(tipoEstagio.getId(), curso.getId())).thenReturn(Optional.of(tipoEstagio));
         when(estagioRepository.findFirstByMatriculaIdAndStatusInOrderByIdDesc(matricula.getId(), EstagioService.STATUS_EM_ABERTO))
                 .thenReturn(Optional.ofNullable(estagioExistente));
+        // lenient porque nos testes que barram antes a consulta nem chega a acontecer
+        lenient().when(consultaCnpjService.consultar("11222333000181"))
+                .thenReturn(ConsultaCnpjResponse.encontrado("EMPRESA NOVA LTDA", null, "ATIVA"));
     }
 
 
@@ -376,6 +384,46 @@ class EstagioServiceTest {
         assertTrue(excecao.getMessage().contains("troca de modalidade"));
         assertEquals(StatusEstagio.ATIVO, ativo.getStatus());
         assertEquals("Empresa Antiga", ativo.getNomeEmpresa());
+        verify(estagioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Com a BrasilAPI fora do ar, o estágio é cadastrado sem a situação do CNPJ")
+    void deveCadastrarSemSituacaoQuandoConsultaIndisponivel() {
+        // arrange
+        prepararCadastro(null);
+        when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.indisponivel());
+        when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
+        ArgumentCaptor<Estagio> captor = ArgumentCaptor.forClass(Estagio.class);
+        when(estagioRepository.save(captor.capture())).thenAnswer(inv -> {
+            Estagio salvo = inv.getArgument(0);
+            salvo.setId(ESTAGIO_ID);
+            return salvo;
+        });
+        when(estagioRepository.findById(ESTAGIO_ID)).thenAnswer(inv -> Optional.of(captor.getValue()));
+
+        // act
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
+
+        // assert CNPJ gravado sem pontuação, situação vazia pro orientador conferir
+        assertEquals("11222333000181", captor.getValue().getCnpjEmpresa());
+        assertNull(captor.getValue().getSituacaoCnpj());
+        assertEquals("11.222.333/0001-81", resposta.getCnpjEmpresa());
+    }
+
+    @Test
+    @DisplayName("CNPJ que a Receita não conhece impede o cadastro")
+    void deveBloquearCadastroComCnpjInexistente() {
+        // arrange
+        prepararCadastro(null);
+        when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.naoEncontrado());
+
+        // act
+        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+
+        // assert
+        assertEquals("CNPJ não encontrado na Receita Federal. Confira o número digitado", excecao.getMessage());
         verify(estagioRepository, never()).save(any());
     }
 }
