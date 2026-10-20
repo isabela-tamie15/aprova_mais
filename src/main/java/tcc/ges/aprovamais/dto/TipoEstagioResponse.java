@@ -13,4 +13,5 @@ public class TipoEstagioResponse {
     private final String nome;
     private final String descricao;
     private final BigDecimal cargaHorariaNecessaria;
+    private final BigDecimal jornadaSemanal;
 }

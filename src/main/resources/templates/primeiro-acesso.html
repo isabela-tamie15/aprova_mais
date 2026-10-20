@@ -7,102 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background-color: #f8f9fa; }
-
-        .card-principal {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-        }
-
-        .header-azul {
-            background-color: #2B4ECC;
-            border-radius: 12px 12px 0 0;
-            padding: 2rem;
-        }
-
-        .badge-portal {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            padding: 0.3rem 0.7rem;
-            border-radius: 4px;
-        }
-
-        .resumo-termos {
-            background: #F8FAFF;
-            border: 1px solid #DBEAFE;
-            border-radius: 8px;
-            padding: 1rem 1.2rem;
-            font-size: 0.88rem;
-            color: #374151;
-            line-height: 1.6;
-        }
-
-        .resumo-termos a {
-            color: #2B4ECC;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .resumo-termos a:hover {
-            text-decoration: underline;
-        }
-
-        .form-control:focus {
-            border-color: #2B4ECC;
-            box-shadow: 0 0 0 3px rgba(43, 78, 204, 0.08);
-        }
-
-        .btn-concluir {
-            background: #2B4ECC;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            height: 48px;
-            font-weight: 600;
-            transition: background 0.15s;
-        }
-
-        .btn-concluir:hover:not(:disabled) {
-            background: #2440B0;
-            color: white;
-        }
-
-        .btn-concluir:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-recusar {
-            border-radius: 8px;
-            height: 48px;
-            font-weight: 600;
-        }
-
-        .alerta-erro {
-            background: #FEF2F2;
-            border: 1px solid #FECACA;
-            color: #DC2626;
-            border-radius: 8px;
-            padding: 0.7rem 1rem;
-            font-size: 0.85rem;
-        }
-
-        .alerta-senha {
-            background: #FFF7ED;
-            border: 1px solid #FED7AA;
-            color: #C2410C;
-            border-radius: 8px;
-            padding: 0.7rem 1rem;
-            font-size: 0.85rem;
-        }
-    </style>
+    <link th:href="@{/css/paginas/primeiro-acesso.css}" rel="stylesheet">
 </head>
 <body class="py-5">
 
@@ -181,7 +86,19 @@
                     <label for="senha" class="form-label fw-semibold">Senha</label>
                     <input id="senha" type="password" class="form-control"
                            placeholder="Mínimo 8 caracteres"
-                           x-model="senha" minlength="8">
+                           x-model="senha" minlength="8" maxlength="72" autocomplete="new-password">
+                    <!-- Requisitos da senha, os mesmos que o backend confere -->
+                    <ul class="list-unstyled small mt-2 mb-0">
+                        <li :class="requisitos().tamanho ? 'text-success' : 'text-muted'">
+                            Entre 8 e 72 caracteres
+                        </li>
+                        <li :class="requisitos().letra ? 'text-success' : 'text-muted'">
+                            Pelo menos uma letra
+                        </li>
+                        <li :class="requisitos().numero ? 'text-success' : 'text-muted'">
+                            Pelo menos um número
+                        </li>
+                    </ul>
                 </div>
 
                 <div class="mb-4">
@@ -190,7 +107,7 @@
                     </label>
                     <input id="confirmacaoSenha" type="password" class="form-control"
                            placeholder="Digite a senha novamente"
-                           x-model="confirmacaoSenha">
+                           x-model="confirmacaoSenha" maxlength="72" autocomplete="new-password">
                 </div>
             </div>
 
@@ -221,66 +138,7 @@
     </div>
 </div>
 
-<script>
-    function primeiroAcessoForm() {
-        return {
-            aceitou: false,
-            senha: '',
-            confirmacaoSenha: '',
-            enviando: false,
-            erro: '',
-
-            podeConcluir() {
-                return this.aceitou &&
-                       this.senha.length >= 8 &&
-                       this.senha === this.confirmacaoSenha;
-            },
-             async aceitar() {
-                this.erro = '';
-                this.enviando = true;
-
-                const params = new URLSearchParams(window.location.search);
-                const token = params.get('token');
-
-                try {
-                    const resp = await fetch('/primeiro-acesso/aceitar?token=' + token, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            senha: this.senha,
-                            confirmacaoSenha: this.confirmacaoSenha
-                        })
-                    });
-
-                    if (resp.ok) {
-                        window.location.href = '/login?cadastro=concluido';
-                    } else {
-                        this.erro = 'Erro ao concluir cadastro. Tente novamente.';
-                    }
-                } catch (e) {
-                    this.erro = 'Não foi possível conectar ao servidor.';
-                } finally {
-                    this.enviando = false;
-                }
-            },
-
-            async recusar() {
-                this.enviando = true;
-                const params = new URLSearchParams(window.location.search);
-                const token = params.get('token');
-
-                try {
-                    await fetch('/primeiro-acesso/recusar?token=' + token, {
-                        method: 'POST'
-                    });
-                    window.location.href = '/login?convite=recusado';
-                } catch (e) {
-                    window.location.href = '/login?convite=recusado';
-                }
-            }
-        }
-    }
-</script>
+<script th:src="@{/js/paginas/primeiro-acesso.js}"></script>
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 

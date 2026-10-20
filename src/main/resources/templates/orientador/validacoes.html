@@ -38,16 +38,45 @@
 
             <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
             <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+            <p><strong>CNPJ:</strong>
+                <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
+                <!-- RN67: situação na Receita. Sem situação, a consulta não foi possível e o orientador confere no termo -->
+                <span th:if="${estagio.situacaoCnpj == 'ATIVA'}" class="badge bg-success ms-1">Ativa na Receita</span>
+                <span th:if="${estagio.situacaoCnpj != null and estagio.situacaoCnpj != 'ATIVA'}"
+                      class="badge bg-danger ms-1" th:text="${'Situação na Receita: ' + estagio.situacaoCnpj}"></span>
+                <span th:if="${estagio.cnpjEmpresa != null and estagio.situacaoCnpj == null}"
+                      class="badge bg-warning text-dark ms-1">Não verificado, conferir no termo</span>
+            </p>
             <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
 
-            <div th:if="${estagio.status == 'REJEITADO'}" class="alert alert-danger py-2 mb-3">
-                <strong>Justificativa anterior:</strong>
-                <span th:text="${estagio.justificativaRejeicao}"></span>
+            <!-- Decisões anteriores sobre esse estágio, inclusive as rejeições de envios passados -->
+            <th:block th:with="historico=${historicos.get(estagio.id)}">
+            <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="mb-3">
+                <strong>Decisões anteriores:</strong>
+                <ul class="list-unstyled small mb-0 mt-1">
+                    <li th:each="decisao : ${historico}" class="mb-1">
+                        <span th:if="${decisao.aprovado}" class="badge bg-success">Aprovado</span>
+                        <span th:unless="${decisao.aprovado}" class="badge bg-danger">Rejeitado</span>
+                        <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
+                        <span th:if="${decisao.justificativa}" th:text="${' - ' + decisao.justificativa}"></span>
+                    </li>
+                </ul>
             </div>
+            </th:block>
 
             <!-- Ações para estágios pendentes -->
             <div th:if="${estagio.status == 'PENDENTE'}">
                 <div class="alert alert-danger py-2 mb-3" x-show="mensagem" x-text="mensagem"></div>
+
+                <div class="mb-2" style="max-width: 320px;">
+                    <label class="form-label small mb-1" th:for="${'dataInicio-' + estagio.id}">
+                        Data de início conferida no termo de compromisso
+                    </label>
+                    <input type="date" class="form-control form-control-sm"
+                           th:id="${'dataInicio-' + estagio.id}"
+                           th:value="${estagio.dataInicio}"
+                           x-ref="dataInicio" :max="dataMaxima()">
+                </div>
 
                 <div class="d-flex gap-2 align-items-start">
                     <button class="btn btn-success"
@@ -57,10 +86,14 @@
                     </button>
 
                     <div class="d-flex gap-2 flex-grow-1">
-                        <input type="text"
-                               class="form-control"
-                               x-model="justificativa"
-                               placeholder="Justificativa para rejeição">
+                        <div class="flex-grow-1">
+                            <input type="text"
+                                   class="form-control"
+                                   x-model="justificativa"
+                                   maxlength="1000"
+                                   placeholder="Justificativa para rejeição">
+                            <div class="form-text" x-text="justificativa.length + '/1000'"></div>
+                        </div>
                         <button class="btn btn-danger"
                                 @click="rejeitar()"
                                 :disabled="processando">
@@ -73,69 +106,8 @@
     </div>
 </div>
 
-<script th:inline="javascript">
-    function validacao(id) {
-        return {
-            justificativa: '',
-            mensagem: '',
-            processando: false,
-
-            async aprovar() {
-                this.processando = true;
-                try {
-                    const resp = await fetch(`/api/v1/orientador/validacoes/${id}/aprovar`, {
-                        method: 'POST',
-                        credentials: 'include'
-                    });
-                    if (resp.ok) {
-                        window.location.reload();
-                    } else {
-                        const dados = await resp.json();
-                        this.mensagem = dados.mensagem || 'Erro ao aprovar.';
-                    }
-                } catch (e) {
-                    this.mensagem = 'Não foi possível conectar ao servidor.';
-                } finally {
-                    this.processando = false;
-                }
-            },
-
-            async rejeitar() {
-                if (!this.justificativa.trim()) {
-                    this.mensagem = 'Informe a justificativa antes de rejeitar.';
-                    return;
-                }
-                this.processando = true;
-                try {
-                    const resp = await fetch(`/api/v1/orientador/validacoes/${id}/rejeitar`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ justificativa: this.justificativa })
-                    });
-                    if (resp.ok) {
-                        window.location.reload();
-                    } else {
-                        const dados = await resp.json();
-                        this.mensagem = dados.mensagem || 'Erro ao rejeitar.';
-                    }
-                } catch (e) {
-                    this.mensagem = 'Não foi possível conectar ao servidor.';
-                } finally {
-                    this.processando = false;
-                }
-            }
-        }
-    }
-
-    async function logout() {
-        await fetch('/api/v1/auth/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        window.location.href = '/login';
-    }
-</script>
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/orientador-validacoes.js}"></script>
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 

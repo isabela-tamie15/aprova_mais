@@ -1,7 +1,12 @@
 package tcc.ges.aprovamais.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.entity.Convite;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 
@@ -22,4 +27,10 @@ public interface ConviteRepository extends JpaRepository<Convite, Long> {
 
     // Lista os convites enviados por uma secretaria, ordenados do mais recente pro mais antigo
     List<Convite> findByRemetenteEmailOrderByCriadoEmDesc(String emailRemetente);
+
+    //Marca o convite como expirado numa transação própria (REQUIRES_NEW).
+    @Modifying
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query("UPDATE Convite c SET c.status = :status WHERE c.id = :id")
+    int atualizarStatus(@Param("id") Long id, @Param("status") StatusConvite status);
 }

@@ -6,10 +6,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import tcc.ges.aprovamais.dto.EstagioResponse;
+import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.TrilhaService;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 // Esse controller é quem serve as páginas HTML, devolvendo o nome do template que o Thymeleaf renderiza
 @Controller
@@ -91,6 +97,12 @@ public class PaginaController {
         */
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
+        model.addAttribute("historico", estagioService.listarHistoricoDoAluno(email));
+
+        // Estagios que já sairam de aberto (concluidos ou encerrados) ficam listados como anteriores
+        model.addAttribute("estagiosAnteriores", estagioService.listarEstagiosDoAluno(email).stream()
+                .filter(e -> e.getStatus().equals("CONCLUIDO") || e.getStatus().equals("ENCERRADO"))
+                .toList());
         return "aluno/dashboard";
     }
 
@@ -116,7 +128,7 @@ public class PaginaController {
         */
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
-        model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis());
+        model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis(email));
         return "aluno/estagio";
     }
 
@@ -129,7 +141,15 @@ public class PaginaController {
 
         // Busca os estágios pendentes desse orientador específico e joga no Model
         String email = authentication.getName();
-        model.addAttribute("estagios", estagioService.listarPendentes(email));
+        List<EstagioResponse> estagios = estagioService.listarPendentes(email);
+        model.addAttribute("estagios", estagios);
+
+        // Histórico de decisões de cada estágio, indexado pelo id, pra página mostrar as rejeições anteriores
+        Map<Long, List<ValidacaoEstagioResponse>> historicos = new HashMap<>();
+        for (EstagioResponse estagio : estagios) {
+            historicos.put(estagio.getId(), estagioService.listarHistoricoDoOrientador(estagio.getId(), email));
+        }
+        model.addAttribute("historicos", historicos);
         return "orientador/validacoes";
     }
 

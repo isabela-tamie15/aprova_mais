@@ -1,6 +1,7 @@
 package tcc.ges.aprovamais.integracao;
 
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -8,10 +9,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.*;
+import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
 import tcc.ges.aprovamais.service.AuditoriaService;
+import tcc.ges.aprovamais.service.ConsultaCnpjService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -28,6 +34,14 @@ abstract class IntegracaoTestBase {
 
     @MockitoBean
     protected AuditoriaService auditoriaService;
+
+    @MockitoBean
+    protected ConsultaCnpjService consultaCnpjService;
+
+    @BeforeEach
+    void simularConsultaCnpj() {
+        when(consultaCnpjService.consultar(anyString())).thenReturn(ConsultaCnpjResponse.indisponivel());
+    }
 
 
 
@@ -52,7 +66,8 @@ abstract class IntegracaoTestBase {
         TipoEstagio tipo = new TipoEstagio();
         tipo.setCurso(curso);
         tipo.setNome("Estagiario");
-        tipo.setCargaHorariaNecessaria(new BigDecimal("400"));
+        tipo.setCargaHorariaNecessaria(new BigDecimal("270"));
+        tipo.setJornadaSemanal(new BigDecimal("30"));
         entityManager.persist(tipo);
         return tipo;
     }
@@ -113,6 +128,7 @@ abstract class IntegracaoTestBase {
         estagio.setNomeEmpresa("Empresa Teste");
         estagio.setDataInicio(LocalDate.of(2026, 8, 1));
         estagio.setCargaHorariaNecessaria(tipo.getCargaHorariaNecessaria());
+        estagio.setJornadaSemanal(tipo.getJornadaSemanal());
         estagio.setStatus(status);
         entityManager.persist(estagio);
         entityManager.flush();

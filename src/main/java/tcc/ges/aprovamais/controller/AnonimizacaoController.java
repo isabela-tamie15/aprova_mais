@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import tcc.ges.aprovamais.service.AnonimizacaoService;
 import tcc.ges.aprovamais.service.AuditoriaService;
 
 // Esse controller é quem recebe as solicitações de LGPD do usuário logado
+@Tag(name = "LGPD", description = "Solicitações do titular e anonimização da conta")
 @RestController
 @RequestMapping("/api/v1/lgpd")
 @RequiredArgsConstructor

@@ -36,6 +36,8 @@ Orientador: Prof. Leonardo Torres
 - googleauth - autenticação de dois fatores via TOTP (RFC 6238)
 - qrcodejs - geração do QR Code do 2FA no navegador
 - Resend - API externa de envio de e-mails (convites)
+- BrasilAPI - consulta pública do CNPJ da empresa na Receita Federal
+- springdoc-openapi - documentação da API (Swagger UI)
 - Docker + Docker Compose
 - Prometheus + Grafana (monitoramento)
 
@@ -43,21 +45,27 @@ Orientador: Prof. Leonardo Torres
 
 ## Funcionalidades Implementadas
 
-### Feature 1 - Cadastro e Validação de Estágio (Isabela)
-- Aluno cadastra estágio escolhendo tipo, empresa e data de início
+### Feature 1 - Cadastro e Validação de Estágio
+- Aluno cadastra estágio escolhendo tipo, CNPJ e nome da empresa e data de início
+- Só aparecem os tipos de estágio do curso da matrícula do aluno
+- CNPJ conferido pelo dígito verificador e consultado na Receita Federal pela BrasilAPI; o nome da empresa é preenchido com a razão social
+- Carga total e jornada semanal copiadas do tipo de estágio e congeladas no estágio
 - Estágio enviado com status PENDENTE para aprovação
-- Orientador visualiza estágios PENDENTE e REJEITADO da sua turma
-- Orientador aprova - status muda para ATIVO
+- Orientador visualiza estágios PENDENTE e REJEITADO da sua turma, com a situação do CNPJ na Receita
+- Orientador aprova confirmando a data de início do termo de compromisso - status muda para ATIVO
 - Orientador rejeita com justificativa - status muda para REJEITADO
-- Aluno pode reenviar após rejeição
+- Aluno pode reenviar apenas o estágio REJEITADO; estágio ATIVO só muda por solicitação de troca de modalidade
+- Histórico de todas as aprovações e rejeições, com data, orientador e justificativa
+- Histórico de estágios por matrícula: só um estágio em aberto por vez, os concluídos e encerrados ficam guardados
+- Carga horária cumprida calculada pelas semanas desde o início vezes a jornada semanal, e data prevista de conclusão
 
-### Feature 2 - Trilha Personalizada (Leonardo)
+### Feature 2 - Trilha Personalizada
 - Aluno com estágio ATIVO acessa sua trilha personalizada
 - Trilha determinada pelo tipo de estágio escolhido
 - Tarefas listadas em ordem definida pelo coordenador
 - Diferentes tipos de estágio possuem trilhas diferentes
 
-### Feature 3 - Segurança, Acesso e LGPD (Leonardo e Isabela)
+### Feature 3 - Segurança, Acesso e LGPD
 - Acesso ao sistema somente por convite enviado pela secretaria (não há cadastro aberto)
 - Primeiro acesso pelo link do convite: definição de senha e aceite dos termos de uso
 - Autenticação de dois fatores (2FA), obrigatória para perfis administrativos
@@ -76,7 +84,7 @@ As regras abaixo estão implementadas no backend. Ocultar botões no frontend n�
 - JWT assinado (HMAC) armazenado em cookie HttpOnly com SameSite=Strict e flag Secure em produção
 - O JWT nunca é enviado no corpo das respostas: fica apenas no cookie, inacessível ao JavaScript da página
 - O browser envia o cookie automaticamente, não é necessário enviar header Authorization nas páginas
-- Senhas armazenadas com BCrypt, senha mínima de 8 caracteres e confirmação validada no backend
+- Senhas armazenadas com BCrypt: de 8 a 72 caracteres, com pelo menos uma letra e um número, e confirmação validada no backend (o limite de 72 é o máximo considerado pelo BCrypt)
 - Resposta genérica (401) para e-mail inexistente, senha incorreta ou conta inativa, evitando a descoberta de contas cadastradas
 - Bloqueio automático da conta após 5 tentativas falhas (senha ou código 2FA), com desbloqueio automático após 5 minutos
 - Conta desativada perde o acesso imediatamente, mesmo com JWT ainda dentro da validade (verificação no JwtFilter)
@@ -107,9 +115,16 @@ POST /api/v1/auth/login (e-mail e senha)
 - Defense in depth: regras de acesso por rota no SecurityConfig e @PreAuthorize nos controllers
 - Acesso negado por padrão (anyRequest().authenticated())
 - Operações sempre buscam os dados do usuário autenticado (authentication.getName())
-- Orientador só aprova ou rejeita estágios vinculados a ele: a checagem é feita na própria consulta ao banco e estágios de outros orientadores retornam 404
+- Orientador só aprova, rejeita ou consulta o histórico de estágios vinculados a ele: a checagem é feita na própria consulta ao banco e estágios de outros orientadores retornam 404
+- Aluno só cadastra estágio com tipo do próprio curso: tipo de outro curso retorna 404, igual a um id inexistente
 - HTTPS obrigatório no perfil prod (requiresSecure)
 - Swagger e /v3/api-docs desativados no perfil prod
+
+### Validação de Entrada
+- Todos os formulários são validados no frontend, para avisar antes do envio, e de novo no backend com Bean Validation (@Valid), porque a validação da tela pode ser contornada chamando a API direto
+- Erro de validação retorna 400 com a mensagem do primeiro erro e o mapa `campos`, com o erro de cada campo; as telas marcam o campo correspondente
+- JSON inválido ou data fora do formato retorna 400, sem expor detalhes internos
+- Regras: e-mail com até 254 caracteres; nome da empresa entre 2 e 150 caracteres; data de início no máximo 1 ano no futuro; CNPJ com dígito verificador válido; justificativa de rejeição com até 1000 caracteres
 
 | Perfil | Pode acessar |
 |--------|--------------|
@@ -124,6 +139,7 @@ POST /api/v1/auth/login (e-mail e senha)
 - Em repouso: AES-256-GCM (AesEncryptor, chave derivada de ENCRYPTION_SECRET com SHA-256) nos campos:
   - segredo do 2FA (usuarios.dois_fatores_segredo)
   - justificativa de rejeição do estágio (estagios.justificativa_rejeicao)
+  - justificativa de cada decisão do orientador no histórico (validacoes_estagio.justificativa)
 - A justificativa cifrada não é copiada para o log de auditoria
 - RGM e matrícula institucional não são cifrados por decisão de projeto: são identificadores únicos usados em buscas por secretaria, coordenação e orientador. A cifragem AES-GCM gera um valor diferente a cada gravação, o que impediria a restrição de unicidade e a busca. Esses campos são protegidos pelo controle de acesso por perfil.
 
@@ -174,6 +190,34 @@ O envio dos e-mails de convite é feito pela API do Resend (EmailService), servi
 | Transferência internacional | Sim (EUA), declarada na Política de Privacidade |
 
 Observação: com o remetente de testes do Resend (onboarding@resend.dev), os e-mails só são entregues ao endereço da conta cadastrada no Resend. Para enviar a qualquer endereço é necessário verificar um domínio próprio.
+
+---
+
+## Integração com API Externa (BrasilAPI)
+
+O CNPJ da empresa do estágio é consultado na BrasilAPI (ConsultaCnpjService), que repassa os dados públicos da Receita Federal. A API é gratuita e não exige chave.
+
+| Item | Descrição |
+|------|-----------|
+| Finalidade | Confirmar que o CNPJ existe e obter a razão social e a situação cadastral |
+| Dados enviados | Apenas o CNPJ, depois de conferido o dígito verificador |
+| Tempo limite | 3 segundos para conectar e 5 para a resposta (aprova.cnpj.* no application.properties) |
+| CNPJ inexistente (404) | O cadastro é recusado |
+| API lenta ou indisponível | O cadastro segue sem a situação, e o orientador confere o CNPJ no termo de compromisso |
+| Situação diferente de ATIVA | O cadastro segue, e a situação aparece destacada para o orientador |
+
+O validador já aceita o CNPJ alfanumérico emitido pela Receita Federal a partir de julho de 2026. Nos logs aparece apenas o início do CNPJ, e a razão social não é registrada.
+
+---
+
+## Documentação da API (Swagger)
+
+Com a aplicação rodando no perfil dev, a documentação fica em http://localhost:8080/swagger-ui.html, com os endpoints agrupados por módulo.
+
+- Quem fez login pela tela do sistema, no mesmo navegador, já consegue chamar as rotas protegidas: o navegador envia o cookie `jwt` sozinho (esquema `cookieAuth`)
+- Para testar pelo Postman ou curl, use o esquema `bearerAuth` com o token no cabeçalho Authorization
+- Apenas as rotas /api/** aparecem; as páginas Thymeleaf ficam de fora
+- No perfil prod o Swagger fica desativado
 
 ---
 
@@ -239,6 +283,14 @@ docker compose up --build
 **5. Acesse:**
 http://localhost:8080/login
 
+Documentação da API: http://localhost:8080/swagger-ui.html
+
+**6. Rode os testes:**
+```
+./mvnw test
+```
+Os testes usam o banco H2 em memória (perfil test), não precisam do Docker nem do .env e não chamam a BrasilAPI.
+
 ---
 
 ## Seed de Dados
@@ -263,6 +315,8 @@ COORDENADOR, o primeiro login desses perfis exibe o QR Code para configurar o ap
 
 Ao alterar entidades, recrie o banco com `docker compose down -v` antes de subir novamente.
 
+Com o seed, os tipos de estágio têm carga total de 270 h e jornada semanal de 44 h (CLT), 30 h (Estagiário) e 20 h (Empreendedor). O estágio ativo de aluno@teste.com começou em 01/03/2026 e aparece no painel com 270h de 270h e conclusão prevista em 19/04/2026.
+
 Comandos úteis durante os testes:
 ```
 -- desbloquear uma conta sem esperar 5 minutos
@@ -279,7 +333,7 @@ UPDATE usuarios SET dois_fatores_ativo = false, dois_fatores_segredo = NULL WHER
 **src/main/java/tcc/ges/aprovamais/**
 ```
 auth/        - Autenticação: AuthController, AuthService, UserDetailsServiceImpl
-config/      - Configurações: SecurityConfig, AsyncConfig, ContaInicialRunner
+config/      - Configurações: SecurityConfig, AsyncConfig, ContaInicialRunner, OpenApiConfig
 controller/  - Controllers REST e de página: PaginaController, AlunoEstagioController,
                OrientadorValidacaoController, TrilhaController, ConviteController,
                PrimeiroAcessoController, ConsentimentoController, AnonimizacaoController,
@@ -292,7 +346,8 @@ security/    - JwtService, JwtFilter, AesEncryptor
 service/     - Lógica de negócio: EstagioService, TrilhaService, ConviteService,
                PrimeiroAcessoService, ConsentimentoService, AnonimizacaoService,
                AuditoriaService, EmailService, DoisFatoresService,
-               BloqueioContaService, ContaInicialService
+               BloqueioContaService, ContaInicialService, ConsultaCnpjService,
+               CalculadoraCargaHoraria, ValidadorCnpj
 ```
 
 **src/main/resources/**
@@ -321,9 +376,16 @@ templates/
 └── fragments/
     └── rodape-lgpd.html
 static/
-├── css/main.css
-└── js/app.js
+├── css/
+│   ├── main.css          estilos usados em várias páginas
+│   └── paginas/          um arquivo por página (ex.: secretaria-convites.css)
+└── js/
+    ├── comum.js          funções usadas em várias páginas (logout)
+    ├── app.js            login e segurança da conta
+    └── paginas/          um arquivo por página (ex.: aluno-estagio.js)
 ```
+
+As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo segue o caminho do template: `templates/aluno/estagio.html` usa `js/paginas/aluno-estagio.js`. As referências usam `th:src="@{...}"` e `th:href="@{...}"`, que colocam um hash do conteúdo no nome do arquivo: quando ele muda, o navegador baixa a versão nova em vez de usar o cache. Os scripts que definem componentes do Alpine ficam no fim do `<body>`, sem `defer`, para rodar antes do Alpine.
 
 ---
 ## Endpoints da API
@@ -368,16 +430,20 @@ static/
 ### Aluno
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| GET | /api/v1/aluno/estagio | Busca o estágio atual do aluno |
-| GET | /api/v1/aluno/estagio/tipos | Lista os tipos de estágio disponíveis |
-| POST | /api/v1/aluno/estagio | Cadastra ou reenvia o estágio |
+| GET | /api/v1/aluno/estagio | Busca o estágio atual (o único em aberto) do aluno |
+| GET | /api/v1/aluno/estagio/todos | Lista todos os estágios da matrícula, inclusive concluídos e encerrados |
+| GET | /api/v1/aluno/estagio/historico | Lista as aprovações e rejeições do estágio atual |
+| GET | /api/v1/aluno/estagio/tipos | Lista os tipos de estágio do curso do aluno |
+| GET | /api/v1/aluno/estagio/cnpj/{cnpj} | Consulta o CNPJ na Receita (BrasilAPI) |
+| POST | /api/v1/aluno/estagio | Cadastra ou reenvia o estágio (reenvio apenas de estágio REJEITADO) |
 | GET | /api/v1/aluno/trilha | Busca a trilha personalizada do aluno |
 
 ### Orientador
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | GET | /api/v1/orientador/validacoes | Lista estágios pendentes e rejeitados da turma |
-| POST | /api/v1/orientador/validacoes/{id}/aprovar | Aprova um estágio (somente estágios do próprio orientador) |
+| POST | /api/v1/orientador/validacoes/{id}/aprovar | Aprova um estágio (somente estágios do próprio orientador), com a data de início confirmada opcional |
+| GET | /api/v1/orientador/validacoes/{id}/historico | Lista as aprovações e rejeições de um estágio do orientador |
 | POST | /api/v1/orientador/validacoes/{id}/rejeitar | Rejeita um estágio com justificativa (máximo de 1000 caracteres) |
 
 ---
@@ -406,11 +472,16 @@ static/
 
 ## Funcionalidades Previstas
 
+- Perfil Administrador e hierarquia de convites: Administrador convida coordenadores, Coordenador convida secretarias, Secretaria convida alunos e orientadores
+- Lista de pré-cadastro mantida pelo coordenador e matrícula criada automaticamente na turma ao aceitar o convite
+- Telas do coordenador para cadastrar curso, turma, tipo de estágio, trilha e tarefa
+- Envio das entregas da trilha, com histórico de versões, painel de correção e avaliação por checklist de critérios
+- Progresso do estágio comparado ao ritmo esperado, com alertas de atraso
+- Conclusão e encerramento do estágio e solicitações de troca de modalidade, trancamento e reabertura
+- Desconto das semanas de suspensão no cálculo da carga horária
+- Painel de indicadores (Chart.js) para a coordenação
 - Recuperação de senha
-- Dashboard do orientador e painel completo da coordenação
-- Vínculo automático de turma e matrícula no aceite do convite (a secretaria escolherá curso e turma ao convidar)
 - Blocklist de tokens JWT no Redis para revogação no logout
-- Integração com a BrasilAPI para consulta de CNPJ no cadastro de estágio
 
 ## Projeto Final de Curso (PFC)
 

@@ -50,7 +50,7 @@ class EstagioRepositoryIntegrationTest extends IntegracaoTestBase {
         assertEquals("Empresa Teste", doResponsavel.get().getNomeEmpresa());
 
         assertEquals(StatusEstagio.PENDENTE, doResponsavel.get().getStatus());
-        
+
         assertNotNull(doResponsavel.get().getCriadoEm(), "auditoria do JPA deve preencher criadoEm");
         assertTrue(deOutro.isEmpty());
     }
