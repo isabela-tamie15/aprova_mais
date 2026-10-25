@@ -22,6 +22,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     */
     Optional<Usuario> findByTokenPreAutenticacao(String tokenPreAutenticacaoHash);
 
+    // Busca o usuário pelo hash do token de recuperação de senha, usado quando o link do e-mail é aberto
+    Optional<Usuario> findByTokenRecuperacao(String tokenRecuperacaoHash);
+
     // Verifica se já existe pelo menos um usuário com esse perfil, usado pra saber se já tem secretaria cadastrada
     boolean existsByPerfil(PerfilUsuario perfil);
 }
