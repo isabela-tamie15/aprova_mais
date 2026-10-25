@@ -1,0 +1,79 @@
+/* Estilos da página admin/auditoria.html */
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+.navbar-aprovamais {
+    background-color: #2B4ECC;
+}
+
+.card-filtro,
+.card-lista {
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.card-lista {
+    overflow: hidden;
+}
+
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.borda-inferior {
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.borda-superior {
+    border-top: 1px solid #F3F4F6;
+}
+
+.tabela-auditoria {
+    font-size: 0.875rem;
+}
+
+.tabela-auditoria .acao {
+    color: #1E3A8A;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Detalhes podem ser longos, então quebram a linha em vez de alargar a tabela */
+.tabela-auditoria .detalhes {
+    min-width: 240px;
+    max-width: 420px;
+    white-space: normal;
+    color: #4B5563;
+}
+
+.badge-status {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-sucesso {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
+
+.badge-falha {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
