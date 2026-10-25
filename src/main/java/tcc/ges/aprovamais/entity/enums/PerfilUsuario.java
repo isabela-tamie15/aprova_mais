@@ -1,6 +1,7 @@
 package tcc.ges.aprovamais.entity.enums;
 
 public enum PerfilUsuario {
+    ADMINISTRADOR("/admin/auditoria"),
     COORDENADOR("/coordenador/dashboard"),
     ORIENTADOR("/orientador/validacoes"),
     ALUNO("/aluno/dashboard"),
@@ -32,6 +33,6 @@ public enum PerfilUsuario {
      * são obrigados a usar autenticação de dois fatores. Para os demais, o 2FA é opcional.
      */
     public boolean exigeDoisFatores() {
-        return this == COORDENADOR || this == SECRETARIA;
+        return this == ADMINISTRADOR || this == COORDENADOR || this == SECRETARIA;
     }
 }
