@@ -91,6 +91,7 @@ public class SecurityConfig {
                            quem tem o papel certo. O lgpd é o único que libera
                            pra vários perfis ao mesmo tempo
                         */
+                        .requestMatchers("/admin/**", "/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/v1/coordenador/**").hasRole("COORDENADOR")
                         .requestMatchers("/api/v1/orientador/**").hasRole("ORIENTADOR")
                         .requestMatchers("/secretaria/**").hasRole("SECRETARIA")
