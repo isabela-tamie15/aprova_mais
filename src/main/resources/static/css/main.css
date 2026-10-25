@@ -257,6 +257,17 @@ body.pagina-login {
     margin-bottom: 1rem;
 }
 
+/* Aviso de sucesso no login, por exemplo depois de redefinir a senha */
+.alerta-sucesso {
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    color: #15803D;
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
 /* =============================================
    Rodapé do painel direito
    ============================================= */

@@ -48,6 +48,11 @@
         <div x-data="loginForm()">
             <div class="alerta-erro" role="alert" x-show="erro" x-text="erro" x-cloak></div>
 
+            <!-- Volta da recuperação de senha (/redefinir-senha redireciona com ?senha=redefinida) -->
+            <div class="alerta-sucesso" role="status" th:if="${param.senha != null and param.senha[0] == 'redefinida'}">
+                Senha alterada. Entre com a nova senha.
+            </div>
+
             <!-- Etapa 1: e-mail e senha -->
             <form @submit.prevent="entrar" x-show="etapa === 'credenciais'">
                 <div>
@@ -89,10 +94,9 @@
                     </div>
                 </div>
 
-                <!-- Link placeholder, recuperação de senha a implementar -->
                 <span class="link-recuperar">
                     Esqueceu sua senha?
-                    <a href="#" @click.prevent>Recupere agora</a>
+                    <a href="/recuperar-senha">Recupere agora</a>
                 </span>
 
                 <button type="submit" class="btn-entrar" :disabled="carregando">
