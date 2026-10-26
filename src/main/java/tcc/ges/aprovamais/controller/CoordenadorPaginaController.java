@@ -20,4 +20,10 @@ public class CoordenadorPaginaController {
     public String cursos() {
         return "coordenador/cursos";
     }
+
+    // Esse é o endpoint que serve a página de cadastro de turmas
+    @GetMapping("/coordenador/turmas")
+    public String turmas() {
+        return "coordenador/turmas";
+    }
 }

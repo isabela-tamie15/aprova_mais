@@ -40,3 +40,16 @@ function rolarParaFormulario(elemento) {
         elemento.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
+
+// Nomes dos enums pra mostrar na tela, nos selects e nas tabelas
+const NOMES_PERIODO = { MATUTINO: 'Matutino', NOTURNO: 'Noturno', NAO_APLICAVEL: 'Não se aplica' };
+const NOMES_MODALIDADE = { PRESENCIAL: 'Presencial', EAD: 'EAD', HIBRIDO: 'Híbrido' };
+
+/*
+   Carrega os cursos do coordenador logado, usado no select de curso das telas
+   de turmas, tipos de estágio e trilhas. Devolve a lista, ou lista vazia se der erro
+*/
+async function carregarCursosDoCoordenador() {
+    const r = await requisicaoJson('/api/v1/coordenador/cursos');
+    return r.ok ? r.dados : [];
+}

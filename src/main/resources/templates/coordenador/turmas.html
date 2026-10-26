@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Turmas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar-coordenador :: navbar('turmas')}"></div>
+
+<div class="container" x-data="turmasPagina()" x-init="init()" style="max-width: 900px;">
+    <h4 class="fw-bold mb-1">Turmas</h4>
+    <p class="text-muted mb-4">As turmas organizam as matrículas, o orientador e o acompanhamento dos estágios.</p>
+
+    <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+    <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
+
+    <p class="text-muted" x-show="carregando">Carregando...</p>
+
+    <!-- Sem curso não há onde cadastrar turma -->
+    <div class="card p-4 text-center" x-show="!carregando && cursos.length === 0" x-cloak>
+        <p class="text-muted mb-2">Você ainda não tem cursos cadastrados.</p>
+        <a href="/coordenador/cursos" class="btn btn-primary">Cadastrar um curso</a>
+    </div>
+
+    <div x-show="!carregando && cursos.length > 0" x-cloak>
+        <div class="mb-4" style="max-width: 420px;">
+            <label class="form-label" for="curso">Curso</label>
+            <select id="curso" class="form-select" x-model="cursoId" @change="trocarCurso()">
+                <template x-for="curso in cursos" :key="curso.id">
+                    <option :value="curso.id" x-text="curso.nome"></option>
+                </template>
+            </select>
+        </div>
+
+        <!-- Formulário: cadastra uma turma nova no curso escolhido ou altera a turma escolhida na tabela -->
+        <div class="card p-4 mb-4" x-ref="formulario">
+            <h5 class="card-title mb-3" x-text="form.id ? 'Alterar turma' : 'Nova turma'"></h5>
+            <form @submit.prevent="salvar()" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label" for="semestre">Semestre</label>
+                        <input id="semestre" type="text" class="form-control" x-model="form.semestre"
+                               placeholder="2026/2" maxlength="6" :class="{ 'is-invalid': erros.semestre }">
+                        <div class="invalid-feedback" x-text="erros.semestre"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="identificador">Identificador</label>
+                        <input id="identificador" type="text" class="form-control" x-model="form.identificador"
+                               placeholder="8B" maxlength="20" :class="{ 'is-invalid': erros.identificador }">
+                        <div class="invalid-feedback" x-text="erros.identificador"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="periodo">Período</label>
+                        <select id="periodo" class="form-select" x-model="form.periodo"
+                                :class="{ 'is-invalid': erros.periodo }">
+                            <option value="">Selecione...</option>
+                            <template x-for="(nome, valor) in nomesPeriodo" :key="valor">
+                                <option :value="valor" x-text="nome"></option>
+                            </template>
+                        </select>
+                        <div class="invalid-feedback" x-text="erros.periodo"></div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="modalidade">Modalidade</label>
+                        <select id="modalidade" class="form-select" x-model="form.modalidade"
+                                :class="{ 'is-invalid': erros.modalidade }">
+                            <option value="">Selecione...</option>
+                            <template x-for="(nome, valor) in nomesModalidade" :key="valor">
+                                <option :value="valor" x-text="nome"></option>
+                            </template>
+                        </select>
+                        <div class="invalid-feedback" x-text="erros.modalidade"></div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary" :disabled="salvando">
+                        <span x-show="!salvando" x-text="form.id ? 'Salvar alterações' : 'Cadastrar turma'"></span>
+                        <span x-show="salvando" x-cloak>Salvando...</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" x-show="form.id" x-cloak
+                            @click="cancelar()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Turmas do curso escolhido -->
+        <div class="card p-4">
+            <h5 class="card-title mb-3">Turmas do curso</h5>
+            <p class="text-muted mb-0" x-show="turmas.length === 0">Nenhuma turma cadastrada neste curso.</p>
+            <div class="table-responsive" x-show="turmas.length > 0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Semestre</th>
+                        <th>Turma</th>
+                        <th>Período</th>
+                        <th>Modalidade</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <template x-for="turma in turmas" :key="turma.id">
+                        <tr>
+                            <td x-text="turma.semestre"></td>
+                            <td x-text="turma.identificador"></td>
+                            <td x-text="nomesPeriodo[turma.periodo]"></td>
+                            <td x-text="nomesModalidade[turma.modalidade]"></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary" @click="editar(turma)">Editar</button>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/coordenador.js}"></script>
+<script th:src="@{/js/paginas/coordenador-turmas.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

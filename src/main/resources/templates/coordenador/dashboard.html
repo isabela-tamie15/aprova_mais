@@ -9,26 +9,26 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <span class="text-white-50 small me-auto ms-3">Coordenação</span>
-    <div>
-        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
-    </div>
-</nav>
+<div th:replace="~{fragments/navbar-coordenador :: navbar('painel')}"></div>
 
-<div class="container" style="max-width: 800px;">
+<div class="container" style="max-width: 900px;">
     <h4 class="fw-bold mb-1">Painel da Coordenação</h4>
-    <p class="text-muted mb-4">Bem-vindo ao Aprova+</p>
+    <p class="text-muted mb-4">Cadastre a estrutura dos seus cursos para os alunos começarem o estágio.</p>
 
-    <!-- Funcionalidades da coordenação (trilhas, tipos de estágio, relatórios) previstas para as próximas entregas -->
-    <div class="card p-4 text-center">
-        <p class="text-muted mb-2">As funcionalidades do painel da coordenação estão em desenvolvimento.</p>
-        <p class="text-muted small mb-0">
-            Enquanto isso, você pode gerenciar a verificação em duas etapas da sua conta em
-            <a href="/conta/seguranca">Segurança</a>.
-        </p>
+    <!-- Atalhos para os cadastros da coordenação. Cada cadastro novo ganha um cartão aqui -->
+    <div class="row g-3">
+        <div class="col-md-6">
+            <a href="/coordenador/cursos" class="card p-4 h-100 text-decoration-none text-reset">
+                <h5 class="mb-1">Cursos</h5>
+                <p class="text-muted small mb-0">Cadastre os cursos que você coordena, com o código e-MEC.</p>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="/coordenador/turmas" class="card p-4 h-100 text-decoration-none text-reset">
+                <h5 class="mb-1">Turmas</h5>
+                <p class="text-muted small mb-0">Cadastre as turmas de cada curso, com semestre, período e modalidade.</p>
+            </a>
+        </div>
     </div>
 </div>
 
