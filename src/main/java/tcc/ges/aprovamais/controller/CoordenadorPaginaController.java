@@ -26,4 +26,10 @@ public class CoordenadorPaginaController {
     public String turmas() {
         return "coordenador/turmas";
     }
+
+    // Esse é o endpoint que serve a página de cadastro de tipos de estágio
+    @GetMapping("/coordenador/tipos-estagio")
+    public String tiposEstagio() {
+        return "coordenador/tipos-estagio";
+    }
 }
