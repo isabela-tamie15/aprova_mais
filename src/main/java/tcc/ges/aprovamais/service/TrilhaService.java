@@ -110,6 +110,7 @@ public class TrilhaService {
                 .nome(tarefa.getNome())
                 .descricao(tarefa.getDescricao())
                 .ordem(tarefa.getOrdem())
+                .linkApoio(tarefa.getLinkApoio())
                 .build();
     }
 }

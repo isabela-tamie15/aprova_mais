@@ -32,4 +32,10 @@ public class CoordenadorPaginaController {
     public String tiposEstagio() {
         return "coordenador/tipos-estagio";
     }
+
+    // Esse é o endpoint que serve a página de montagem das trilhas e tarefas
+    @GetMapping("/coordenador/trilhas")
+    public String trilhas() {
+        return "coordenador/trilhas";
+    }
 }
