@@ -29,6 +29,7 @@
                 <th style="width: 80px;">Ordem</th>
                 <th>Tarefa</th>
                 <th>Descrição</th>
+                <th>Material de apoio</th>
             </tr>
             </thead>
             <tbody>
@@ -36,6 +37,11 @@
                 <td class="text-center" th:text="${tarefa.ordem}"></td>
                 <td th:text="${tarefa.nome}"></td>
                 <td th:text="${tarefa.descricao}"></td>
+                <td>
+                    <a th:if="${tarefa.linkApoio}" th:href="${tarefa.linkApoio}" target="_blank"
+                       rel="noopener noreferrer">Abrir</a>
+                    <span th:unless="${tarefa.linkApoio}" class="text-muted">-</span>
+                </td>
             </tr>
             </tbody>
         </table>

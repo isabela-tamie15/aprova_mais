@@ -26,6 +26,16 @@ public class Curso {
     @Column(name = "codigo_mec", nullable = false, unique = true)
     private String codigoMec;
 
+    /*
+       Coordenador responsável pelo curso (RN20). Quem cadastra o curso vira o
+       coordenador dele. Fica nulo nos cursos criados por script antes desse campo
+       existir, que precisam ser vinculados com o script de ajuste do banco
+    */
+    @ManyToOne
+    @JoinColumn(name = "coordenador_id")
+    @ToString.Exclude
+    private Coordenador coordenador;
+
     @OneToMany(mappedBy = "curso")
     @ToString.Exclude
     private List<TipoEstagio> tiposEstagio;
