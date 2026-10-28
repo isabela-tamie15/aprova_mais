@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Auditoria</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/paginas/admin-auditoria.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar navbar-dark navbar-aprovamais px-3 mb-4">
+    <span class="navbar-brand fw-bold">Aprova+</span>
+    <span class="text-white-50 small me-auto ms-3">Administrador</span>
+    <div>
+        <a th:href="@{/conta/seguranca}" class="btn btn-outline-light btn-sm me-2">Segurança</a>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+    </div>
+</nav>
+
+<div class="container pb-5" x-data="auditoria()" x-init="iniciar()">
+    <h4 class="fw-bold mb-1">Auditoria</h4>
+    <p class="text-muted mb-4">Registros das ações relevantes do sistema, do mais recente para o mais antigo</p>
+
+    <!-- Filtros -->
+    <form class="card-filtro p-4 mb-4" @submit.prevent="filtrar()" novalidate>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="filtro-email" class="form-label">E-mail</label>
+                <input id="filtro-email" type="text" class="form-control" maxlength="254"
+                       placeholder="E-mail completo ou parte dele" x-model="filtros.email"
+                       :class="{ 'is-invalid': erros.email }">
+                <div class="invalid-feedback" x-text="erros.email"></div>
+            </div>
+            <div class="col-md-4">
+                <label for="filtro-acao" class="form-label">Ação</label>
+                <select id="filtro-acao" class="form-select" x-model="filtros.acao">
+                    <option value="">Todas</option>
+                    <template x-for="acao in acoes" :key="acao">
+                        <option :value="acao" x-text="acao"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="filtro-sucesso" class="form-label">Resultado</label>
+                <select id="filtro-sucesso" class="form-select" x-model="filtros.sucesso">
+                    <option value="">Todos</option>
+                    <option value="true">Sucesso</option>
+                    <option value="false">Falha</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="filtro-inicio" class="form-label">De</label>
+                <input id="filtro-inicio" type="date" class="form-control" x-model="filtros.inicio"
+                       :class="{ 'is-invalid': erros.periodo }">
+            </div>
+            <div class="col-md-4">
+                <label for="filtro-fim" class="form-label">Até</label>
+                <input id="filtro-fim" type="date" class="form-control" x-model="filtros.fim"
+                       :class="{ 'is-invalid': erros.periodo }">
+                <div class="invalid-feedback" x-text="erros.periodo"></div>
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary fw-semibold flex-grow-1" :disabled="carregando">
+                    Filtrar
+                </button>
+                <button type="button" class="btn btn-outline-secondary" @click="limpar()" :disabled="carregando">
+                    Limpar
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="alert alert-danger" x-show="mensagemErro" x-text="mensagemErro" x-cloak></div>
+
+    <!-- Resultado -->
+    <div class="card-lista">
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 borda-inferior">
+            <span class="small text-muted" x-text="resumo()"></span>
+            <span class="small text-muted" x-show="carregando" x-cloak>Carregando...</span>
+        </div>
+
+        <div x-show="!carregando && registros.length === 0" class="p-4 text-center text-muted" x-cloak>
+            Nenhum registro encontrado com esses filtros.
+        </div>
+
+        <div class="table-responsive" x-show="registros.length > 0" x-cloak>
+            <table class="table mb-0 align-middle tabela-auditoria">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-4">Data e hora</th>
+                    <th>E-mail</th>
+                    <th>Perfil</th>
+                    <th>Ação</th>
+                    <th>Resultado</th>
+                    <th>IP</th>
+                    <th class="pe-4">Detalhes</th>
+                </tr>
+                </thead>
+                <tbody>
+                <template x-for="registro in registros" :key="registro.id">
+                    <tr>
+                        <td class="ps-4 text-nowrap" x-text="formatarData(registro.criadoEm)"></td>
+                        <td class="text-nowrap" x-text="registro.email || '-'"></td>
+                        <td x-text="registro.perfil || '-'"></td>
+                        <td><code class="acao" x-text="registro.acao"></code></td>
+                        <td>
+                            <span class="badge-status"
+                                  :class="registro.sucesso ? 'badge-sucesso' : 'badge-falha'"
+                                  x-text="registro.sucesso ? 'Sucesso' : 'Falha'"></span>
+                        </td>
+                        <td class="text-nowrap" x-text="registro.ipOrigem || '-'"></td>
+                        <td class="pe-4 detalhes" x-text="registro.detalhes || '-'"></td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- O x-show fica numa div sem d-flex: o display:flex !important do Bootstrap venceria o display:none -->
+        <div x-show="totalPaginas > 1" x-cloak>
+            <div class="d-flex justify-content-between align-items-center px-4 py-3 borda-superior">
+                <button class="btn btn-outline-secondary btn-sm" @click="irPara(pagina - 1)"
+                        :disabled="carregando || pagina === 0">Anterior</button>
+                <span class="small text-muted" x-text="'Página ' + (pagina + 1) + ' de ' + totalPaginas"></span>
+                <button class="btn btn-outline-secondary btn-sm" @click="irPara(pagina + 1)"
+                        :disabled="carregando || pagina + 1 >= totalPaginas">Próxima</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/admin-auditoria.js}"></script>
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

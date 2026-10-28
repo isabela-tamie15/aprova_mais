@@ -87,6 +87,7 @@ public class AuditoriaService {
     private PerfilAuditoria converterPerfil(PerfilUsuario perfil) {
         if (perfil == null) return null;
         return switch (perfil) {
+            case ADMINISTRADOR -> PerfilAuditoria.ADMINISTRADOR;
             case COORDENADOR -> PerfilAuditoria.COORDENADOR;
             case SECRETARIA -> PerfilAuditoria.SECRETARIA;
             case ORIENTADOR -> PerfilAuditoria.ORIENTADOR;

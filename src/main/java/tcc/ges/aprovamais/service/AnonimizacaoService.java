@@ -77,8 +77,7 @@ public class AnonimizacaoService {
                         secretaria.setSetor("REMOVIDO");
                         secretariaRepository.save(secretaria);
                     });
-            case COORDENADOR -> {
-                // coordenador não tem campos extras além do Usuario
+            case COORDENADOR, ADMINISTRADOR -> {
             }
         }
 

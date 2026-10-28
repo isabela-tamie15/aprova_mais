@@ -1,6 +1,8 @@
 package tcc.ges.aprovamais.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.LogAuditoria;
 import tcc.ges.aprovamais.entity.enums.PerfilAuditoria;
@@ -9,7 +11,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 @Repository
-public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long> {
+public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long>,
+        JpaSpecificationExecutor<LogAuditoria> {
 
     // Lista os logs de um usuário específico, usado na tela de histórico dele
     List<LogAuditoria> findByUsuarioId(Long usuarioId);
@@ -28,4 +31,8 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
 
     // Filtra por intervalo de datas, usado em relatórios e consultas de LGPD
     List<LogAuditoria> findByCriadoEmBetween(OffsetDateTime inicio, OffsetDateTime fim);
+
+    // Lista as ações que já aparecem na auditoria, usado no filtro da tela do administrador
+    @Query("select distinct l.acao from LogAuditoria l order by l.acao")
+    List<String> listarAcoesRegistradas();
 }

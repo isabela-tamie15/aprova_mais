@@ -78,6 +78,9 @@ public class SecurityConfig {
                                 "/api/v1/auth/logout",
                                 "/api/v1/auth/2fa/**",
                                 "/api/v1/auth/convite/**",
+                                "/recuperar-senha",
+                                "/redefinir-senha",
+                                "/api/v1/auth/recuperacao/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -88,6 +91,7 @@ public class SecurityConfig {
                            quem tem o papel certo. O lgpd é o único que libera
                            pra vários perfis ao mesmo tempo
                         */
+                        .requestMatchers("/admin/**", "/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/v1/coordenador/**").hasRole("COORDENADOR")
                         .requestMatchers("/api/v1/orientador/**").hasRole("ORIENTADOR")
                         .requestMatchers("/secretaria/**").hasRole("SECRETARIA")
