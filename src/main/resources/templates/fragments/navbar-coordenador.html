@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    Barra de navegação das telas da coordenação. Cada página usa assim:
+    <div th:replace="~{fragments/navbar-coordenador :: navbar('cursos')}"></div>
+    O parâmetro diz qual link fica destacado. Página nova da coordenação ganha o link aqui.
+    O botão Sair chama o logout() do /js/comum.js, que a página precisa carregar.
+-->
+<nav th:fragment="navbar(ativo)" class="navbar navbar-expand navbar-dark bg-dark px-3 mb-4 flex-wrap">
+    <a class="navbar-brand fw-bold" href="/coordenador/dashboard">Aprova+</a>
+    <ul class="navbar-nav me-auto flex-wrap">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'painel'} ? 'active'" href="/coordenador/dashboard">Painel</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'cursos'} ? 'active'" href="/coordenador/cursos">Cursos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'turmas'} ? 'active'" href="/coordenador/turmas">Turmas</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'tipos'} ? 'active'" href="/coordenador/tipos-estagio">Tipos de estágio</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'trilhas'} ? 'active'" href="/coordenador/trilhas">Trilhas</a>
+        </li>
+    </ul>
+    <div>
+        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+    </div>
+</nav>
+
+</body>
+</html>

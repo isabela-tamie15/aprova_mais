@@ -15,4 +15,12 @@ public interface TipoEstagioRepository extends JpaRepository<TipoEstagio, Long> 
 
     // Busca o tipo só se ele for do curso informado, usado no cadastro pra barrar tipo de outro curso
     Optional<TipoEstagio> findByIdAndCursoId(Long id, Long cursoId);
+
+    // Busca o tipo só se o curso dele for do coordenador informado (RN21), senão volta vazio e vira 404
+    Optional<TipoEstagio> findByIdAndCursoCoordenadorEmail(Long id, String emailCoordenador);
+
+    // Impede dois tipos com o mesmo nome no mesmo curso (ex: dois "CLT")
+    boolean existsByCursoIdAndNomeIgnoreCase(Long cursoId, String nome);
+
+    boolean existsByCursoIdAndNomeIgnoreCaseAndIdNot(Long cursoId, String nome, Long id);
 }

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
@@ -149,6 +150,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(construirErro(HttpStatus.CONFLICT, ex.getMessage()));
+    }
+
+    /*
+       403 acesso negado pelo @PreAuthorize, por exemplo um aluno abrindo uma página
+       da coordenação. Sem esse handler, a exceção caía no genérico lá embaixo e
+       virava 500. As rotas protegidas só pelo SecurityConfig já respondiam 403
+       antes de chegar aqui
+    */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErroResposta> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("[EXCEPTION] Acesso negado: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(construirErro(HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este recurso."));
     }
 
     // 404 recurso não encontrado

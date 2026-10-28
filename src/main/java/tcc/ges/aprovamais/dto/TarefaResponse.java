@@ -10,4 +10,5 @@ public class TarefaResponse {
     private final String nome;
     private final String descricao;
     private final Integer ordem;
+    private final String linkApoio;
 }

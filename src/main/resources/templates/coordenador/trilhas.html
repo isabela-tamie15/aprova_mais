@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aprova+ | Trilhas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link th:href="@{/css/main.css}" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar-coordenador :: navbar('trilhas')}"></div>
+
+<div class="container" x-data="trilhasPagina()" x-init="init()" style="max-width: 900px;">
+  <h4 class="fw-bold mb-1">Trilhas</h4>
+  <p class="text-muted mb-4">
+    Cada tipo de estágio tem uma trilha, com as tarefas que o aluno precisa entregar, na ordem em que ele vê.
+  </p>
+
+  <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+  <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
+
+  <p class="text-muted" x-show="carregando">Carregando...</p>
+
+  <div class="card p-4 text-center" x-show="!carregando && cursos.length === 0" x-cloak>
+    <p class="text-muted mb-2">Você ainda não tem cursos cadastrados.</p>
+    <a href="/coordenador/cursos" class="btn btn-primary">Cadastrar um curso</a>
+  </div>
+
+  <div x-show="!carregando && cursos.length > 0" x-cloak>
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label class="form-label" for="curso">Curso</label>
+        <select id="curso" class="form-select" x-model="cursoId" @change="trocarCurso()">
+          <template x-for="curso in cursos" :key="curso.id">
+            <option :value="curso.id" x-text="curso.nome"></option>
+          </template>
+        </select>
+      </div>
+      <div class="col-md-6" x-show="tipos.length > 0">
+        <label class="form-label" for="tipo">Tipo de estágio</label>
+        <select id="tipo" class="form-select" x-model="tipoId" @change="trocarTipo()">
+          <template x-for="tipo in tipos" :key="tipo.id">
+            <option :value="tipo.id" x-text="tipo.nome"></option>
+          </template>
+        </select>
+      </div>
+    </div>
+
+    <div class="card p-4 text-center" x-show="tipos.length === 0">
+      <p class="text-muted mb-2">Este curso ainda não tem tipos de estágio.</p>
+      <a href="/coordenador/tipos-estagio" class="btn btn-primary">Cadastrar um tipo de estágio</a>
+    </div>
+
+    <!-- Tipo sem trilha (ou trilha em edição): formulário da trilha -->
+    <div class="card p-4 mb-4" x-show="tipoId && (!trilha || editandoTrilha)">
+      <h5 class="card-title mb-3" x-text="trilha ? 'Alterar trilha' : 'Criar a trilha deste tipo'"></h5>
+      <form @submit.prevent="salvarTrilha()" novalidate>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="nomeTrilha">Nome da trilha</label>
+            <input id="nomeTrilha" type="text" class="form-control" x-model="formTrilha.nome"
+                   placeholder="Trilha Estagiário" maxlength="100" :class="{ 'is-invalid': erros.nome }">
+            <div class="invalid-feedback" x-text="erros.nome"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="descricaoTrilha">Descrição (opcional)</label>
+            <input id="descricaoTrilha" type="text" class="form-control" x-model="formTrilha.descricao"
+                   maxlength="255" :class="{ 'is-invalid': erros.descricao }">
+            <div class="invalid-feedback" x-text="erros.descricao"></div>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button type="submit" class="btn btn-primary" :disabled="salvando"
+                  x-text="trilha ? 'Salvar alterações' : 'Criar trilha'"></button>
+          <button type="button" class="btn btn-outline-secondary" x-show="editandoTrilha"
+                  @click="editandoTrilha = false; erros = {}">Cancelar</button>
+        </div>
+      </form>
+    </div>
+
+    <template x-if="trilha">
+      <div>
+        <!-- Cabeçalho da trilha -->
+        <div class="card p-4 mb-4" x-show="!editandoTrilha">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <h5 class="mb-1" x-text="trilha.nome"></h5>
+              <p class="text-muted small mb-0" x-show="trilha.descricao" x-text="trilha.descricao"></p>
+            </div>
+            <button class="btn btn-sm btn-outline-primary" @click="editarTrilha()">Alterar trilha</button>
+          </div>
+        </div>
+
+        <!-- Tarefas da trilha, na ordem em que o aluno vê -->
+        <div class="card p-4 mb-4">
+          <h5 class="card-title mb-3">Tarefas</h5>
+          <p class="text-muted mb-0" x-show="trilha.tarefas.length === 0">Esta trilha ainda não tem tarefas.</p>
+          <div class="table-responsive" x-show="trilha.tarefas.length > 0">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+              <tr>
+                <th style="width: 70px;">Ordem</th>
+                <th>Tarefa</th>
+                <th>Material de apoio</th>
+                <th class="text-end">Ações</th>
+              </tr>
+              </thead>
+              <tbody>
+              <template x-for="tarefa in trilha.tarefas" :key="tarefa.id">
+                <tr>
+                  <td class="text-center" x-text="tarefa.ordem"></td>
+                  <td>
+                    <span x-text="tarefa.nome"></span>
+                    <div class="small text-muted" x-show="tarefa.descricao" x-text="tarefa.descricao"></div>
+                  </td>
+                  <td>
+                    <a x-show="tarefa.linkApoio" :href="tarefa.linkApoio" target="_blank"
+                       rel="noopener noreferrer">Abrir</a>
+                    <span x-show="!tarefa.linkApoio" class="text-muted">-</span>
+                  </td>
+                  <td class="text-end text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary" @click="editarTarefa(tarefa)">Editar</button>
+                    <button class="btn btn-sm btn-outline-danger" @click="removerTarefa(tarefa)">Remover</button>
+                  </td>
+                </tr>
+              </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Formulário: adiciona uma tarefa ou altera a tarefa escolhida -->
+        <div class="card p-4" x-ref="formularioTarefa">
+          <h5 class="card-title mb-3" x-text="formTarefa.id ? 'Alterar tarefa' : 'Nova tarefa'"></h5>
+          <form @submit.prevent="salvarTarefa()" novalidate>
+            <div class="row g-3">
+              <div class="col-md-2">
+                <label class="form-label" for="ordem">Ordem</label>
+                <input id="ordem" type="number" class="form-control" x-model="formTarefa.ordem"
+                       min="1" max="99" :class="{ 'is-invalid': erros.ordem }">
+                <div class="invalid-feedback" x-text="erros.ordem"></div>
+              </div>
+              <div class="col-md-10">
+                <label class="form-label" for="nomeTarefa">Nome da tarefa</label>
+                <input id="nomeTarefa" type="text" class="form-control" x-model="formTarefa.nome"
+                       placeholder="Termo de Compromisso" maxlength="100"
+                       :class="{ 'is-invalid': erros.nome }">
+                <div class="invalid-feedback" x-text="erros.nome"></div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="descricaoTarefa">Descrição (opcional)</label>
+                <input id="descricaoTarefa" type="text" class="form-control" x-model="formTarefa.descricao"
+                       maxlength="255" :class="{ 'is-invalid': erros.descricao }">
+                <div class="invalid-feedback" x-text="erros.descricao"></div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="linkApoio">Link do material de apoio (opcional)</label>
+                <input id="linkApoio" type="url" class="form-control" x-model="formTarefa.linkApoio"
+                       placeholder="https://..." maxlength="500" :class="{ 'is-invalid': erros.linkApoio }">
+                <div class="invalid-feedback" x-text="erros.linkApoio"></div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary" :disabled="salvando"
+                      x-text="formTarefa.id ? 'Salvar alterações' : 'Adicionar tarefa'"></button>
+              <button type="button" class="btn btn-outline-secondary" x-show="formTarefa.id"
+                      @click="cancelarTarefa()">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/coordenador.js}"></script>
+<script th:src="@{/js/paginas/coordenador-trilhas.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
