@@ -1,10 +1,13 @@
 package tcc.ges.aprovamais.config;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -13,16 +16,22 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import tcc.ges.aprovamais.security.JwtFilter;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 // Essa config é quem define as regras de segurança da aplicação inteira, incluido as rotas permitidas
@@ -53,6 +62,9 @@ public class SecurityConfig {
                 // Sem sessão no servidor, cada requisição se autentica sozinha pelo token
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(excecoes -> excecoes
+                        .authenticationEntryPoint(this::responderNaoAutenticado)
                 )
                 .authorizeHttpRequests(auth -> auth
                         /*
@@ -115,6 +127,23 @@ public class SecurityConfig {
             );
         }
         return http.build();
+    }
+
+
+    private void responderNaoAutenticado(HttpServletRequest requisicao,
+                                         HttpServletResponse resposta,
+                                         AuthenticationException excecao) throws IOException {
+        if (!requisicao.getRequestURI().startsWith("/api/")) {
+            new Http403ForbiddenEntryPoint().commence(requisicao, resposta, excecao);
+            return;
+        }
+        resposta.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        resposta.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        resposta.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        resposta.getWriter().write(String.format(
+                "{\"status\":401,\"erro\":\"Unauthorized\",\"mensagem\":\"%s\",\"timestamp\":\"%s\"}",
+                "Autenticação necessária. Faça login novamente.",
+                OffsetDateTime.now(ZoneOffset.UTC)));
     }
 
     // Esse é o provider que autentica de verdade, usando o UserDetailsService e o BCrypt
