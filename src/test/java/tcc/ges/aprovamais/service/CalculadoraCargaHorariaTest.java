@@ -144,4 +144,38 @@ class CalculadoraCargaHorariaTest {
                 CalculadoraCargaHoraria.calcularDiasRestantes(ENCERRAMENTO_ENTREGAS, LocalDate.of(2026, 6, 16))));
 
     }
+
+    // RF22: semanas contadas, usadas no extrato da carga
+
+    @Test
+    @DisplayName("Três semanas completas desde o início contam 3 semanas, e a semana incompleta não conta")
+    void deveContarSomenteSemanasCompletas() {
+
+        // INICIO é 02/03/2026: 23/03 fecha a terceira semana, 22/03 ainda está nela
+        assertEquals(3, CalculadoraCargaHoraria.calcularSemanasContadas(INICIO, LocalDate.of(2026, 3, 23)));
+        assertEquals(2, CalculadoraCargaHoraria.calcularSemanasContadas(INICIO, LocalDate.of(2026, 3, 22)));
+
+    }
+
+    @Test
+    @DisplayName("Antes do início, ou sem a data de início, nenhuma semana é contada")
+    void naoDeveContarSemanasAntesDoInicioOuSemData() {
+
+        assertEquals(0, CalculadoraCargaHoraria.calcularSemanasContadas(INICIO, LocalDate.of(2026, 3, 1)));
+        assertEquals(0, CalculadoraCargaHoraria.calcularSemanasContadas(null, LocalDate.of(2026, 3, 23)));
+
+    }
+
+    @Test
+    @DisplayName("Extrato do CA01: 3 semanas de Estagiário dão 90 h de carga cumprida")
+    void deveFecharAContaDoExtrato() {
+
+        LocalDate hoje = LocalDate.of(2026, 3, 23);
+        long semanas = CalculadoraCargaHoraria.calcularSemanasContadas(INICIO, hoje);
+
+        assertEquals(0, JORNADA_ESTAGIARIO.multiply(BigDecimal.valueOf(semanas)).compareTo(new BigDecimal("90")));
+        assertEquals(0, CalculadoraCargaHoraria.calcularCargaCumprida(INICIO, CARGA_TOTAL, JORNADA_ESTAGIARIO, hoje)
+                .compareTo(new BigDecimal("90")));
+
+    }
 }

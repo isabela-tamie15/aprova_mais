@@ -28,14 +28,24 @@ public final class CalculadoraCargaHoraria {
     }
 
 
+    /*
+       RF22: semanas completas desde o início, que é o número usado no extrato
+       ("3 semanas × 30 h = 90 h de 270 h"). Antes do início, ou sem a data, é zero
+    */
+    public static long calcularSemanasContadas(LocalDate dataInicio, LocalDate hoje) {
+        if (dataInicio == null || hoje == null || hoje.isBefore(dataInicio)) {
+            return 0;
+        }
+        return ChronoUnit.WEEKS.between(dataInicio, hoje);
+    }
+
     //semanas completas desde o início vezes a jornada, sem passar da carga total
     public static BigDecimal calcularCargaCumprida(LocalDate dataInicio, BigDecimal cargaTotal,
                                                    BigDecimal jornadaSemanal, LocalDate hoje) {
-        if (dataInicio == null || hoje == null || !valoresValidos(cargaTotal, jornadaSemanal)
-                || hoje.isBefore(dataInicio)) {
+        if (!valoresValidos(cargaTotal, jornadaSemanal)) {
             return BigDecimal.ZERO;
         }
-        long semanasCompletas = ChronoUnit.WEEKS.between(dataInicio, hoje);
+        long semanasCompletas = calcularSemanasContadas(dataInicio, hoje);
         BigDecimal cumprida = jornadaSemanal.multiply(BigDecimal.valueOf(semanasCompletas));
         return cumprida.min(cargaTotal);
     }

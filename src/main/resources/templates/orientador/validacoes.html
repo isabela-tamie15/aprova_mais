@@ -13,7 +13,7 @@
     <span class="navbar-brand fw-bold">Aprova+</span>
     <div>
         <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
     </div>
 </nav>
 
@@ -51,17 +51,17 @@
 
             <!-- Decisões anteriores sobre esse estágio, inclusive as rejeições de envios passados -->
             <th:block th:with="historico=${historicos.get(estagio.id)}">
-            <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="mb-3">
-                <strong>Decisões anteriores:</strong>
-                <ul class="list-unstyled small mb-0 mt-1">
-                    <li th:each="decisao : ${historico}" class="mb-1">
-                        <span th:if="${decisao.aprovado}" class="badge bg-success">Aprovado</span>
-                        <span th:unless="${decisao.aprovado}" class="badge bg-danger">Rejeitado</span>
-                        <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
-                        <span th:if="${decisao.justificativa}" th:text="${' - ' + decisao.justificativa}"></span>
-                    </li>
-                </ul>
-            </div>
+                <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="mb-3">
+                    <strong>Decisões anteriores:</strong>
+                    <ul class="list-unstyled small mb-0 mt-1">
+                        <li th:each="decisao : ${historico}" class="mb-1">
+                            <span th:if="${decisao.aprovado}" class="badge bg-success">Aprovado</span>
+                            <span th:unless="${decisao.aprovado}" class="badge bg-danger">Rejeitado</span>
+                            <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
+                            <span th:if="${decisao.justificativa}" th:text="${' - ' + decisao.justificativa}"></span>
+                        </li>
+                    </ul>
+                </div>
             </th:block>
 
             <!-- Ações para estágios pendentes -->
@@ -120,9 +120,25 @@
             </div>
 
             <p><strong>Tipo:</strong> <span th:text="${ativo.nomeTipoEstagio}"></span></p>
+            <p><strong>Início:</strong> <span th:text="${#temporals.format(ativo.dataInicio, 'dd/MM/yyyy')}"></span></p>
             <p><strong>Carga horária cumprida:</strong>
                 <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0)}"></span>h de
                 <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0)}"></span>h
+                <span class="text-muted" th:if="${ativo.jornadaSemanal}">
+                    (<span th:text="${#numbers.formatDecimal(ativo.jornadaSemanal, 1, 0)}"></span>h por semana)
+                </span>
+            </p>
+            <!-- RF22: extrato da carga, mostrando a conta feita pelo sistema (semanas completas vezes a jornada) -->
+            <p th:if="${ativo.semanasContadas != null and ativo.jornadaSemanal != null}"><strong>Extrato da carga:</strong>
+                <span th:if="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
+                      th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                              + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h = '
+                              + #numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0) + ' h de '
+                              + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h'}"></span>
+                <span th:unless="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
+                      th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                              + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h: carga total de '
+                              + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h atingida'}"></span>
             </p>
             <p><strong>Carga horária restante:</strong>
                 <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaRestante, 1, 0)}"></span>h

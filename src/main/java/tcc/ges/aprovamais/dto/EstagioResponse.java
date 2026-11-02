@@ -30,4 +30,7 @@ public class EstagioResponse {
     private final LocalDate dataEncerramentoEntregas;
     private final Long diasParaEncerramentoEntregas;
     private final String avisoPrazo;
+
+    // RF22: semanas completas contadas desde o início, para o extrato da carga. Só vem preenchido no estágio ATIVO
+    private final Long semanasContadas;
 }

@@ -456,7 +456,7 @@ public class EstagioService {
         LocalDate dataPrevista = estagio.getDataPrevistaConclusao() != null
                 ? estagio.getDataPrevistaConclusao()
                 : CalculadoraCargaHoraria.calcularDataPrevista(estagio.getDataInicio(),
-                        estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal());
+                estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal());
 
         /*
            F2: a data de encerramento das entregas vem da turma da matrícula, porque
@@ -471,6 +471,11 @@ public class EstagioService {
                 dataEncerramentoEntregas, LocalDate.now());
         String avisoPrazo = estagio.getStatus() == StatusEstagio.ATIVO
                 ? CalculadoraCargaHoraria.definirAvisoPrazo(diasParaEncerramento)
+                : null;
+
+        // RF22: semanas usadas no extrato da carga, só no estágio ATIVO, que é quando a carga é contada pelo período
+        Long semanasContadas = estagio.getStatus() == StatusEstagio.ATIVO
+                ? CalculadoraCargaHoraria.calcularSemanasContadas(estagio.getDataInicio(), LocalDate.now())
                 : null;
 
         return EstagioResponse.builder()
@@ -500,6 +505,7 @@ public class EstagioService {
                 .dataEncerramentoEntregas(dataEncerramentoEntregas)
                 .diasParaEncerramentoEntregas(diasParaEncerramento)
                 .avisoPrazo(avisoPrazo)
+                .semanasContadas(semanasContadas)
                 .build();
     }
 }

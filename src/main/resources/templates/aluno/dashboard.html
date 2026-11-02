@@ -11,7 +11,7 @@
     <span class="navbar-brand fw-bold">Aprova+</span>
     <div>
         <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
     </div>
 </nav>
 
@@ -51,13 +51,25 @@
         <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span>
             <span th:if="${estagio.cnpjEmpresa}" class="text-muted" th:text="${'(' + estagio.cnpjEmpresa + ')'}"></span>
         </p>
-        <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+        <p><strong>Início:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
         <p><strong>Carga horária cumprida:</strong>
             <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0)}"></span>h de
             <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0)}"></span>h
             <span class="text-muted" th:if="${estagio.jornadaSemanal}">
                 (<span th:text="${#numbers.formatDecimal(estagio.jornadaSemanal, 1, 0)}"></span>h por semana)
             </span>
+        </p>
+        <!-- RF22: extrato da carga, mostrando a conta feita pelo sistema (semanas completas vezes a jornada) -->
+        <p th:if="${estagio.semanasContadas != null and estagio.jornadaSemanal != null}"><strong>Extrato da carga:</strong>
+            <span th:if="${estagio.cargaHorariaCumprida < estagio.cargaHorariaNecessaria}"
+                  th:text="${estagio.semanasContadas + (estagio.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                          + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + ' h = '
+                          + #numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0) + ' h de '
+                          + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + ' h'}"></span>
+            <span th:unless="${estagio.cargaHorariaCumprida < estagio.cargaHorariaNecessaria}"
+                  th:text="${estagio.semanasContadas + (estagio.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                          + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + ' h: carga total de '
+                          + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + ' h atingida'}"></span>
         </p>
         <!-- F2: horas que ainda faltam para completar a carga horária -->
         <p><strong>Carga horária restante:</strong>

@@ -420,4 +420,26 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ainda não informada pela coordenação")));
     }
+
+    // RF22: extrato da carga, com a conta das semanas
+
+    @Test
+    @DisplayName("Extrato da carga: 3 semanas de Estagiário aparecem como 3 semanas × 30 h = 90 h de 270 h (CA01)")
+    void deveMostrarExtratoDaCargaParaAlunoEOrientador() throws Exception {
+        Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(3));
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.semanasContadas").value(3));
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("3 semanas × 30 h = 90 h de 270 h")));
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("3 semanas × 30 h = 90 h de 270 h")));
+    }
 }
