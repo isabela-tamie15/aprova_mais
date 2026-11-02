@@ -22,4 +22,7 @@ public interface OrientadorRepository extends JpaRepository<Orientador, Long> {
             "WHERE ot.turma_id = :turmaId LIMIT 1",
             nativeQuery = true)
     Optional<Orientador> findFirstByTurmaId(@Param("turmaId") Long turmaId);
+
+    // Confere se a matrícula institucional já pertence a um orientador, usado no pré-cadastro
+    boolean existsByMatriculaInstitucional(String matriculaInstitucional);
 }

@@ -120,6 +120,9 @@ public class GlobalExceptionHandler {
             case "dataInicioDentroDoLimite" -> "dataInicio";
             case "cnpjComDigitosValidos" -> "cnpjEmpresa";
             case "senhasConferem" -> "confirmacaoSenha";
+            case "turmaInformadaParaAluno" -> "turmaId";
+            case "perfilDePreCadastro" -> "perfil";
+            case "nomeInformadoParaPerfilAdministrativo" -> "nome";
             default -> campo;
         };
     }
