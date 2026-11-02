@@ -14,4 +14,10 @@ public class AdministradorPaginaController {
     public String auditoria() {
         return "admin/auditoria";
     }
+
+    // Esse é o endpoint que serve a tela de convites do Administrador, que convida os coordenadores
+    @GetMapping("/admin/convites")
+    public String convites() {
+        return "admin/convites";
+    }
 }

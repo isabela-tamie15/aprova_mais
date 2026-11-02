@@ -1,0 +1,67 @@
+/* Estilos da página admin/convites.html */
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+.navbar-aprovamais {
+    background-color: #2B4ECC;
+}
+
+.card-form,
+.card-lista {
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.card-lista {
+    overflow: hidden;
+}
+
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.borda-inferior {
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.badge-status {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-PENDENTE {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+.badge-ACEITO {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
+
+.badge-RECUSADO {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
+
+.badge-EXPIRADO {
+    background-color: #F3F4F6;
+    color: #6B7280;
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+   Barra de navegação das páginas do Administrador.
+   Uso: <div th:replace="~{fragments/navbar-admin :: navbar('auditoria')}"></div>
+   O parâmetro marca a página ativa: auditoria ou convites
+-->
+<nav th:fragment="navbar(ativo)" class="navbar navbar-expand navbar-dark navbar-aprovamais px-3 mb-4 flex-wrap">
+    <span class="navbar-brand fw-bold">Aprova+</span>
+    <ul class="navbar-nav me-auto flex-wrap">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'auditoria'} ? 'active'" th:href="@{/admin/auditoria}">Auditoria</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'convites'} ? 'active'" th:href="@{/admin/convites}">Convites</a>
+        </li>
+    </ul>
+    <div>
+        <a th:href="@{/conta/seguranca}" class="btn btn-outline-light btn-sm me-2">Segurança</a>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+    </div>
+</nav>
+
+</body>
+</html>
