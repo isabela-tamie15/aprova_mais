@@ -11,14 +11,7 @@
 </head>
 <body>
 
-<nav class="navbar navbar-dark navbar-aprovamais px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <span class="text-white-50 small me-auto ms-3">Administrador</span>
-    <div>
-        <a th:href="@{/conta/seguranca}" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
-    </div>
-</nav>
+<div th:replace="~{fragments/navbar-admin :: navbar('auditoria')}"></div>
 
 <div class="container pb-5" x-data="auditoria()" x-init="iniciar()">
     <h4 class="fw-bold mb-1">Auditoria</h4>

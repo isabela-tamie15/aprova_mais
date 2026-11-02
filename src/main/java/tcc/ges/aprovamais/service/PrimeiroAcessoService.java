@@ -4,10 +4,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.entity.Aluno;
 import tcc.ges.aprovamais.entity.Convite;
+import tcc.ges.aprovamais.entity.Matricula;
+import tcc.ges.aprovamais.entity.Orientador;
+import tcc.ges.aprovamais.entity.PreCadastro;
+import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.MatriculaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+
+import java.util.Optional;
 
 // Esse service é quem fecha o fluxo de primeiro acesso, quando o convidado cria a senha e aceita os termos
 @Service
@@ -19,6 +28,8 @@ public class PrimeiroAcessoService {
     private final PasswordEncoder passwordEncoder;
     private final AuditoriaService auditoriaService;
     private final ConsentimentoService consentimentoService;
+    private final PreCadastroService preCadastroService;
+    private final MatriculaRepository matriculaRepository;
 
     // Esse é o método que conclui o cadastro quando o usuário define a senha e aceita os termos
     @Transactional
@@ -39,7 +50,19 @@ public class PrimeiroAcessoService {
         usuario.setPrimeiroAcesso(false);
         usuario.setAtivo(true);
 
+        /*
+           Aluno e orientador recebem os dados do pré-cadastro (nome e RGM ou matrícula institucional), no lugar dos valores provisórios
+           gravados no envio do convite
+        */
+        Optional<PreCadastro> preCadastro = preCadastroService.buscarPorEmail(convite.getEmail());
+        preCadastro.ifPresent(dados -> aplicarPreCadastro(usuario, dados));
+
         usuarioRepository.save(usuario);
+
+        // PPara aluno, a matrícula ATIVA é criada na turma do pré-cadastro
+        if (usuario instanceof Aluno aluno && preCadastro.isPresent() && preCadastro.get().getTurma() != null) {
+            criarMatricula(aluno, preCadastro.get().getTurma(), ip);
+        }
 
         // Marca o convite como usado, assim o token não vale mais
         conviteService.aceitarConvite(token);
@@ -78,5 +101,31 @@ public class PrimeiroAcessoService {
         );
 
         conviteService.recusarConvite(token);
+    }
+
+    // Copia do pré-cadastro os dados que identificam a pessoa na instituição
+    private void aplicarPreCadastro(Usuario usuario, PreCadastro dados) {
+        usuario.setNome(dados.getNome());
+        if (usuario instanceof Aluno aluno) {
+            aluno.setRgm(dados.getIdentificadorInstitucional());
+        } else if (usuario instanceof Orientador orientador) {
+            orientador.setMatriculaInstitucional(dados.getIdentificadorInstitucional());
+        }
+    }
+
+    //Cria a matrícula do aluno na turma do pré-cadastro
+    private void criarMatricula(Aluno aluno, Turma turma, String ip) {
+        if (matriculaRepository.findByAlunoIdAndTurmaId(aluno.getId(), turma.getId()).isPresent()) {
+            return;
+        }
+        Matricula matricula = new Matricula();
+        matricula.setAluno(aluno);
+        matricula.setTurma(turma);
+        matricula.setStatus(StatusMatricula.ATIVA);
+        Matricula salva = matriculaRepository.save(matricula);
+
+        auditoriaService.registrar(aluno, "MATRICULA_CRIADA",
+                "Matrícula id=" + salva.getId() + " criada na turma id=" + turma.getId() + " no aceite do convite",
+                ip, true);
     }
 }
