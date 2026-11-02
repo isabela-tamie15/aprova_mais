@@ -10,7 +10,7 @@ function turmasPagina() {
         erro: '',
         sucesso: '',
         erros: {},
-        form: { id: null, semestre: '', identificador: '', periodo: '', modalidade: '' },
+        form: { id: null, semestre: '', identificador: '', periodo: '', modalidade: '', dataEncerramentoEntregas: '' },
         nomesPeriodo: NOMES_PERIODO,
         nomesModalidade: NOMES_MODALIDADE,
 
@@ -50,7 +50,9 @@ function turmasPagina() {
                 semestre: turma.semestre,
                 identificador: turma.identificador,
                 periodo: turma.periodo,
-                modalidade: turma.modalidade
+                modalidade: turma.modalidade,
+                // Turmas antigas vêm sem a data, então o campo começa vazio para o coordenador preencher
+                dataEncerramentoEntregas: turma.dataEncerramentoEntregas || ''
             };
             this.erros = {};
             this.erro = '';
@@ -59,7 +61,7 @@ function turmasPagina() {
         },
 
         cancelar() {
-            this.form = { id: null, semestre: '', identificador: '', periodo: '', modalidade: '' };
+            this.form = { id: null, semestre: '', identificador: '', periodo: '', modalidade: '', dataEncerramentoEntregas: '' };
             this.erros = {};
             this.erro = '';
         },
@@ -83,6 +85,9 @@ function turmasPagina() {
             if (!this.form.modalidade) {
                 erros.modalidade = 'Selecione a modalidade.';
             }
+            if (!this.form.dataEncerramentoEntregas) {
+                erros.dataEncerramentoEntregas = 'Informe a data de encerramento das entregas do semestre.';
+            }
 
             this.erros = erros;
             return Object.keys(erros).length === 0;
@@ -103,7 +108,8 @@ function turmasPagina() {
                 semestre: this.form.semestre.trim(),
                 identificador: this.form.identificador.trim(),
                 periodo: this.form.periodo,
-                modalidade: this.form.modalidade
+                modalidade: this.form.modalidade,
+                dataEncerramentoEntregas: this.form.dataEncerramentoEntregas
             });
             this.salvando = false;
 
@@ -118,6 +124,14 @@ function turmasPagina() {
             const mensagem = editando ? 'Turma alterada.' : 'Turma cadastrada.';
             await this.carregarTurmas();
             this.sucesso = mensagem;
+        },
+
+        // A API devolve a data no formato 2026-06-15, e na tabela mostramos no formato 15/06/2026
+        formatarData(data) {
+            if (!data) {
+                return 'Não informada';
+            }
+            return data.split('-').reverse().join('/');
         }
     }
 }

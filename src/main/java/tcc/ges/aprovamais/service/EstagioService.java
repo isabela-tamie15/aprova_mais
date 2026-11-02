@@ -238,6 +238,20 @@ public class EstagioService {
     }
 
     /*
+       F2: lista os estágios ATIVO do orientador, para ele acompanhar as horas
+       e o aviso de prazo de cada aluno. Como a consulta filtra pelo e-mail do
+       orientador, ele só enxerga os próprios alunos
+    */
+    @Transactional(readOnly = true)
+    public List<EstagioResponse> listarAtivosDoOrientador(String emailOrientador) {
+        return estagioRepository
+                .findByOrientadorEmailAndStatusIn(emailOrientador, List.of(StatusEstagio.ATIVO))
+                .stream()
+                .map(this::paraResponse)
+                .collect(Collectors.toList());
+    }
+
+    /*
        Esse é o método que o orientador usa pra aprovar um estágio pendente.
        A dataInicioConfirmada é a data que ele conferiu no termo de compromisso (RF21).
        Se vier diferente da que o aluno informou, ela passa a valer e a data prevista é recalculada, porque a carga é contada a partir dela
@@ -442,7 +456,27 @@ public class EstagioService {
         LocalDate dataPrevista = estagio.getDataPrevistaConclusao() != null
                 ? estagio.getDataPrevistaConclusao()
                 : CalculadoraCargaHoraria.calcularDataPrevista(estagio.getDataInicio(),
-                        estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal());
+                estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal());
+
+        /*
+           F2: a data de encerramento das entregas vem da turma da matrícula, porque
+           é a mesma para todos os alunos da turma. Os dias são contados a partir de hoje.
+           O aviso de prazo só aparece para o estágio ATIVO, já que é só nele que o aluno
+           está fazendo as entregas
+        */
+        LocalDate dataEncerramentoEntregas = estagio.getMatricula().getTurma() != null
+                ? estagio.getMatricula().getTurma().getDataEncerramentoEntregas()
+                : null;
+        Long diasParaEncerramento = CalculadoraCargaHoraria.calcularDiasRestantes(
+                dataEncerramentoEntregas, LocalDate.now());
+        String avisoPrazo = estagio.getStatus() == StatusEstagio.ATIVO
+                ? CalculadoraCargaHoraria.definirAvisoPrazo(diasParaEncerramento)
+                : null;
+
+        // RF22: semanas usadas no extrato da carga, só no estágio ATIVO, que é quando a carga é contada pelo período
+        Long semanasContadas = estagio.getStatus() == StatusEstagio.ATIVO
+                ? CalculadoraCargaHoraria.calcularSemanasContadas(estagio.getDataInicio(), LocalDate.now())
+                : null;
 
         return EstagioResponse.builder()
                 .id(estagio.getId())
@@ -466,6 +500,12 @@ public class EstagioService {
                         ? estagio.getOrientador().getNome()
                         : null)
                 .justificativaRejeicao(estagio.getJustificativaRejeicao())
+                .cargaHorariaRestante(CalculadoraCargaHoraria.calcularCargaRestante(
+                        estagio.getCargaHorariaNecessaria(), calcularCargaCumprida(estagio)))
+                .dataEncerramentoEntregas(dataEncerramentoEntregas)
+                .diasParaEncerramentoEntregas(diasParaEncerramento)
+                .avisoPrazo(avisoPrazo)
+                .semanasContadas(semanasContadas)
                 .build();
     }
 }

@@ -76,6 +76,14 @@
                         </select>
                         <div class="invalid-feedback" x-text="erros.modalidade"></div>
                     </div>
+                    <!-- Data em que as entregas do semestre fecham, usada no aviso de prazo do aluno e do orientador (F2) -->
+                    <div class="col-md-4">
+                        <label class="form-label" for="dataEncerramentoEntregas">Encerramento das entregas do semestre</label>
+                        <input id="dataEncerramentoEntregas" type="date" class="form-control"
+                               x-model="form.dataEncerramentoEntregas"
+                               :class="{ 'is-invalid': erros.dataEncerramentoEntregas }">
+                        <div class="invalid-feedback" x-text="erros.dataEncerramentoEntregas"></div>
+                    </div>
                 </div>
                 <div class="d-flex gap-2 mt-3">
                     <button type="submit" class="btn btn-primary" :disabled="salvando">
@@ -100,6 +108,7 @@
                         <th>Turma</th>
                         <th>Período</th>
                         <th>Modalidade</th>
+                        <th>Encerramento das entregas</th>
                         <th class="text-end">Ações</th>
                     </tr>
                     </thead>
@@ -110,6 +119,7 @@
                             <td x-text="turma.identificador"></td>
                             <td x-text="nomesPeriodo[turma.periodo]"></td>
                             <td x-text="nomesModalidade[turma.modalidade]"></td>
+                            <td x-text="formatarData(turma.dataEncerramentoEntregas)"></td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-primary" @click="editar(turma)">Editar</button>
                             </td>

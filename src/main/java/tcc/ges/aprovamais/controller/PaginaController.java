@@ -150,6 +150,9 @@ public class PaginaController {
             historicos.put(estagio.getId(), estagioService.listarHistoricoDoOrientador(estagio.getId(), email));
         }
         model.addAttribute("historicos", historicos);
+
+        // F2: estágios ATIVO desse orientador, para a página mostrar as horas e o aviso de prazo de cada aluno
+        model.addAttribute("estagiosAtivos", estagioService.listarAtivosDoOrientador(email));
         return "orientador/validacoes";
     }
 

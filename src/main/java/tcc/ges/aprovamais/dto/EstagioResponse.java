@@ -24,4 +24,13 @@ public class EstagioResponse {
     private final String cnpjEmpresa;
     private final String situacaoCnpj;
     private final String justificativaRejeicao;
+
+    // F2: horas que faltam, data em que as entregas do semestre fecham, dias até essa data e o aviso de prazo
+    private final BigDecimal cargaHorariaRestante;
+    private final LocalDate dataEncerramentoEntregas;
+    private final Long diasParaEncerramentoEntregas;
+    private final String avisoPrazo;
+
+    // RF22: semanas completas contadas desde o início, para o extrato da carga. Só vem preenchido no estágio ATIVO
+    private final Long semanasContadas;
 }

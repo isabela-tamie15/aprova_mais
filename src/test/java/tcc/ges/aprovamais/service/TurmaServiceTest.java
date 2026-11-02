@@ -18,6 +18,7 @@ import tcc.ges.aprovamais.entity.enums.Periodo;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.TurmaRepository;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,6 +66,7 @@ class TurmaServiceTest {
         request.setIdentificador(identificador);
         request.setPeriodo(Periodo.NOTURNO);
         request.setModalidade(Modalidade.PRESENCIAL);
+        request.setDataEncerramentoEntregas(LocalDate.of(2026, 12, 5));
         return request;
     }
 
@@ -136,5 +138,30 @@ class TurmaServiceTest {
         // assert
         assertEquals("Uma turma não pode mudar de curso", excecao.getMessage());
         verify(turmaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Edição grava a data de encerramento das entregas em uma turma antiga que estava sem ela (F2)")
+    void deveGravarDataDeEncerramentoAoEditarTurmaAntiga() {
+        // arrange: turma cadastrada antes do campo existir, por isso sem a data
+        Turma turma = new Turma();
+        turma.setId(20L);
+        turma.setCurso(curso);
+        turma.setSemestre("2026/2");
+        turma.setIdentificador("8B");
+        turma.setPeriodo(Periodo.NOTURNO);
+        turma.setModalidade(Modalidade.PRESENCIAL);
+        when(turmaRepository.findByIdAndCursoCoordenadorEmail(20L, EMAIL_COORDENADOR)).thenReturn(Optional.of(turma));
+        when(turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCaseAndIdNot(3L, "2026/2", "8B", 20L))
+                .thenReturn(false);
+        when(turmaRepository.save(turma)).thenReturn(turma);
+
+        // act
+        TurmaResponse resposta = turmaService.atualizar(20L, EMAIL_COORDENADOR, request(3L, "8B"), IP);
+
+        // assert
+        assertEquals(LocalDate.of(2026, 12, 5), turma.getDataEncerramentoEntregas());
+        assertEquals(LocalDate.of(2026, 12, 5), resposta.getDataEncerramentoEntregas());
+        verify(auditoriaService).registrar(eq(coordenador), eq("TURMA_ALTERADA"), anyString(), eq(IP), eq(true));
     }
 }

@@ -13,7 +13,7 @@
     <span class="navbar-brand fw-bold">Aprova+</span>
     <div>
         <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-    <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
     </div>
 </nav>
 
@@ -51,17 +51,17 @@
 
             <!-- Decisões anteriores sobre esse estágio, inclusive as rejeições de envios passados -->
             <th:block th:with="historico=${historicos.get(estagio.id)}">
-            <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="mb-3">
-                <strong>Decisões anteriores:</strong>
-                <ul class="list-unstyled small mb-0 mt-1">
-                    <li th:each="decisao : ${historico}" class="mb-1">
-                        <span th:if="${decisao.aprovado}" class="badge bg-success">Aprovado</span>
-                        <span th:unless="${decisao.aprovado}" class="badge bg-danger">Rejeitado</span>
-                        <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
-                        <span th:if="${decisao.justificativa}" th:text="${' - ' + decisao.justificativa}"></span>
-                    </li>
-                </ul>
-            </div>
+                <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="mb-3">
+                    <strong>Decisões anteriores:</strong>
+                    <ul class="list-unstyled small mb-0 mt-1">
+                        <li th:each="decisao : ${historico}" class="mb-1">
+                            <span th:if="${decisao.aprovado}" class="badge bg-success">Aprovado</span>
+                            <span th:unless="${decisao.aprovado}" class="badge bg-danger">Rejeitado</span>
+                            <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
+                            <span th:if="${decisao.justificativa}" th:text="${' - ' + decisao.justificativa}"></span>
+                        </li>
+                    </ul>
+                </div>
             </th:block>
 
             <!-- Ações para estágios pendentes -->
@@ -101,6 +101,72 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- F2: estágios ATIVO do orientador, com as horas e o aviso de prazo de cada aluno -->
+    <h4 class="mt-5 mb-4">Estágios ativos</h4>
+
+    <div th:if="${estagiosAtivos == null or #lists.isEmpty(estagiosAtivos)}" class="card p-4 text-center">
+        <p class="text-muted mb-0">Nenhum estágio ativo no momento.</p>
+    </div>
+
+    <div th:if="${estagiosAtivos != null and !#lists.isEmpty(estagiosAtivos)}">
+        <div th:each="ativo : ${estagiosAtivos}" class="card p-4 mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0" th:text="${ativo.nomeAluno}"></h5>
+                <span class="badge bg-success">Ativo</span>
+            </div>
+
+            <p><strong>Tipo:</strong> <span th:text="${ativo.nomeTipoEstagio}"></span></p>
+            <p><strong>Início:</strong> <span th:text="${#temporals.format(ativo.dataInicio, 'dd/MM/yyyy')}"></span></p>
+            <p><strong>Carga horária cumprida:</strong>
+                <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0)}"></span>h de
+                <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0)}"></span>h
+                <span class="text-muted" th:if="${ativo.jornadaSemanal}">
+                    (<span th:text="${#numbers.formatDecimal(ativo.jornadaSemanal, 1, 0)}"></span>h por semana)
+                </span>
+            </p>
+            <!-- RF22: extrato da carga, mostrando a conta feita pelo sistema (semanas completas vezes a jornada) -->
+            <p th:if="${ativo.semanasContadas != null and ativo.jornadaSemanal != null}"><strong>Extrato da carga:</strong>
+                <span th:if="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
+                      th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                              + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h = '
+                              + #numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0) + ' h de '
+                              + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h'}"></span>
+                <span th:unless="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
+                      th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                              + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h: carga total de '
+                              + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h atingida'}"></span>
+            </p>
+            <p><strong>Carga horária restante:</strong>
+                <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaRestante, 1, 0)}"></span>h
+            </p>
+            <p th:if="${ativo.dataEncerramentoEntregas}"><strong>DATA DE ENCERRAMENTO DAS ENTREGAS DO SEMESTRE:</strong>
+                <span th:text="${#temporals.format(ativo.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
+            </p>
+            <p th:unless="${ativo.dataEncerramentoEntregas}" class="text-muted">
+                Data de encerramento das entregas ainda não informada pela coordenação.
+            </p>
+
+            <!-- Mesmo aviso que o aluno vê no painel dele: amarelo de 30 a 11 dias e vermelho a partir de 10 dias -->
+            <div th:if="${ativo.avisoPrazo == 'AMARELO'}" class="alert alert-warning mb-0" role="alert">
+                <strong>PRAZO SE ESGOTANDO</strong> -
+                <span th:text="${'faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
+            </div>
+            <div th:if="${ativo.avisoPrazo == 'VERMELHO'}" class="alert alert-danger mb-0" role="alert">
+                <strong>PRAZO SE ESGOTANDO</strong> -
+                <span th:text="${ativo.diasParaEncerramentoEntregas == 1
+                        ? 'falta 1 dia para a data de encerramento das entregas'
+                        : 'faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
+            </div>
+            <div th:if="${ativo.avisoPrazo == 'ULTIMO_DIA'}" class="alert alert-danger mb-0" role="alert">
+                <strong>PRAZO SE ESGOTANDO</strong> - hoje é o último dia para entregar
+            </div>
+            <div th:if="${ativo.avisoPrazo == 'ENCERRADO'}" class="alert alert-danger mb-0" role="alert">
+                As entregas do semestre foram encerradas em
+                <span th:text="${#temporals.format(ativo.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>.
             </div>
         </div>
     </div>
