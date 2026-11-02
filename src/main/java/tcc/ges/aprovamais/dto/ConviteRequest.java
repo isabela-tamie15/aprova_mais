@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,4 +18,15 @@ public class ConviteRequest {
 
     @NotNull(message = "O perfil é obrigatório")
     private PerfilDestino perfil;
+
+    // Nome do convidado, só para coordenador e secretaria, o aluno e orientador vem do pré-cadastro
+    @Size(max = 150, message = "O nome deve ter no máximo 150 caracteres")
+    private String nome;
+
+    // Coordenador e secretaria não passam pelo pré-cadastro, então o nome vem aqui
+    @AssertTrue(message = "Informe o nome completo")
+    public boolean isNomeInformadoParaPerfilAdministrativo() {
+        boolean administrativo = perfil == PerfilDestino.COORDENADOR || perfil == PerfilDestino.SECRETARIA;
+        return !administrativo || (nome != null && nome.trim().length() >= 3);
+    }
 }

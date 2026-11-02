@@ -8,14 +8,21 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
+import tcc.ges.aprovamais.entity.Administrador;
 import tcc.ges.aprovamais.entity.Aluno;
 import tcc.ges.aprovamais.entity.Convite;
+import tcc.ges.aprovamais.entity.Coordenador;
+import tcc.ges.aprovamais.entity.Curso;
+import tcc.ges.aprovamais.entity.PreCadastro;
 import tcc.ges.aprovamais.entity.Secretaria;
+import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
+import tcc.ges.aprovamais.exception.DadoInvalidoException;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.repository.OrientadorRepository;
@@ -33,11 +40,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+// Testa o envio de convites pela hierarquia de perfis e pelo pré-cadastro (RF03, RN01, RN05, RN06, RN07)
 @ExtendWith(MockitoExtension.class)
 class ConviteServiceTest {
 
     private static final String EMAIL_DESTINO = "novo.aluno@teste.com";
     private static final String EMAIL_SECRETARIA = "secretaria@teste.com";
+    private static final String EMAIL_ADMIN = "admin@teste.com";
+    private static final String EMAIL_COORDENADOR = "coordenador@teste.com";
     private static final String IP = "127.0.0.1";
     private static final String APP_URL = "http://localhost:8080";
 
@@ -53,9 +63,13 @@ class ConviteServiceTest {
     private OrientadorRepository orientadorRepository;
     @Mock
     private AuditoriaService auditoriaService;
+    @Mock
+    private PreCadastroService preCadastroService;
     @InjectMocks
     private ConviteService conviteService;
+
     private Usuario secretaria;
+    private Turma turma;
 
     @BeforeEach
     void setUp() {
@@ -64,72 +78,198 @@ class ConviteServiceTest {
         secretaria = new Secretaria();
         secretaria.setEmail(EMAIL_SECRETARIA);
         secretaria.setPerfil(PerfilUsuario.SECRETARIA);
+
+        Curso curso = new Curso();
+        curso.setNome("Engenharia de Software");
+        turma = new Turma();
+        turma.setId(5L);
+        turma.setCurso(curso);
+    }
+
+    private PreCadastro preCadastro(PerfilDestino perfil) {
+        PreCadastro preCadastro = new PreCadastro();
+        preCadastro.setEmail(EMAIL_DESTINO);
+        preCadastro.setNome("Maria Souza");
+        preCadastro.setPerfil(perfil);
+        preCadastro.setIdentificadorInstitucional("11230000001");
+        preCadastro.setTurma(perfil == PerfilDestino.ALUNO ? turma : null);
+        return preCadastro;
     }
 
     @Test
-    @DisplayName("E-mail novo cria aluno pendente, convite válido por 24 h e envia o e-mail")
-    void deveEnviarConviteECriarAlunoPendente() {
+    @DisplayName("CA01: secretaria convida aluno pré-cadastrado; aluno pendente criado e convite com a turma")
+    void deveConvidarAlunoPreCadastrado() {
         // arrange
-        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE))
-                .thenReturn(false);
         when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
-        when(usuarioRepository.existsByEmail(EMAIL_DESTINO)).thenReturn(false);
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
+        when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.empty());
 
         // act
-        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO,
-                EMAIL_SECRETARIA, null, null, IP);
+        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP);
 
-        // assert é aluno criado inativo esperando o primeiro acesso
+        // assert: aluno criado inativo, com o nome do pré-cadastro, esperando o primeiro acesso
         ArgumentCaptor<Aluno> alunoCaptor = ArgumentCaptor.forClass(Aluno.class);
         verify(alunoRepository).save(alunoCaptor.capture());
         Aluno aluno = alunoCaptor.getValue();
         assertEquals(EMAIL_DESTINO, aluno.getEmail());
+        assertEquals("Maria Souza", aluno.getNome());
         assertEquals(PerfilUsuario.ALUNO, aluno.getPerfil());
         assertFalse(aluno.getAtivo());
         assertTrue(aluno.getPrimeiroAcesso());
 
-        // assert convite pendente, vinculado à secretaria e expira em 24H
+        // assert: convite pendente, com a turma do pré-cadastro e validade de 24 h
         ArgumentCaptor<Convite> conviteCaptor = ArgumentCaptor.forClass(Convite.class);
         verify(conviteRepository).save(conviteCaptor.capture());
         Convite convite = conviteCaptor.getValue();
         assertEquals(StatusConvite.PENDENTE, convite.getStatus());
         assertEquals(PerfilDestino.ALUNO, convite.getPerfilDestino());
         assertEquals(secretaria, convite.getRemetente());
-        assertNotNull(convite.getTokenConvite());
+        assertEquals(turma, convite.getTurma());
+        assertEquals(turma.getCurso(), convite.getCurso());
 
         OffsetDateTime agora = OffsetDateTime.now(ZoneOffset.UTC);
         assertTrue(convite.getExpiracaoToken().isAfter(agora.plusHours(23).plusMinutes(59)));
         assertTrue(convite.getExpiracaoToken().isBefore(agora.plusHours(24).plusMinutes(1)));
 
-        //assert, o link do email leva o token do convite
         verify(emailService).enviarConvite(EMAIL_DESTINO, EMAIL_DESTINO,
                 APP_URL + "/primeiro-acesso?token=" + convite.getTokenConvite());
-        verify(orientadorRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Convite pendente para o mesmo e-mail impede um novo envio")
-    void deveLancarExcecaoQuandoJaExisteConvitePendente() {
-        // arrange
-        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE))
-                .thenReturn(true);
+    @DisplayName("CA02: secretaria não pode convidar coordenador (RN01)")
+    void secretariaNaoConvidaCoordenador() {
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
 
-        // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
-                () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO,
-                        EMAIL_SECRETARIA, null, null, IP));
+        assertThrows(AccessDeniedException.class,
+                () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.COORDENADOR, "Fulano",
+                        EMAIL_SECRETARIA, IP));
 
-        // assert
-        assertEquals("Já existe um convite pendente para o email: " + EMAIL_DESTINO,
-                excecao.getMessage());
         verify(conviteRepository, never()).save(any());
         verify(emailService, never()).enviarConvite(anyString(), anyString(), anyString());
     }
 
     @Test
+    @DisplayName("Administrador convida coordenador, com o nome informado no convite")
+    void administradorConvidaCoordenador() {
+        Administrador administrador = new Administrador();
+        administrador.setEmail(EMAIL_ADMIN);
+        administrador.setPerfil(PerfilUsuario.ADMINISTRADOR);
+        when(usuarioRepository.findByEmail(EMAIL_ADMIN)).thenReturn(Optional.of(administrador));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
+        when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.empty());
+
+        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.COORDENADOR, " Ana Lima ", EMAIL_ADMIN, IP);
+
+        ArgumentCaptor<Usuario> usuarioCaptor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(usuarioCaptor.capture());
+        assertInstanceOf(Coordenador.class, usuarioCaptor.getValue());
+        assertEquals("Ana Lima", usuarioCaptor.getValue().getNome());
+        assertEquals(PerfilUsuario.COORDENADOR, usuarioCaptor.getValue().getPerfil());
+        verify(preCadastroService, never()).buscarPorEmail(anyString());
+        verify(conviteRepository).save(any(Convite.class));
+    }
+
+    @Test
+    @DisplayName("Coordenador convida secretaria")
+    void coordenadorConvidaSecretaria() {
+        Coordenador coordenador = new Coordenador();
+        coordenador.setEmail(EMAIL_COORDENADOR);
+        coordenador.setPerfil(PerfilUsuario.COORDENADOR);
+        when(usuarioRepository.findByEmail(EMAIL_COORDENADOR)).thenReturn(Optional.of(coordenador));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
+        when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.empty());
+
+        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.SECRETARIA, "Carla Dias", EMAIL_COORDENADOR, IP);
+
+        ArgumentCaptor<Usuario> usuarioCaptor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(usuarioCaptor.capture());
+        assertInstanceOf(Secretaria.class, usuarioCaptor.getValue());
+        assertEquals(PerfilUsuario.SECRETARIA, usuarioCaptor.getValue().getPerfil());
+    }
+
+    @Test
+    @DisplayName("CA03: e-mail fora do pré-cadastro é recusado")
+    void deveRecusarEmailForaDoPreCadastro() {
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.empty());
+
+        DadoInvalidoException excecao = assertThrows(DadoInvalidoException.class,
+                () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
+
+        assertTrue(excecao.getMessage().contains("pré-cadastro"));
+        verify(conviteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Perfil diferente do pré-cadastro é recusado")
+    void deveRecusarPerfilDiferenteDoPreCadastro() {
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO))
+                .thenReturn(Optional.of(preCadastro(PerfilDestino.ORIENTADOR)));
+
+        assertThrows(DadoInvalidoException.class,
+                () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
+
+        verify(conviteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CA04: convite pendente para o mesmo e-mail impede um novo envio")
+    void deveLancarExcecaoQuandoJaExisteConvitePendente() {
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(true);
+
+        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+                () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
+
+        assertEquals("Já existe um convite pendente para o email: " + EMAIL_DESTINO, excecao.getMessage());
+        verify(conviteRepository, never()).save(any());
+        verify(emailService, never()).enviarConvite(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Quem já tem conta ativa não é convidado de novo")
+    void deveRecusarContaAtiva() {
+        Aluno ativo = new Aluno();
+        ativo.setEmail(EMAIL_DESTINO);
+        ativo.setPerfil(PerfilUsuario.ALUNO);
+        ativo.setPrimeiroAcesso(false);
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
+        when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.of(ativo));
+
+        assertThrows(IllegalStateException.class,
+                () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
+
+        verify(conviteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Reenvio para quem ainda não concluiu o cadastro não duplica o usuário")
+    void deveReenviarConviteSemDuplicarUsuarioPendente() {
+        Aluno pendente = new Aluno();
+        pendente.setEmail(EMAIL_DESTINO);
+        pendente.setPerfil(PerfilUsuario.ALUNO);
+        pendente.setPrimeiroAcesso(true);
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
+        when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.of(pendente));
+
+        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP);
+
+        verify(conviteRepository).save(any(Convite.class));
+        verify(emailService).enviarConvite(eq(EMAIL_DESTINO), eq(EMAIL_DESTINO), anyString());
+        verify(alunoRepository, never()).save(any());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("Token vencido é marcado como EXPIRADO e lança exceção")
     void deveMarcarConviteComoExpiradoQuandoTokenVenceu() {
-        // ARrange
         Convite convite = new Convite();
         convite.setEmail(EMAIL_DESTINO);
         convite.setTokenConvite("token-vencido");
@@ -137,35 +277,12 @@ class ConviteServiceTest {
         convite.setExpiracaoToken(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
         when(conviteRepository.findByTokenConvite("token-vencido")).thenReturn(Optional.of(convite));
 
-        // act
         IllegalStateException excecao = assertThrows(IllegalStateException.class,
                 () -> conviteService.validarToken("token-vencido"));
 
-        // Assert
-        assertEquals("Este convite expirou. Solicite um novo convite à secretaria",
-                excecao.getMessage());
+        assertEquals("Este convite expirou. Solicite um novo convite a quem enviou", excecao.getMessage());
         assertEquals(StatusConvite.EXPIRADO, convite.getStatus());
         verify(conviteRepository).atualizarStatus(convite.getId(), StatusConvite.EXPIRADO);
         verify(conviteRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Reenvio para e-mail que já tem usuário não duplica o cadastro")
-    void deveReenviarConviteSemDuplicarUsuarioExistente() {
-        // Arrange
-        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE))
-                .thenReturn(false);
-        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
-        when(usuarioRepository.existsByEmail(EMAIL_DESTINO)).thenReturn(true);
-
-        // Act
-        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO,
-                EMAIL_SECRETARIA, null, null, IP);
-
-        // Assert
-        verify(conviteRepository).save(any(Convite.class));
-        verify(emailService).enviarConvite(eq(EMAIL_DESTINO), eq(EMAIL_DESTINO), anyString());
-        verify(alunoRepository, never()).save(any());
-        verify(orientadorRepository, never()).save(any());
     }
 }
