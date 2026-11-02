@@ -426,4 +426,100 @@ class EstagioServiceTest {
         assertEquals("CNPJ não encontrado na Receita Federal. Confira o número digitado", excecao.getMessage());
         verify(estagioRepository, never()).save(any());
     }
+
+    // F2: horas restantes, data de encerramento das entregas e aviso de prazo
+
+    // Prepara a consulta do aluno devolvendo o estágio informado como o estágio em aberto da matrícula
+    private void prepararConsultaDoAluno(Estagio estagio) {
+        when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
+        when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
+        when(estagioRepository.findFirstByMatriculaIdAndStatusInOrderByIdDesc(matricula.getId(), EstagioService.STATUS_EM_ABERTO))
+                .thenReturn(Optional.of(estagio));
+    }
+
+    @Test
+    @DisplayName("Estágio ativo mostra as horas restantes e o aviso amarelo quando faltam 20 dias para o encerramento das entregas")
+    void deveMostrarHorasRestantesEAvisoAmarelo() {
+        // arrange: 3 semanas completas de 30 h (90 h) e encerramento das entregas daqui a 20 dias
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(3));
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(new BigDecimal("90"), resposta.getCargaHorariaCumprida());
+        assertEquals(new BigDecimal("180"), resposta.getCargaHorariaRestante());
+        assertEquals(LocalDate.now().plusDays(20), resposta.getDataEncerramentoEntregas());
+        assertEquals(20L, resposta.getDiasParaEncerramentoEntregas());
+        assertEquals(CalculadoraCargaHoraria.AVISO_AMARELO, resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Estágio ativo mostra o aviso vermelho quando faltam 5 dias para o encerramento das entregas")
+    void deveMostrarAvisoVermelho() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(5L, resposta.getDiasParaEncerramentoEntregas());
+        assertEquals(CalculadoraCargaHoraria.AVISO_VERMELHO, resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Estágio pendente mostra a data de encerramento, mas não recebe aviso de prazo")
+    void naoDeveMostrarAvisoParaEstagioPendente() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.PENDENTE);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(5L, resposta.getDiasParaEncerramentoEntregas());
+        assertNull(resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Turma sem data de encerramento das entregas não gera aviso nem erro")
+    void naoDeveQuebrarQuandoTurmaNaoTemDataDeEncerramento() {
+        // arrange: a turma do setUp foi criada sem a data, como as turmas antigas
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertNull(resposta.getDataEncerramentoEntregas());
+        assertNull(resposta.getDiasParaEncerramentoEntregas());
+        assertNull(resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Orientador recebe só os estágios ATIVO dele, já com o aviso de prazo calculado")
+    void deveListarEstagiosAtivosDoOrientador() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
+        when(estagioRepository.findByOrientadorEmailAndStatusIn(EMAIL_ORIENTADOR, List.of(StatusEstagio.ATIVO)))
+                .thenReturn(List.of(estagio));
+
+        // act
+        List<EstagioResponse> ativos = estagioService.listarAtivosDoOrientador(EMAIL_ORIENTADOR);
+
+        // assert
+        assertEquals(1, ativos.size());
+        assertEquals("Aluno Teste", ativos.get(0).getNomeAluno());
+        assertEquals(CalculadoraCargaHoraria.AVISO_AMARELO, ativos.get(0).getAvisoPrazo());
+    }
 }

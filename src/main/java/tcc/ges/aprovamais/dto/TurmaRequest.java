@@ -9,6 +9,8 @@ import lombok.Data;
 import tcc.ges.aprovamais.entity.enums.Modalidade;
 import tcc.ges.aprovamais.entity.enums.Periodo;
 
+import java.time.LocalDate;
+
 @Data
 public class TurmaRequest {
 
@@ -30,4 +32,12 @@ public class TurmaRequest {
 
     @NotNull(message = "Selecione a modalidade")
     private Modalidade modalidade;
+
+    /*
+       Data em que as entregas do semestre fecham, usada no aviso de prazo da F2.
+       É opcional na API, igual à coluna, que aceita vazio: turma sem a data mostra
+       "ainda não informada pela coordenação" ao aluno e ao orientador. A tela de
+       turmas continua exigindo o campo, na validação do coordenador-turmas.js
+    */
+    private LocalDate dataEncerramentoEntregas;
 }

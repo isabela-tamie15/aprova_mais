@@ -14,6 +14,7 @@ import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.repository.EstagioRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -28,6 +29,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -362,5 +364,60 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(status().isBadRequest());
 
         verify(consultaCnpjService, never()).consultar(anyString());
+    }
+
+    // F2: data de encerramento das entregas e aviso de prazo, pela API e nas páginas
+
+    @Test
+    @DisplayName("GET do estágio ativo devolve a data de encerramento das entregas, os dias que faltam e o aviso amarelo")
+    void deveDevolverAvisoDePrazoPelaApi() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        LocalDate encerramento = LocalDate.now().plusDays(20);
+        matricula.getTurma().setDataEncerramentoEntregas(encerramento);
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dataEncerramentoEntregas").value(encerramento.toString()))
+                .andExpect(jsonPath("$.diasParaEncerramentoEntregas").value(20))
+                .andExpect(jsonPath("$.avisoPrazo").value("AMARELO"));
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra o aviso PRAZO SE ESGOTANDO quando faltam 5 dias")
+    void deveMostrarAvisoNoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
+        entityManager.flush();
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("PRAZO SE ESGOTANDO")))
+                .andExpect(content().string(containsString("faltam 5 dias para a data de encerramento das entregas")))
+                .andExpect(content().string(containsString("Carga horária restante")));
+    }
+
+    @Test
+    @DisplayName("Página do orientador lista os estágios ativos com o aviso de prazo de cada aluno")
+    void deveMostrarEstagiosAtivosNaPaginaDoOrientador() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now());
+        entityManager.flush();
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Estágios ativos")))
+                .andExpect(content().string(containsString("Aluno Teste")))
+                .andExpect(content().string(containsString("hoje é o último dia para entregar")));
+    }
+
+    @Test
+    @DisplayName("Turma sem data de encerramento das entregas não quebra o painel do aluno")
+    void naoDeveQuebrarPainelSemDataDeEncerramento() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("ainda não informada pela coordenação")));
     }
 }

@@ -98,6 +98,9 @@ public class TurmaService {
         turma.setIdentificador(identificador);
         turma.setPeriodo(request.getPeriodo());
         turma.setModalidade(request.getModalidade());
+
+        // Data em que as entregas do semestre fecham, usada no aviso de prazo da F2
+        turma.setDataEncerramentoEntregas(request.getDataEncerramentoEntregas());
     }
 
     // Grava o identificador em maiúsculas e sem espaços nas pontas, assim "8b " e "8B" são a mesma turma
@@ -114,6 +117,7 @@ public class TurmaService {
                 .identificador(turma.getIdentificador())
                 .periodo(turma.getPeriodo().name())
                 .modalidade(turma.getModalidade().name())
+                .dataEncerramentoEntregas(turma.getDataEncerramentoEntregas())
                 .build();
     }
 }

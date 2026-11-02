@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import tcc.ges.aprovamais.entity.enums.Periodo;
 import tcc.ges.aprovamais.entity.enums.Modalidade;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Data
@@ -39,6 +40,15 @@ public class Turma {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Modalidade modalidade;
+
+    /*
+       Data em que as entregas do semestre fecham, informada pelo coordenador.
+       A F2 usa essa data para mostrar ao aluno e ao orientador quantos dias faltam
+       e o aviso de prazo. A coluna aceita vazio porque as turmas cadastradas antes
+       deste campo existir não têm essa data, e o banco não conseguiria criar a coluna
+    */
+    @Column(name = "data_encerramento_entregas")
+    private LocalDate dataEncerramentoEntregas;
 
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
