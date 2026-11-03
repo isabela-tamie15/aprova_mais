@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Barra de navegação do orientador. O parâmetro "ativo" marca a página atual -->
+<nav th:fragment="navbar(ativo)" class="navbar navbar-dark bg-dark px-3 mb-4">
+    <span class="navbar-brand fw-bold">Aprova+</span>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="/orientador/validacoes" class="btn btn-sm"
+           th:classappend="${ativo == 'validacoes'} ? 'btn-light' : 'btn-outline-light'">Validações</a>
+        <a href="/orientador/correcoes" class="btn btn-sm"
+           th:classappend="${ativo == 'correcoes'} ? 'btn-light' : 'btn-outline-light'">Correções</a>
+        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm">Segurança</a>
+        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+    </div>
+</nav>
+</body>
+</html>
