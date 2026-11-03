@@ -14,6 +14,7 @@ import tcc.ges.aprovamais.entity.Tarefa;
 import tcc.ges.aprovamais.entity.TipoEstagio;
 import tcc.ges.aprovamais.entity.Trilha;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.EntregaRepository;
 import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
 import tcc.ges.aprovamais.repository.TrilhaRepository;
@@ -36,6 +37,7 @@ public class TrilhaCoordenadorService {
     private final TarefaRepository tarefaRepository;
     private final TipoEstagioRepository tipoEstagioRepository;
     private final AuditoriaService auditoriaService;
+    private final EntregaRepository entregaRepository;
 
     // Esse é o método que busca a trilha de um tipo. Vazio quer dizer que o tipo ainda não tem trilha
     @Transactional(readOnly = true)
@@ -132,6 +134,9 @@ public class TrilhaCoordenadorService {
         Tarefa tarefa = buscarTarefaDoCoordenador(tarefaId, emailCoordenador);
         TipoEstagio tipo = tarefa.getTrilha().getTipoEstagio();
 
+        if (entregaRepository.existsByTarefaId(tarefa.getId())) {
+            throw new IllegalStateException("Esta tarefa já tem entregas de alunos e não pode ser removida.");
+        }
         tarefaRepository.delete(tarefa);
 
         registrar(tipo, "TAREFA_REMOVIDA",

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:x-bind="http://www.w3.org/1999/xhtml"
+      xmlns:x-on="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Minha Trilha</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/paginas/entregas.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-light">
 
@@ -12,7 +16,7 @@
     <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
 </nav>
 
-<div class="container">
+<div class="container pb-5" x-data="trilhaAluno()">
 
     <div class="d-flex align-items-center mb-4">
         <a href="/aluno/dashboard" class="btn btn-outline-secondary btn-sm me-3">← Voltar ao dashboard</a>
@@ -23,37 +27,139 @@
         <h5 class="card-title" th:text="${trilha.nomeTipoEstagio}"></h5>
         <p class="text-muted" th:text="${trilha.nomeTrilha}"></p>
 
-        <table class="table table-bordered table-hover mt-3">
-            <thead class="table-dark">
-            <tr>
-                <th style="width: 80px;">Ordem</th>
-                <th>Tarefa</th>
-                <th>Descrição</th>
-                <th>Material de apoio</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="tarefa : ${trilha.tarefas}">
-                <td class="text-center" th:text="${tarefa.ordem}"></td>
-                <td th:text="${tarefa.nome}"></td>
-                <td th:text="${tarefa.descricao}"></td>
-                <td>
-                    <a th:if="${tarefa.linkApoio}" th:href="${tarefa.linkApoio}" target="_blank"
-                       rel="noopener noreferrer">Abrir</a>
-                    <span th:unless="${tarefa.linkApoio}" class="text-muted">-</span>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mt-3 mb-0 align-middle">
+                <thead class="table-dark">
+                <tr>
+                    <th class="coluna-ordem">Ordem</th>
+                    <th>Tarefa</th>
+                    <th>Descrição</th>
+                    <th>Material de apoio</th>
+                    <th>Entrega</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- O status vem do servidor e é atualizado pelo script depois de um envio (RF32) -->
+                <tr th:each="tarefa : ${trilha.tarefas}">
+                    <td class="text-center" th:text="${tarefa.ordem}"></td>
+                    <td th:text="${tarefa.nome}"></td>
+                    <td th:text="${tarefa.descricao}"></td>
+                    <td>
+                        <a th:if="${tarefa.linkApoio}" th:href="${tarefa.linkApoio}" target="_blank"
+                           rel="noopener noreferrer">Abrir</a>
+                        <span th:unless="${tarefa.linkApoio}" class="text-muted">-</span>
+                    </td>
+                    <td>
+                        <span class="badge" th:data-id="${tarefa.id}" th:data-status="${tarefa.statusEntrega}"
+                              x-bind:class="classeStatus(statusDe($el.dataset.id, $el.dataset.status))"
+                              x-text="nomeStatus(statusDe($el.dataset.id, $el.dataset.status))"
+                              th:text="${tarefa.statusEntrega}"></span>
+                        <small class="text-muted d-block" th:if="${tarefa.totalVersoes > 0}"
+                               th:text="${tarefa.totalVersoes == 1 ? '1 versão' : tarefa.totalVersoes + ' versões'}"></small>
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-primary" th:data-id="${tarefa.id}"
+                                x-on:click="abrir($el.dataset.id)">Entregar / ver</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div th:unless="${trilha}" class="card p-4 text-center">
         <p class="text-muted">Nenhuma trilha encontrada para o seu tipo de estágio.</p>
     </div>
 
+    <!-- Entrega da tarefa selecionada: envio de arquivo (RF33) e histórico de versões (RF34) -->
+    <div id="painel-entrega" class="card p-4 mt-4" x-show="tarefaId" x-cloak>
+        <div class="text-muted" x-show="carregando">Carregando a entrega...</div>
+        <div class="alert alert-danger" x-show="erro" x-text="erro"></div>
+
+        <template x-if="detalhe && !carregando">
+            <div>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1" x-text="detalhe.nomeTarefa"></h5>
+                        <p class="text-muted mb-0" x-text="detalhe.descricaoTarefa"></p>
+                    </div>
+                    <span class="badge" :class="classeStatus(detalhe.status)" x-text="nomeStatus(detalhe.status)"></span>
+                </div>
+
+                <div class="alert alert-success" x-show="sucesso" x-text="sucesso"></div>
+
+                <div class="alert alert-warning" x-show="detalhe.status === 'DEVOLVIDA'">
+                    Sua última versão foi devolvida. Confira o feedback do orientador abaixo e envie uma nova versão.
+                </div>
+                <div class="alert alert-info" x-show="detalhe.status === 'ENVIADA' || detalhe.status === 'EM_REVISAO'">
+                    Sua entrega está com o orientador. Uma nova versão só pode ser enviada se ela for devolvida.
+                </div>
+                <div class="alert alert-success" x-show="detalhe.status === 'APROVADA'">
+                    Tarefa aprovada pelo orientador.
+                </div>
+
+                <!-- Formulário de envio, só quando a tarefa aceita uma nova versão -->
+                <form x-show="detalhe.podeEnviar" @submit.prevent="enviar()" novalidate class="mb-4">
+                    <h6 class="fw-semibold" x-text="'Enviar versão ' + (detalhe.versoes.length + 1)"></h6>
+                    <div class="mb-3">
+                        <label for="arquivo" class="form-label">Arquivo</label>
+                        <input id="arquivo" type="file" class="form-control" x-ref="arquivo"
+                               accept=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png"
+                               :class="{ 'is-invalid': erros.arquivo }" @change="erros.arquivo = ''">
+                        <div class="invalid-feedback" x-text="erros.arquivo"></div>
+                        <div class="form-text">PDF, DOCX, XLSX, PPTX, JPG, JPEG ou PNG, até 10 MB.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comentario" class="form-label">Comentário para o orientador (opcional)</label>
+                        <textarea id="comentario" class="form-control" rows="2" maxlength="1000"
+                                  x-model="comentario" :class="{ 'is-invalid': erros.comentario }"></textarea>
+                        <div class="invalid-feedback" x-text="erros.comentario"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" :disabled="enviando">
+                        <span x-show="!enviando">Enviar</span>
+                        <span x-show="enviando">Enviando...</span>
+                    </button>
+                </form>
+
+                <h6 class="fw-semibold">Histórico de versões</h6>
+                <p class="text-muted" x-show="detalhe.versoes.length === 0">Nenhuma versão enviada ainda.</p>
+
+                <template x-for="versao in detalhe.versoes" :key="versao.id">
+                    <div class="versao-entrega">
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <strong x-text="'Versão ' + versao.numero"></strong>
+                            <span class="text-muted small" x-text="'Enviada em ' + formatarDataHora(versao.enviadaEm)"></span>
+                        </div>
+                        <div class="mt-1">
+                            <a :href="'/api/v1/aluno/entregas/versoes/' + versao.id + '/arquivo'" x-text="versao.nomeArquivo"></a>
+                            <span class="text-muted small" x-text="'(' + formatarTamanho(versao.tamanhoBytes) + ')'"></span>
+                        </div>
+                        <p class="mb-0 mt-1 small" x-show="versao.comentarioAluno">
+                            <strong>Seu comentário:</strong> <span x-text="versao.comentarioAluno"></span>
+                        </p>
+
+                        <div class="avaliacao-versao" x-show="versao.resultado">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="badge" :class="classeStatus(versao.resultado)" x-text="nomeStatus(versao.resultado)"></span>
+                                <span class="text-muted small"
+                                      x-text="'por ' + versao.nomeAvaliador + ' em ' + formatarDataHora(versao.avaliadaEm)"></span>
+                            </div>
+                            <p class="mb-1 mt-2" x-show="versao.feedback">
+                                <strong>Feedback:</strong> <span class="texto-livre" x-text="versao.feedback"></span>
+                            </p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
 </div>
 
 <script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/entregas-comum.js}"></script>
+<script th:src="@{/js/paginas/aluno-trilha.js}"></script>
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 

@@ -12,6 +12,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -135,6 +137,24 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(construirErro(HttpStatus.BAD_REQUEST,
                         "Dados enviados em formato inválido. Confira os campos e tente novamente."));
+    }
+
+    // 400 arquivo da entrega maior que o limite do spring.servlet.multipart (10 MB)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErroResposta> handleArquivoGrande(MaxUploadSizeExceededException ex) {
+        log.warn("[EXCEPTION] Arquivo acima do limite: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(construirErro(HttpStatus.BAD_REQUEST, "O arquivo deve ter no máximo 10 MB."));
+    }
+
+    // 400 envio de entrega sem o arquivo
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErroResposta> handleArquivoAusente(MissingServletRequestPartException ex) {
+        log.warn("[EXCEPTION] Parte ausente na requisição: {}", ex.getRequestPartName());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(construirErro(HttpStatus.BAD_REQUEST, "Selecione um arquivo para enviar."));
     }
 
     // 400 parâmetro inválido que não passa pelo @Valid (ex: CNPJ na URL)
