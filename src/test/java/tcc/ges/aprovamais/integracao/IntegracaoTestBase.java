@@ -12,6 +12,7 @@ import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.*;
 import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.service.AuditoriaService;
+import tcc.ges.aprovamais.service.ConsentimentoService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -81,6 +82,9 @@ abstract class IntegracaoTestBase {
         aluno.setSenhaHash("hash-de-teste");
         aluno.setPerfil(PerfilUsuario.ALUNO);
         aluno.setRgm(rgm);
+        // Termos já aceitos, como no primeiro acesso. Sem isso as telas mandam para o consentimento
+        aluno.setConsentimentoDado(true);
+        aluno.setVersaoConsentimento(ConsentimentoService.VERSAO_TERMOS_ATUAL);
         entityManager.persist(aluno);
         return aluno;}
 
@@ -93,6 +97,8 @@ abstract class IntegracaoTestBase {
         orientador.setSenhaHash("hash-de-teste");
         orientador.setPerfil(PerfilUsuario.ORIENTADOR);
         orientador.setMatriculaInstitucional(matriculaInstitucional);
+        orientador.setConsentimentoDado(true);
+        orientador.setVersaoConsentimento(ConsentimentoService.VERSAO_TERMOS_ATUAL);
         entityManager.persist(orientador);
         return orientador;
 

@@ -41,6 +41,19 @@ public class ConsentimentoService {
     }
 
     /*
+       Diz se o usuário ainda precisa aceitar os termos, se ele nunca aceitou, ou
+       aceitou uma versão antiga.
+       Quem não existe no banco não é bloqueado aqui
+    */
+    @Transactional(readOnly = true)
+    public boolean precisaConsentir(String email) {
+        return usuarioRepository.findByEmail(email)
+                .map(u -> !Boolean.TRUE.equals(u.getConsentimentoDado())
+                        || !VERSAO_TERMOS_ATUAL.equals(u.getVersaoConsentimento()))
+                .orElse(false);
+    }
+
+    /*
        Método separado porque o aceite também acontece no fluxo de primeiro
        acesso, quando o usuário cria a conta, e lá não tem IP nem auditoria
        pra registrar. Assim os dois fluxos reaproveitam a mesma lógica
