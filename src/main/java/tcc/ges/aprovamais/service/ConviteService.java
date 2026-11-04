@@ -14,6 +14,7 @@ import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.repository.OrientadorRepository;

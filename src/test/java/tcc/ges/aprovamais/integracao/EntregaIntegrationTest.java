@@ -11,7 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
-import tcc.ges.aprovamais.service.EmailService;
+import tcc.ges.aprovamais.external.EmailService;
 
 import java.nio.charset.StandardCharsets;
 
@@ -29,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 //Entregas de ponta a ponta pela API o aluno envia, o orientador abre e avalia, o aluno manda nova versão
 @TestPropertySource(properties = "aprova.armazenamento.diretorio=target/uploads-teste")

@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.auth;
+package tcc.ges.aprovamais.security;
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

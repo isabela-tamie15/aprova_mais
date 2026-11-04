@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.service;
+package tcc.ges.aprovamais.external;
 
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;

@@ -7,11 +7,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.*;
-import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
+import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.service.AuditoriaService;
-import tcc.ges.aprovamais.service.ConsultaCnpjService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

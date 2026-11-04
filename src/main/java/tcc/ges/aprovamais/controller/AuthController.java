@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.auth;
+package tcc.ges.aprovamais.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -15,6 +15,7 @@ import tcc.ges.aprovamais.dto.LoginRequest;
 import tcc.ges.aprovamais.dto.LoginResponse;
 import tcc.ges.aprovamais.dto.PreAutenticacaoRequest;
 import tcc.ges.aprovamais.dto.VerificacaoDoisFatoresRequest;
+import tcc.ges.aprovamais.service.AuthService;
 
 @Tag(name = "Autenticação", description = "Login em duas etapas, segundo fator e logout. Rotas públicas")
 @SecurityRequirements

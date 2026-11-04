@@ -24,10 +24,10 @@ import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.Periodo;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.repository.MatriculaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
-import tcc.ges.aprovamais.service.EmailService;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
