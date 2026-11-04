@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.auth;
+package tcc.ges.aprovamais.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;

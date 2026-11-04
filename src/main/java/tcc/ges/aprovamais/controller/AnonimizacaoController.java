@@ -9,11 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import tcc.ges.aprovamais.entity.Usuario;
-import tcc.ges.aprovamais.exception.ResourceNotFoundException;
-import tcc.ges.aprovamais.repository.UsuarioRepository;
 import tcc.ges.aprovamais.service.AnonimizacaoService;
-import tcc.ges.aprovamais.service.AuditoriaService;
 
 // Esse controller é quem recebe as solicitações de LGPD do usuário logado
 @Tag(name = "LGPD", description = "Solicitações do titular e anonimização da conta")
@@ -23,8 +19,6 @@ import tcc.ges.aprovamais.service.AuditoriaService;
 public class AnonimizacaoController {
 
     private final AnonimizacaoService anonimizacaoService;
-    private final UsuarioRepository usuarioRepository;
-    private final AuditoriaService auditoriaService;
 
     // Esse é o endpoint que o usuário usa pra pedir a exclusão dos próprios dados
     @DeleteMapping("/meus-dados")
@@ -54,12 +48,10 @@ public class AnonimizacaoController {
            na auditoria pra ficar rastreável. Quem entrega os dados em si é
            outro fluxo, mais controlado
         */
-        Usuario usuario = usuarioRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
-        auditoriaService.registrar(usuario,
+        anonimizacaoService.registrarSolicitacao(authentication.getName(),
                 "SOLICITACAO_ACESSO_DADOS",
                 "Titular solicitou acesso aos seus dados pessoais",
-                request.getRemoteAddr(), true);
+                request.getRemoteAddr());
         return ResponseEntity.ok().build();
     }
 
@@ -70,12 +62,11 @@ public class AnonimizacaoController {
             HttpServletRequest request) {
 
         // Mesma ideia do acesso, só registra a solicitação pra auditoria
-        Usuario usuario = usuarioRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
-        auditoriaService.registrar(usuario,
+        anonimizacaoService.registrarSolicitacao(authentication.getName(),
                 "SOLICITACAO_CORRECAO_DADOS",
                 "Titular solicitou correção dos seus dados pessoais",
-                request.getRemoteAddr(), true);
+                request.getRemoteAddr());
         return ResponseEntity.ok().build();
     }
+
 }

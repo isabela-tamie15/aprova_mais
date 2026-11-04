@@ -1,7 +1,8 @@
-package tcc.ges.aprovamais.auth;
+package tcc.ges.aprovamais.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -10,11 +11,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.WebUtils;
 import tcc.ges.aprovamais.dto.ConfiguracaoDoisFatoresResponse;
 import tcc.ges.aprovamais.dto.LoginRequest;
 import tcc.ges.aprovamais.dto.LoginResponse;
 import tcc.ges.aprovamais.dto.PreAutenticacaoRequest;
 import tcc.ges.aprovamais.dto.VerificacaoDoisFatoresRequest;
+import tcc.ges.aprovamais.security.TokenRevogadoService;
+import tcc.ges.aprovamais.service.AuthService;
 
 @Tag(name = "Autenticação", description = "Login em duas etapas, segundo fator e logout. Rotas públicas")
 @SecurityRequirements
@@ -24,6 +28,7 @@ import tcc.ges.aprovamais.dto.VerificacaoDoisFatoresRequest;
 public class AuthController {
 
     private final AuthService authService;
+    private final TokenRevogadoService tokenRevogadoService;
 
     // Diz se a aplicação tá rodando com SSL, usado pra decidir se o cookie vai com Secure ou não
     @Value("${server.ssl.enabled:false}")
@@ -97,6 +102,12 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response,
             Authentication authentication) {
+
+        // Encerra o token no servidor, não só no navegador
+        Cookie cookieJwt = WebUtils.getCookie(request, "jwt");
+        if (cookieJwt != null) {
+            tokenRevogadoService.revogar(cookieJwt.getValue());
+        }
 
         /*
            Grava um cookie com valor vazio e Max-Age 0, que é a forma padrão

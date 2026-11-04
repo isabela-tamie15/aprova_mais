@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Painel de correção</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/paginas/entregas.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar-orientador :: navbar('correcoes')}"></div>
+
+<!-- Painel de correção centralizado (F4, RF35): entregas dos alunos do orientador, das mais antigas para as mais recentes -->
+<div class="container pb-5" x-data="painelCorrecao()" x-init="carregar()">
+    <h4 class="mb-1">Painel de correção</h4>
+    <p class="total-aguardando mb-4" x-cloak x-show="painel"
+       x-text="painel && (painel.totalAguardando === 1
+                ? '1 entrega aguardando sua análise'
+                : painel.totalAguardando + ' entregas aguardando sua análise')"></p>
+
+    <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+
+    <form class="card p-3 mb-3" @submit.prevent="aplicarFiltros()">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label for="filtroAluno" class="form-label small mb-1">Aluno</label>
+                <select id="filtroAluno" class="form-select form-select-sm" x-model="filtros.alunoId">
+                    <option value="">Todos</option>
+                    <template x-for="aluno in (painel ? painel.alunos : [])" :key="aluno.id">
+                        <option :value="aluno.id" x-text="aluno.nome"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filtroTarefa" class="form-label small mb-1">Tarefa</label>
+                <select id="filtroTarefa" class="form-select form-select-sm" x-model="filtros.tarefaId">
+                    <option value="">Todas</option>
+                    <template x-for="tarefa in (painel ? painel.tarefas : [])" :key="tarefa.id">
+                        <option :value="tarefa.id" x-text="tarefa.nome"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filtroStatus" class="form-label small mb-1">Status</label>
+                <select id="filtroStatus" class="form-select form-select-sm" x-model="filtros.status">
+                    <option value="">Aguardando análise</option>
+                    <option value="ENVIADA">Enviada</option>
+                    <option value="EM_REVISAO">Em revisão</option>
+                    <option value="APROVADA">Aprovada</option>
+                    <option value="DEVOLVIDA">Devolvida</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filtroDe" class="form-label small mb-1">Enviada de</label>
+                <input id="filtroDe" type="date" class="form-control form-control-sm" x-model="filtros.de">
+            </div>
+            <div class="col-md-2">
+                <label for="filtroAte" class="form-label small mb-1">até</label>
+                <input id="filtroAte" type="date" class="form-control form-control-sm" x-model="filtros.ate">
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" @click="limparFiltros()">Limpar</button>
+        </div>
+    </form>
+
+    <div class="card">
+        <div class="p-4 text-muted" x-show="carregando">Carregando...</div>
+        <div class="p-4 text-center text-muted" x-cloak x-show="!carregando && painel && painel.itens.length === 0">
+            Nenhuma entrega encontrada com esses filtros.
+        </div>
+        <div class="table-responsive" x-cloak x-show="!carregando && painel && painel.itens.length > 0">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Enviada em</th>
+                    <th>Aluno</th>
+                    <th>Tarefa</th>
+                    <th>Versão</th>
+                    <th>Status</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+                </thead>
+                <tbody>
+                <template x-for="item in (painel ? painel.itens : [])" :key="item.entregaId">
+                    <tr>
+                        <td x-text="formatarDataHora(item.enviadaEm)"></td>
+                        <td x-text="item.nomeAluno"></td>
+                        <td x-text="item.nomeTarefa"></td>
+                        <td x-text="item.numeroVersao"></td>
+                        <td><span class="badge" :class="classeStatus(item.status)" x-text="nomeStatus(item.status)"></span></td>
+                        <td class="text-end">
+                            <a class="btn btn-sm" :href="'/orientador/correcoes/' + item.entregaId"
+                               :class="aguardando(item.status) ? 'btn-primary' : 'btn-outline-secondary'"
+                               x-text="aguardando(item.status) ? 'Avaliar' : 'Ver'"></a>
+                        </td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginação -->
+    <div x-cloak x-show="painel && painel.totalPaginas > 1">
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <button class="btn btn-sm btn-outline-secondary" :disabled="painel && painel.pagina === 0"
+                @click="irPara(painel.pagina - 1)">Anterior</button>
+        <span class="small text-muted"
+              x-text="painel && ('Página ' + (painel.pagina + 1) + ' de ' + painel.totalPaginas)"></span>
+        <button class="btn btn-sm btn-outline-secondary" :disabled="painel && painel.pagina >= painel.totalPaginas - 1"
+                @click="irPara(painel.pagina + 1)">Próxima</button>
+    </div>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/entregas-comum.js}"></script>
+<script th:src="@{/js/paginas/orientador-correcoes.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+</body>
+</html>

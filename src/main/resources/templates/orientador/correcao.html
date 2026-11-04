@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Avaliar entrega</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/paginas/entregas.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar-orientador :: navbar('correcoes')}"></div>
+
+<!-- Avaliação da entrega (F4, RF36) -->
+<div class="container pb-5" th:attr="x-data=${'avaliacaoEntrega(' + entregaId + ')'}" x-init="carregar()">
+    <a href="/orientador/correcoes" class="btn btn-outline-secondary btn-sm mb-3">← Voltar ao painel</a>
+
+    <div class="text-muted" x-show="carregando">Carregando a entrega...</div>
+    <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+    <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
+
+    <template x-if="detalhe">
+        <div>
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h4 class="mb-1" x-text="detalhe.nomeTarefa"></h4>
+                    <p class="text-muted mb-0" x-text="'Aluno: ' + detalhe.nomeAluno"></p>
+                </div>
+                <span class="badge fs-6" :class="classeStatus(detalhe.status)" x-text="nomeStatus(detalhe.status)"></span>
+            </div>
+
+            <!-- Versão atual e versão anterior lado a lado (CA02 do RF36) -->
+            <div class="card p-4 mb-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-semibold" x-text="'Versão atual (' + atual().numero + ')'"></h6>
+                        <p class="small text-muted mb-1" x-text="'Enviada em ' + formatarDataHora(atual().enviadaEm)"></p>
+                        <a :href="linkArquivo(atual())" x-text="atual().nomeArquivo"></a>
+                        <span class="text-muted small" x-text="'(' + formatarTamanho(atual().tamanhoBytes) + ')'"></span>
+                        <p class="mt-2 mb-0" x-show="atual().comentarioAluno">
+                            <strong>Comentário do aluno:</strong>
+                            <span class="texto-livre" x-text="atual().comentarioAluno"></span>
+                        </p>
+                    </div>
+                    <div class="col-md-6 coluna-versao-anterior">
+                        <template x-if="anterior()">
+                            <div>
+                                <h6 class="fw-semibold" x-text="'Versão anterior (' + anterior().numero + ')'"></h6>
+                                <p class="small text-muted mb-1" x-text="'Enviada em ' + formatarDataHora(anterior().enviadaEm)"></p>
+                                <a :href="linkArquivo(anterior())" x-text="anterior().nomeArquivo"></a>
+                                <div class="avaliacao-versao" x-show="anterior().resultado">
+                                    <span class="badge" :class="classeStatus(anterior().resultado)"
+                                          x-text="nomeStatus(anterior().resultado)"></span>
+                                    <p class="mb-0 mt-2 small"><strong>Feedback dado:</strong>
+                                        <span class="texto-livre" x-text="anterior().feedback || '-'"></span></p>
+                                </div>
+                            </div>
+                        </template>
+                        <p class="text-muted mb-0" x-show="!anterior()">Primeira versão desta entrega.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulário de avaliação, só enquanto a entrega aguarda análise -->
+            <form class="card p-4 mb-4" x-show="aguardando()" @submit.prevent novalidate>
+                <h5 class="fw-semibold mb-3">Avaliação</h5>
+                <!-- O checklist de critérios da F6 entra aqui, antes do feedback -->
+
+                <div class="mb-3">
+                    <label for="feedback" class="form-label">Feedback para o aluno</label>
+                    <textarea id="feedback" class="form-control" rows="4" maxlength="2000" x-model="feedback"
+                              :class="{ 'is-invalid': erros.feedback }"></textarea>
+                    <div class="invalid-feedback" x-text="erros.feedback"></div>
+                    <div class="form-text">Obrigatório para devolver. O aluno recebe um e-mail avisando do resultado.</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success" :disabled="enviando"
+                            @click="avaliar('APROVAR')">Aprovar</button>
+                    <button type="button" class="btn btn-warning" :disabled="enviando"
+                            @click="avaliar('DEVOLVER')">Devolver para ajustes</button>
+                </div>
+            </form>
+
+            <!-- Histórico completo (RF34) -->
+            <div class="card p-4">
+                <h5 class="fw-semibold mb-3">Histórico de versões</h5>
+                <template x-for="versao in detalhe.versoes" :key="versao.id">
+                    <div class="versao-entrega">
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <strong x-text="'Versão ' + versao.numero"></strong>
+                            <span class="text-muted small" x-text="'Enviada em ' + formatarDataHora(versao.enviadaEm)"></span>
+                        </div>
+                        <a :href="linkArquivo(versao)" x-text="versao.nomeArquivo"></a>
+                        <div class="avaliacao-versao" x-show="versao.resultado">
+                            <span class="badge" :class="classeStatus(versao.resultado)" x-text="nomeStatus(versao.resultado)"></span>
+                            <span class="text-muted small ms-2"
+                                  x-text="'em ' + formatarDataHora(versao.avaliadaEm)"></span>
+                            <p class="mb-1 mt-2 small" x-show="versao.feedback"><strong>Feedback:</strong>
+                                <span class="texto-livre" x-text="versao.feedback"></span></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/entregas-comum.js}"></script>
+<script th:src="@{/js/paginas/orientador-correcao.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+</body>
+</html>

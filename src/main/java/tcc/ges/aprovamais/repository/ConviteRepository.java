@@ -16,7 +16,7 @@ import java.util.Optional;
 @Repository
 public interface ConviteRepository extends JpaRepository<Convite, Long> {
 
-    // Busca um convite pelo token, usado pra validar o link de primeiro acesso
+    // Busca um convite pelo hash do token (o banco não guarda o token), usado pra validar o link de primeiro acesso
     Optional<Convite> findByTokenConvite(String tokenConvite);
 
     // Busca convite pelo e-mail e status, usado pra checar se já existe convite pendente
@@ -33,4 +33,4 @@ public interface ConviteRepository extends JpaRepository<Convite, Long> {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Query("UPDATE Convite c SET c.status = :status WHERE c.id = :id")
     int atualizarStatus(@Param("id") Long id, @Param("status") StatusConvite status);
-}
+}

@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.service;
+package tcc.ges.aprovamais.external;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,6 +12,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
+import tcc.ges.aprovamais.service.ValidadorCnpj;
 
 import java.time.Duration;
 

@@ -13,7 +13,7 @@ import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
-import tcc.ges.aprovamais.service.ConsultaCnpjService;
+import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.ValidadorCnpj;
 

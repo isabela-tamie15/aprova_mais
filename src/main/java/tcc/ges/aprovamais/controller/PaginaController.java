@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
-import tcc.ges.aprovamais.repository.ConviteRepository;
+import tcc.ges.aprovamais.service.ConviteService;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.TrilhaService;
 
@@ -24,7 +24,7 @@ public class PaginaController {
 
     private final EstagioService estagioService;
     private final TrilhaService trilhaService;
-    private final ConviteRepository conviteRepository;
+    private final ConviteService conviteService;
 
     // rotas públicas/gerais
 
@@ -182,8 +182,7 @@ public class PaginaController {
            por isso filtra pelo e-mail do remetente que veio do token
         */
         String email = authentication.getName();
-        model.addAttribute("convites",
-                conviteRepository.findByRemetenteEmailOrderByCriadoEmDesc(email));
+        model.addAttribute("convites", conviteService.listarEnviados(email));
         return "secretaria/convites";
     }
-}
+}

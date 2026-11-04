@@ -8,6 +8,7 @@ import org.springframework.web.context.WebApplicationContext;
 import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.service.ConsentimentoService;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
@@ -41,6 +42,8 @@ abstract class CoordenacaoTestBase extends IntegracaoTestBase {
         c.setEmail(email);
         c.setSenhaHash("hash-de-teste");
         c.setPerfil(PerfilUsuario.COORDENADOR);
+        c.setConsentimentoDado(true);
+        c.setVersaoConsentimento(ConsentimentoService.VERSAO_TERMOS_ATUAL);
         entityManager.persist(c);
         return c;
     }

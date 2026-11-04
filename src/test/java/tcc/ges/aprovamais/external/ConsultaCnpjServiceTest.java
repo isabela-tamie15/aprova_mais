@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.service;
+package tcc.ges.aprovamais.external;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

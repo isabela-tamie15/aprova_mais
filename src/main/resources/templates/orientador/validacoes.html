@@ -8,14 +8,8 @@
 </head>
 <body class="bg-light">
 
-<!-- Navbar -->
-<nav class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <div>
-        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
-    </div>
-</nav>
+<!-- Navbar compartilhada do orientador: Validações, Correções, Segurança e Sair -->
+<div th:replace="~{fragments/navbar-orientador :: navbar('validacoes')}"></div>
 
 <div class="container">
     <h4 class="mb-4">Validações de Estágio</h4>

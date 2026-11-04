@@ -6,14 +6,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
-import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.EstagioCadastroRequest;
+import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.repository.*;
 
 import java.math.BigDecimal;

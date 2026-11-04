@@ -7,10 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.TarefaResponse;
 import tcc.ges.aprovamais.dto.TrilhaResponse;
+import tcc.ges.aprovamais.entity.Entrega;
 import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.Matricula;
 import tcc.ges.aprovamais.entity.Tarefa;
 import tcc.ges.aprovamais.entity.Trilha;
+import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
@@ -20,6 +22,7 @@ import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TrilhaRepository;
 
 import java.util.List;
+import java.util.Map;
 
 // Esse service é quem monta a trilha de tarefas do aluno baseado no estágio ativo dele
 @Service
@@ -32,6 +35,7 @@ public class TrilhaService {
     private final EstagioRepository estagioRepository;
     private final TrilhaRepository trilhaRepository;
     private final TarefaRepository tarefaRepository;
+    private final EntregaService entregaService;
 
     // Esse é o método principal, monta a trilha completa do aluno seguindo a cadeia matrícula → estágio → trilha → tarefas
     @Transactional(readOnly = true)
@@ -45,7 +49,7 @@ public class TrilhaService {
         Matricula matricula = buscarMatriculaAtiva(emailAluno);
         Estagio estagio = buscarEstagioAtivo(matricula.getId());
         Trilha trilha = buscarTrilhaPorTipo(estagio.getTipoEstagio().getId());
-        List<TarefaResponse> tarefas = buscarTarefas(trilha.getId());
+        List<TarefaResponse> tarefas = buscarTarefas(trilha.getId(), entregaService.entregasPorTarefa(estagio.getId()));
 
         log.info("[TRILHA] {} tarefas encontradas para aluno: {} - Tipo: {}",
                 tarefas.size(), emailAluno, estagio.getTipoEstagio().getNome());
@@ -94,23 +98,26 @@ public class TrilhaService {
                 });
     }
 
-    // Busca as tarefas da trilha já na ordem certa, e converte cada uma pro DTO de resposta
-    private List<TarefaResponse> buscarTarefas(Long trilhaId) {
+    // Busca as tarefas da trilha já na ordem certa, e converte cada uma pro DTO com o status da entrega do aluno
+    private List<TarefaResponse> buscarTarefas(Long trilhaId, Map<Long, Entrega> entregas) {
         return tarefaRepository
                 .findByTrilhaIdOrderByOrdem(trilhaId)
                 .stream()
-                .map(this::toTarefaResponse)
+                .map(tarefa -> toTarefaResponse(tarefa, entregas.get(tarefa.getId())))
                 .toList();
     }
 
     // Converte a entidade Tarefa pro DTO que vai ser devolvido pro frontend
-    private TarefaResponse toTarefaResponse(Tarefa tarefa) {
+    private TarefaResponse toTarefaResponse(Tarefa tarefa, Entrega entrega) {
         return TarefaResponse.builder()
                 .id(tarefa.getId())
                 .nome(tarefa.getNome())
                 .descricao(tarefa.getDescricao())
                 .ordem(tarefa.getOrdem())
                 .linkApoio(tarefa.getLinkApoio())
+                //status da entrega da tarefa fica como PENDENTE enquanto o aluno não enviou nada
+                .statusEntrega(entrega == null ? StatusEntrega.PENDENTE.name() : entrega.getStatus().name())
+                .totalVersoes(entrega == null ? 0L : entregaService.contarVersoes(entrega.getId()))
                 .build();
     }
 }

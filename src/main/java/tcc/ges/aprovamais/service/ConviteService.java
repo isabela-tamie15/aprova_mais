@@ -14,10 +14,12 @@ import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.repository.OrientadorRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+import tcc.ges.aprovamais.security.HashToken;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -112,12 +114,15 @@ public class ConviteService {
             criarUsuarioPendente(email, perfil, nomeConvidado);
         }
 
-        // Gera o token do convite, que vai no link enviado por e-mail
+        /*
+           Gera o token do convite, que vai no link enviado por e-mail.
+           O banco guarda só o hash dele, como no token de recuperação de senha
+        */
         String token = UUID.randomUUID().toString();
 
         Convite convite = new Convite();
         convite.setEmail(email);
-        convite.setTokenConvite(token);
+        convite.setTokenConvite(HashToken.sha256(token));
         convite.setPerfilDestino(perfil);
         convite.setRemetente(remetente);
 
@@ -135,6 +140,9 @@ public class ConviteService {
 
         String linkConvite = appUrl + "/primeiro-acesso?token=" + token;
         emailService.enviarConvite(email, email, linkConvite);
+
+        // Só aparece com o log em DEBUG, que é o do perfil dev, isso n deve nunca sair em produção
+        log.debug("[CONVITE] Link de primeiro acesso para {}: {}", email, linkConvite);
 
         auditoriaService.registrar(
                 remetente,
@@ -216,7 +224,10 @@ public class ConviteService {
     // Esse é o método que valida um token de convite, usado antes de aceitar, recusar ou abrir a página
     @Transactional(readOnly = true)
     public Convite validarToken(String token) {
-        Convite convite = conviteRepository.findByTokenConvite(token)
+        if (token == null || token.isBlank() || token.length() > 200) {
+            throw new ResourceNotFoundException("Convite não encontrado ou inválido");
+        }
+        Convite convite = conviteRepository.findByTokenConvite(HashToken.sha256(token))
                 .orElseThrow(() -> new ResourceNotFoundException("Convite não encontrado ou inválido"));
 
         // Se já foi usado ou cancelado, não vale mais

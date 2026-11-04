@@ -92,4 +92,15 @@ public class AnonimizacaoService {
                 true
         );
     }
+
+    /*
+       Registra na auditoria o pedido de acesso ou de correção dos dados pessoais.
+       Os dados em si são entregues pela secretaria, fora do sistema
+    */
+    @Transactional(readOnly = true)
+    public void registrarSolicitacao(String email, String acao, String detalhes, String ipOrigem) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+        auditoriaService.registrar(usuario, acao, detalhes, ipOrigem, true);
+    }
 }

@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.service;
+package tcc.ges.aprovamais.external;
 
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;
@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 // Esse service é quem envia os e-mails transacionais do sistema, usando a API do Resend
 @Service
@@ -50,13 +51,8 @@ public class EmailService {
 
             log.info("[EMAIL] Convite enviado para: {}", destinatario);
 
-        } catch (ResendException e) {
-            /*
-               Se o envio falhar, o erro fica só no log. Faz sentido porque
-               o @Async já desacoplou do fluxo principal, não tem como
-               avisar quem chamou, e o convite continua válido no banco
-               mesmo que o e-mail não tenha ido
-            */
+        } catch (ResendException | RuntimeException e) {
+            // Se o envio falhar, o erro fica só no log
             log.error("[EMAIL] Erro ao enviar convite para {}: {}", destinatario, e.getMessage(), e);
         }
     }
@@ -78,8 +74,30 @@ public class EmailService {
 
             log.info("[EMAIL] Recuperação de senha enviada para: {}", destinatario);
 
-        } catch (ResendException e) {
+        } catch (ResendException | RuntimeException e) {
             log.error("[EMAIL] Erro ao enviar recuperação de senha para {}: {}", destinatario, e.getMessage(), e);
+        }
+    }
+
+    /*
+       Avisa o aluno de que a entrega foi aprovada ou devolvida. O email
+       traz só o resultado e o link para a trilha, o feedback e a nota ficam no sistema, que exige login
+    */
+    @Async
+    public void enviarResultadoEntrega(String destinatario, String nomeDestinatario, String nomeTarefa,
+                                       boolean aprovada, String linkTrilha) {
+        try {
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions email = CreateEmailOptions.builder()
+                    .from(REMETENTE)
+                    .to(destinatario)
+                    .subject((aprovada ? "Entrega aprovada" : "Entrega devolvida para ajustes") + " - Aprova+")
+                    .html(montarCorpoResultadoEntrega(nomeDestinatario, nomeTarefa, aprovada, linkTrilha))
+                    .build();
+            resend.emails().send(email);
+            log.info("[EMAIL] Resultado da entrega enviado para: {}", destinatario);
+        } catch (ResendException | RuntimeException e) {
+            log.error("[EMAIL] Erro ao enviar resultado da entrega para {}: {}", destinatario, e.getMessage(), e);
         }
     }
 
@@ -107,7 +125,29 @@ public class EmailService {
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(nome, link);
+                """.formatted(HtmlUtils.htmlEscape(nome), link);
+    }
+
+    // O nome da tarefa vem do cadastro do coordenador, então passa pelo escape de HTML antes de entrar no corpo
+    private String montarCorpoResultadoEntrega(String nome, String tarefa, boolean aprovada, String link) {
+        String resultado = aprovada
+                ? "foi <strong>aprovada</strong> pelo seu orientador."
+                : "foi <strong>devolvida para ajustes</strong>. Confira o feedback do orientador e envie uma nova versão.";
+        return """
+                <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2B4ECC;">Sua entrega foi avaliada</h2>
+                    <p>Olá, <strong>%s</strong>!</p>
+                    <p>A entrega da tarefa <strong>%s</strong> %s</p>
+                    <a href="%s"
+                       style="display: inline-block; background: #2B4ECC; color: white;
+                              padding: 12px 24px; border-radius: 8px; text-decoration: none;
+                              font-weight: 600; margin: 16px 0;">
+                        Ver minha trilha
+                    </a>
+                    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
+                </div>
+                """.formatted(HtmlUtils.htmlEscape(nome), HtmlUtils.htmlEscape(tarefa), resultado, link);
     }
 
     // Mesma ideia do convite, mas com texto e prazo de expiração diferentes
@@ -130,6 +170,6 @@ public class EmailService {
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(nome, link);
+                """.formatted(HtmlUtils.htmlEscape(nome), link);
     }
 }

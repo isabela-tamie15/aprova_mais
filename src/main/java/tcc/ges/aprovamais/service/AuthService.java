@@ -1,4 +1,4 @@
-package tcc.ges.aprovamais.auth;
+package tcc.ges.aprovamais.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,6 @@ import tcc.ges.aprovamais.dto.LoginResponse;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 import tcc.ges.aprovamais.security.JwtService;
-import tcc.ges.aprovamais.service.AuditoriaService;
-import tcc.ges.aprovamais.service.BloqueioContaService;
-import tcc.ges.aprovamais.service.DoisFatoresService;
-
 
 @Service
 @RequiredArgsConstructor

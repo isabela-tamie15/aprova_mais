@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 import java.nio.charset.StandardCharsets;
