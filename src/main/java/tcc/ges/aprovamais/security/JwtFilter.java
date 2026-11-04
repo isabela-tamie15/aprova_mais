@@ -30,6 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final TokenRevogadoService tokenRevogadoService;
 
     // Esse é o método principal do filtro, chamado uma vez por requisição
     @Override
@@ -42,7 +43,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = extrairToken(requisicao);
 
         // Sem token, segue o fluxo como anônimo e deixa o Security decidir o que fazer
-        if (token == null) {
+        // Sem token, ou com um token encerrado pelo logout, a requisição segue sem autenticação
+        if (token == null || tokenRevogadoService.estaRevogado(token)) {
             cadeiaFiltros.doFilter(requisicao, resposta);
             return;
         }
@@ -126,4 +128,4 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         return null;
     }
-}
+}

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 // Esse service é quem gera e valida os tokens JWT usados na autenticação
 @Service
@@ -53,6 +54,12 @@ public class JwtService {
                    de novo
                 */
                 .claim(CLAIM_PERFIL, perfil)
+                /*
+                   Id único de cada token. Sem ele, dois logins do mesmo usuário
+                   no mesmo segundo geram o mesmo token, e o logout de um
+                   encerraria o outro junto (ver TokenRevogadoService)
+                */
+                .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiracaoMs))
                 .signWith(chaveAssinatura)
@@ -67,6 +74,11 @@ public class JwtService {
     // Extrai o perfil que foi gravado como claim no momento da geração
     public String extrairPerfil(String token) {
         return extrairClaims(token).get(CLAIM_PERFIL, String.class);
+    }
+
+    // Momento em que o token expira, usado para saber até quando ele precisa ficar na lista de revogados
+    public java.time.Instant extrairExpiracao(String token) {
+        return extrairClaims(token).getExpiration().toInstant();
     }
 
     /*
@@ -91,4 +103,4 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-}
+}
