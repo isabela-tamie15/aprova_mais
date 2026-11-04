@@ -23,11 +23,13 @@ import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.ConviteRepository;
 import tcc.ges.aprovamais.repository.OrientadorRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+import tcc.ges.aprovamais.security.HashToken;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -133,8 +135,14 @@ class ConviteServiceTest {
         assertTrue(convite.getExpiracaoToken().isAfter(agora.plusHours(23).plusMinutes(59)));
         assertTrue(convite.getExpiracaoToken().isBefore(agora.plusHours(24).plusMinutes(1)));
 
-        verify(emailService).enviarConvite(EMAIL_DESTINO, EMAIL_DESTINO,
-                APP_URL + "/primeiro-acesso?token=" + convite.getTokenConvite());
+        // o link do email leva o token. O banco guarda só o hash dele
+        ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarConvite(eq(EMAIL_DESTINO), eq(EMAIL_DESTINO), linkCaptor.capture());
+        String prefixo = APP_URL + "/primeiro-acesso?token=";
+        assertTrue(linkCaptor.getValue().startsWith(prefixo));
+        String token = linkCaptor.getValue().substring(prefixo.length());
+        assertNotEquals(token, convite.getTokenConvite());
+        assertEquals(HashToken.sha256(token), convite.getTokenConvite());
     }
 
     @Test
@@ -276,7 +284,7 @@ class ConviteServiceTest {
         convite.setTokenConvite("token-vencido");
         convite.setStatus(StatusConvite.PENDENTE);
         convite.setExpiracaoToken(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
-        when(conviteRepository.findByTokenConvite("token-vencido")).thenReturn(Optional.of(convite));
+        when(conviteRepository.findByTokenConvite(HashToken.sha256("token-vencido"))).thenReturn(Optional.of(convite));
 
         IllegalStateException excecao = assertThrows(IllegalStateException.class,
                 () -> conviteService.validarToken("token-vencido"));
@@ -285,5 +293,15 @@ class ConviteServiceTest {
         assertEquals(StatusConvite.EXPIRADO, convite.getStatus());
         verify(conviteRepository).atualizarStatus(convite.getId(), StatusConvite.EXPIRADO);
         verify(conviteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Token que não existe, vazio ou grande demais responde como convite inválido")
+    void deveRecusarTokenInvalido() {
+        when(conviteRepository.findByTokenConvite(HashToken.sha256("nao-existe"))).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> conviteService.validarToken("nao-existe"));
+        assertThrows(ResourceNotFoundException.class, () -> conviteService.validarToken(""));
+        assertThrows(ResourceNotFoundException.class, () -> conviteService.validarToken("x".repeat(201)));
     }
 }

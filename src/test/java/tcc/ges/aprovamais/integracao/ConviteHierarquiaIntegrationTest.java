@@ -3,6 +3,7 @@ package tcc.ges.aprovamais.integracao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -32,6 +33,9 @@ import tcc.ges.aprovamais.repository.UsuarioRepository;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -150,9 +154,14 @@ class ConviteHierarquiaIntegrationTest extends IntegracaoTestBase {
         Convite convite = conviteRepository.findByEmailAndStatus(EMAIL_ALUNO_NOVO, StatusConvite.PENDENTE).orElseThrow();
         assertEquals(turma.getId(), convite.getTurma().getId());
 
+        // o token sai do link do email, porque o banco guarda só o hash dele
+        ArgumentCaptor<String> link = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarConvite(eq(EMAIL_ALUNO_NOVO), anyString(), link.capture());
+        String token = link.getValue().substring(link.getValue().indexOf("token=") + "token=".length());
+
         // aceite com senha válida ativa a conta e cria a matrícula na turma do pré-cadastro
         mockMvc.perform(post("/primeiro-acesso/aceitar")
-                        .param("token", convite.getTokenConvite())
+                        .param("token", token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"senha\":\"senhaForte1\",\"confirmacaoSenha\":\"senhaForte1\"}")).andExpect(status().isOk());
 
