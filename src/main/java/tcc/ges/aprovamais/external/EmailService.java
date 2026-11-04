@@ -51,13 +51,8 @@ public class EmailService {
 
             log.info("[EMAIL] Convite enviado para: {}", destinatario);
 
-        } catch (ResendException e) {
-            /*
-               Se o envio falhar, o erro fica só no log. Faz sentido porque
-               o @Async já desacoplou do fluxo principal, não tem como
-               avisar quem chamou, e o convite continua válido no banco
-               mesmo que o e-mail não tenha ido
-            */
+        } catch (ResendException | RuntimeException e) {
+            // Se o envio falhar, o erro fica só no log
             log.error("[EMAIL] Erro ao enviar convite para {}: {}", destinatario, e.getMessage(), e);
         }
     }
@@ -79,7 +74,7 @@ public class EmailService {
 
             log.info("[EMAIL] Recuperação de senha enviada para: {}", destinatario);
 
-        } catch (ResendException e) {
+        } catch (ResendException | RuntimeException e) {
             log.error("[EMAIL] Erro ao enviar recuperação de senha para {}: {}", destinatario, e.getMessage(), e);
         }
     }
@@ -101,7 +96,7 @@ public class EmailService {
                     .build();
             resend.emails().send(email);
             log.info("[EMAIL] Resultado da entrega enviado para: {}", destinatario);
-        } catch (ResendException e) {
+        } catch (ResendException | RuntimeException e) {
             log.error("[EMAIL] Erro ao enviar resultado da entrega para {}: {}", destinatario, e.getMessage(), e);
         }
     }
@@ -130,7 +125,7 @@ public class EmailService {
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(nome, link);
+                """.formatted(HtmlUtils.htmlEscape(nome), link);
     }
 
     // O nome da tarefa vem do cadastro do coordenador, então passa pelo escape de HTML antes de entrar no corpo
@@ -175,6 +170,6 @@ public class EmailService {
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(nome, link);
+                """.formatted(HtmlUtils.htmlEscape(nome), link);
     }
 }
