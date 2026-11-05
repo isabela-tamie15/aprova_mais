@@ -137,6 +137,11 @@
             <p><strong>Carga horária restante:</strong>
                 <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaRestante, 1, 0)}"></span>h
             </p>
+            <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
+            <p th:if="${ativo.atividadesTotal != null and ativo.atividadesTotal > 0}"><strong>Atividades:</strong>
+                <span th:text="${ativo.atividadesAprovadas + (ativo.atividadesAprovadas == 1 ? ' atividade aprovada' : ' atividades aprovadas') + ', '
+                        + ativo.atividadesRestantes + (ativo.atividadesRestantes == 1 ? ' atividade restante' : ' atividades restantes')}"></span>
+            </p>
             <p th:if="${ativo.dataEncerramentoEntregas}"><strong>DATA DE ENCERRAMENTO DAS ENTREGAS DO SEMESTRE:</strong>
                 <span th:text="${#temporals.format(ativo.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
             </p>
@@ -155,12 +160,16 @@
                         ? 'falta 1 dia para a data de encerramento das entregas'
                         : 'faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
             </div>
+            <!-- F2: no último dia o aviso continua vermelho. Depois da data ele fica roxo, e os dias vêm negativos do Java, por isso só tiramos o sinal para exibir -->
             <div th:if="${ativo.avisoPrazo == 'ULTIMO_DIA'}" class="alert alert-danger mb-0" role="alert">
-                <strong>PRAZO SE ESGOTANDO</strong> - hoje é o último dia para entregar
+                <strong>PRAZO VENCE HOJE</strong> - hoje é o último dia para entregar
             </div>
-            <div th:if="${ativo.avisoPrazo == 'ENCERRADO'}" class="alert alert-danger mb-0" role="alert">
-                As entregas do semestre foram encerradas em
-                <span th:text="${#temporals.format(ativo.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>.
+            <div th:if="${ativo.avisoPrazo == 'ENCERRADO'}" class="alert mb-0" role="alert"
+                 style="background-color: #e2d9f3; border-color: #6f42c1; color: #432874;">
+                <strong>PRAZO VENCEU</strong> -
+                <span th:text="${-ativo.diasParaEncerramentoEntregas == 1
+                        ? 'há 1 dia'
+                        : 'há ' + (-ativo.diasParaEncerramentoEntregas) + ' dias'}"></span>
             </div>
         </div>
     </div>

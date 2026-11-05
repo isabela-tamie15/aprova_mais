@@ -75,7 +75,12 @@
         <p><strong>Carga horária restante:</strong>
             <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaRestante, 1, 0)}"></span>h
         </p>
-        <p th:if="${estagio.dataPrevistaConclusao}"><strong>Conclusão prevista:</strong>
+        <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
+        <p th:if="${estagio.atividadesTotal != null and estagio.atividadesTotal > 0}"><strong>Atividades:</strong>
+            <span th:text="${estagio.atividadesAprovadas + (estagio.atividadesAprovadas == 1 ? ' atividade aprovada' : ' atividades aprovadas') + ', '
+                    + estagio.atividadesRestantes + (estagio.atividadesRestantes == 1 ? ' atividade restante' : ' atividades restantes')}"></span>
+        </p>
+        <p th:if="${estagio.dataPrevistaConclusao}"><strong>DATA DE CONCLUSÃO PREVISTA DO ESTÁGIO:</strong>
             <span th:text="${#temporals.format(estagio.dataPrevistaConclusao, 'dd/MM/yyyy')}"></span>
         </p>
         <p><strong>Orientador:</strong>
@@ -102,12 +107,16 @@
                     ? 'falta 1 dia para a data de encerramento das entregas'
                     : 'faltam ' + estagio.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
         </div>
+        <!-- F2: no último dia o aviso continua vermelho. Depois da data ele fica roxo, e os dias vêm negativos do Java, por isso só tiramos o sinal para exibir -->
         <div th:if="${estagio.avisoPrazo == 'ULTIMO_DIA'}" class="alert alert-danger mb-3" role="alert">
-            <strong>PRAZO SE ESGOTANDO</strong> - hoje é o último dia para entregar
+            <strong>PRAZO VENCE HOJE</strong> - hoje é o último dia para entregar
         </div>
-        <div th:if="${estagio.avisoPrazo == 'ENCERRADO'}" class="alert alert-danger mb-3" role="alert">
-            As entregas do semestre foram encerradas em
-            <span th:text="${#temporals.format(estagio.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>.
+        <div th:if="${estagio.avisoPrazo == 'ENCERRADO'}" class="alert mb-3" role="alert"
+             style="background-color: #e2d9f3; border-color: #6f42c1; color: #432874;">
+            <strong>PRAZO VENCEU</strong> -
+            <span th:text="${-estagio.diasParaEncerramentoEntregas == 1
+                    ? 'há 1 dia'
+                    : 'há ' + (-estagio.diasParaEncerramentoEntregas) + ' dias'}"></span>
         </div>
 
         <a href="/aluno/trilha" class="btn btn-primary mt-2">Ver minha trilha de tarefas</a>

@@ -11,6 +11,7 @@ import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.entity.*;
+import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
@@ -45,6 +46,11 @@ public class EstagioService {
     private final UsuarioRepository usuarioRepository;
     private final ValidacaoEstagioRepository validacaoEstagioRepository;
     private final ConsultaCnpjService consultaCnpjService;
+
+    // F2: usados para contar as tarefas da trilha do tipo de estágio e as entregas aprovadas do aluno
+    private final TrilhaRepository trilhaRepository;
+    private final TarefaRepository tarefaRepository;
+    private final EntregaRepository entregaRepository;
 
     // Esse é o método que busca o estágio ativo de um aluno, usado quando a gente precisa garantir que existe
     @Transactional(readOnly = true)
@@ -474,6 +480,30 @@ public class EstagioService {
                 ? CalculadoraCargaHoraria.definirAvisoPrazo(diasParaEncerramento)
                 : null;
 
+        /*
+           F2: atividades da trilha, contadas só no estágio ATIVO, que é quando o aluno faz as entregas.
+           O total são as tarefas da trilha do tipo de estágio (se o tipo ainda não tem trilha, o total é zero)
+           e as aprovadas são as entregas do estágio com status APROVADA. Quando não há pendência,
+           ou seja, todas as tarefas foram aprovadas ou a trilha não tem tarefas, o aviso de prazo não aparece
+        */
+        Long atividadesTotal = null;
+        Long atividadesAprovadas = null;
+        Long atividadesRestantes = null;
+        if (estagio.getStatus() == StatusEstagio.ATIVO) {
+            atividadesTotal = trilhaRepository.findByTipoEstagioId(estagio.getTipoEstagio().getId())
+                    .map(trilha -> (long) tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId()).size())
+                    .orElse(0L);
+            atividadesAprovadas = entregaRepository.findByEstagioId(estagio.getId())
+                    .stream()
+                    .filter(entrega -> entrega.getStatus() == StatusEntrega.APROVADA)
+                    .count();
+            atividadesRestantes = PendenciasEstagio.calcularAtividadesRestantes(atividadesTotal, atividadesAprovadas);
+
+            if (!PendenciasEstagio.temPendencia(atividadesTotal, atividadesAprovadas)) {
+                avisoPrazo = null;
+            }
+        }
+
         // RF22: semanas usadas no extrato da carga, só no estágio ATIVO, que é quando a carga é contada pelo período
         Long semanasContadas = estagio.getStatus() == StatusEstagio.ATIVO
                 ? CalculadoraCargaHoraria.calcularSemanasContadas(estagio.getDataInicio(), LocalDate.now())
@@ -507,6 +537,9 @@ public class EstagioService {
                 .diasParaEncerramentoEntregas(diasParaEncerramento)
                 .avisoPrazo(avisoPrazo)
                 .semanasContadas(semanasContadas)
+                .atividadesAprovadas(atividadesAprovadas)
+                .atividadesTotal(atividadesTotal)
+                .atividadesRestantes(atividadesRestantes)
                 .build();
     }
 }

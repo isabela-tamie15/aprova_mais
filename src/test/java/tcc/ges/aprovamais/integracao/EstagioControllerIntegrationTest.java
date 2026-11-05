@@ -19,6 +19,7 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -372,6 +373,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
     @DisplayName("GET do estágio ativo devolve a data de encerramento das entregas, os dias que faltam e o aviso amarelo")
     void deveDevolverAvisoDePrazoPelaApi() throws Exception {
         criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
         LocalDate encerramento = LocalDate.now().plusDays(20);
         matricula.getTurma().setDataEncerramentoEntregas(encerramento);
         entityManager.flush();
@@ -387,6 +389,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
     @DisplayName("Painel do aluno mostra o aviso PRAZO SE ESGOTANDO quando faltam 5 dias")
     void deveMostrarAvisoNoPainelDoAluno() throws Exception {
         criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
         matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
         entityManager.flush();
 
@@ -401,6 +404,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
     @DisplayName("Página do orientador lista os estágios ativos com o aviso de prazo de cada aluno")
     void deveMostrarEstagiosAtivosNaPaginaDoOrientador() throws Exception {
         criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
         matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now());
         entityManager.flush();
 
@@ -419,6 +423,71 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ainda não informada pela coordenação")));
+    }
+
+    /*
+       F2 parte 2: as telas com a linha das atividades e os avisos novos. O aviso de prazo só aparece
+       enquanto houver atividade sem aprovação, por isso os testes do aviso criam uma trilha com tarefas
+    */
+
+    // Cria a trilha do tipo de estágio do aluno com a quantidade de tarefas informada, sem nenhuma entrega
+    private void criarTrilhaComTarefas(int quantidade) {
+        Trilha trilha = new Trilha();
+        trilha.setTipoEstagio(tipoEstagio);
+        trilha.setNome("Trilha " + tipoEstagio.getNome());
+        entityManager.persist(trilha);
+        for (int ordem = 1; ordem <= quantidade; ordem++) {
+            Tarefa tarefa = new Tarefa();
+            tarefa.setTrilha(trilha);
+            tarefa.setNome("Tarefa " + ordem);
+            tarefa.setOrdem(ordem);
+            entityManager.persist(tarefa);
+        }
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra as atividades restantes e o aviso PRAZO VENCEU em roxo depois da data")
+    void deveMostrarAtividadesEPrazoVencidoNoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().minusDays(3));
+        entityManager.flush();
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("0 atividades aprovadas, 1 atividade restante")))
+                .andExpect(content().string(containsString("PRAZO VENCEU")))
+                .andExpect(content().string(containsString("há 3 dias")))
+                .andExpect(content().string(containsString("#6f42c1")))
+                .andExpect(content().string(containsString("DATA DE CONCLUSÃO PREVISTA DO ESTÁGIO:")));
+    }
+
+    @Test
+    @DisplayName("Página do orientador mostra PRAZO VENCE HOJE no último dia e a linha das atividades do aluno")
+    void deveMostrarPrazoVenceHojeNaPaginaDoOrientador() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(3);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now());
+        entityManager.flush();
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("PRAZO VENCE HOJE")))
+                .andExpect(content().string(containsString("0 atividades aprovadas, 3 atividades restantes")));
+    }
+
+    @Test
+    @DisplayName("Trilha sem tarefas não mostra a linha das atividades nem o aviso de prazo no painel do aluno")
+    void naoDeveMostrarAtividadesNemAvisoComTrilhaSemTarefas() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
+        entityManager.flush();
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("DATA DE ENCERRAMENTO DAS ENTREGAS DO SEMESTRE:")))
+                .andExpect(content().string(not(containsString("Atividades:"))))
+                .andExpect(content().string(not(containsString("PRAZO SE ESGOTANDO"))));
     }
 
     // RF22: extrato da carga, com a conta das semanas
