@@ -108,68 +108,101 @@
 
     <div th:if="${estagiosAtivos != null and !#lists.isEmpty(estagiosAtivos)}">
         <div th:each="ativo : ${estagiosAtivos}" class="card p-4 mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title mb-0" th:text="${ativo.nomeAluno}"></h5>
-                <span class="badge bg-success">Ativo</span>
-            </div>
+            <!-- Mesmo layout do painel do aluno, para o orientador ver as informações na mesma ordem -->
+            <h5 class="card-title mb-3" th:text="${ativo.nomeAluno}"></h5>
+            <!-- Faixa de status larga, com a mesma altura do botão "Ver minha trilha de tarefas" do painel do aluno -->
+            <div class="bg-success border border-success text-white text-center rounded fw-semibold mb-4" style="padding: .375rem .75rem;">Ativo</div>
 
-            <p><strong>Tipo:</strong> <span th:text="${ativo.nomeTipoEstagio}"></span></p>
-            <p><strong>Início:</strong> <span th:text="${#temporals.format(ativo.dataInicio, 'dd/MM/yyyy')}"></span></p>
-            <p><strong>Carga horária cumprida:</strong>
-                <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0)}"></span>h de
-                <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0)}"></span>h
-                <span class="text-muted" th:if="${ativo.jornadaSemanal}">
-                    (<span th:text="${#numbers.formatDecimal(ativo.jornadaSemanal, 1, 0)}"></span>h por semana)
-                </span>
-            </p>
-            <!-- RF22: extrato da carga, mostrando a conta feita pelo sistema (semanas completas vezes a jornada) -->
-            <p th:if="${ativo.semanasContadas != null and ativo.jornadaSemanal != null}"><strong>Extrato da carga:</strong>
-                <span th:if="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
-                      th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
-                              + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h = '
-                              + #numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0) + ' h de '
-                              + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h'}"></span>
-                <span th:unless="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
-                      th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
-                              + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h: carga total de '
-                              + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h atingida'}"></span>
-            </p>
-            <p><strong>Carga horária restante:</strong>
-                <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaRestante, 1, 0)}"></span>h
-            </p>
-            <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
-            <p th:if="${ativo.atividadesTotal != null and ativo.atividadesTotal > 0}"><strong>Atividades:</strong>
-                <span th:text="${ativo.atividadesAprovadas + (ativo.atividadesAprovadas == 1 ? ' atividade aprovada' : ' atividades aprovadas') + ', '
-                        + ativo.atividadesRestantes + (ativo.atividadesRestantes == 1 ? ' atividade restante' : ' atividades restantes')}"></span>
-            </p>
-            <p th:if="${ativo.dataEncerramentoEntregas}"><strong>DATA DE ENCERRAMENTO DAS ENTREGAS DO SEMESTRE:</strong>
-                <span th:text="${#temporals.format(ativo.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
-            </p>
-            <p th:unless="${ativo.dataEncerramentoEntregas}" class="text-muted">
-                Data de encerramento das entregas ainda não informada pela coordenação.
-            </p>
+            <!-- F2: informações em duas colunas para ocupar a tela: à esquerda os dados do estágio, à direita a carga e as entregas -->
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Prof. orientador:</strong>
+                        <span th:if="${ativo.nomeOrientador}" th:text="${ativo.nomeOrientador}"></span>
+                        <span th:unless="${ativo.nomeOrientador}" class="text-muted">Não atribuído</span>
+                    </p>
+                    <p><strong>Tipo de estágio:</strong>
+                        <span th:text="${ativo.nomeTipoEstagio + (ativo.jornadaSemanal != null
+                                ? ' (' + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
+                    </p>
+                    <p><strong>Empresa a estagiar:</strong> <span th:text="${ativo.nomeEmpresa}"></span></p>
+                    <!-- CNPJ em linha própria. Estágios antigos podem não ter o CNPJ gravado -->
+                    <p><strong>CNPJ da empresa:</strong>
+                        <span th:text="${ativo.cnpjEmpresa != null ? ativo.cnpjEmpresa : 'Não informado'}"></span>
+                    </p>
+                    <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(ativo.dataInicio, 'dd/MM/yyyy')}"></span></p>
+                    <p th:if="${ativo.dataPrevistaConclusao}"><strong>Conclusão prevista do estágio:</strong>
+                        <span th:text="${#temporals.format(ativo.dataPrevistaConclusao, 'dd/MM/yyyy')}"></span>
+                    </p>
+                </div>
 
-            <!-- Mesmo aviso que o aluno vê no painel dele: amarelo de 30 a 11 dias e vermelho a partir de 10 dias -->
-            <div th:if="${ativo.avisoPrazo == 'AMARELO'}" class="alert alert-warning mb-0" role="alert">
-                <strong>PRAZO SE ESGOTANDO</strong> -
-                <span th:text="${'faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
-            </div>
-            <div th:if="${ativo.avisoPrazo == 'VERMELHO'}" class="alert alert-danger mb-0" role="alert">
-                <strong>PRAZO SE ESGOTANDO</strong> -
-                <span th:text="${ativo.diasParaEncerramentoEntregas == 1
-                        ? 'falta 1 dia para a data de encerramento das entregas'
-                        : 'faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
-            </div>
-            <!-- F2: no último dia o aviso continua vermelho. Depois da data ele fica roxo, e os dias vêm negativos do Java, por isso só tiramos o sinal para exibir -->
-            <div th:if="${ativo.avisoPrazo == 'ULTIMO_DIA'}" class="alert alert-danger mb-0" role="alert">
-                <strong>PRAZO VENCE HOJE</strong> - hoje é o último dia para entregar
-            </div>
-            <div th:if="${ativo.avisoPrazo == 'ENCERRADO'}" class="alert mb-0" role="alert"
-                 style="background-color: #e2d9f3; border-color: #6f42c1; color: #432874;">
-                <strong>PRAZO VENCEU</strong> -
-                <span th:text="${-ativo.diasParaEncerramentoEntregas == 1
-                        ? 'há 1 dia'
-                        : 'há ' + (-ativo.diasParaEncerramentoEntregas) + ' dias'}"></span>
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <!-- Carga total que o tipo de estágio exige, para o cálculo abaixo ficar claro -->
+                        <p><strong>Carga horária exigida:</strong>
+                            <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
+                        </p>
+                        <p><strong>Carga horária cumprida:</strong>
+                            <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0) + 'h'}"></span>
+                        </p>
+                        <p><strong>Carga horária restante:</strong>
+                            <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaRestante, 1, 0) + 'h'}"></span>
+                        </p>
+                        <!--
+                           RF22: cálculo da carga, com a conta feita pelo sistema (semanas completas vezes a jornada).
+                           Depois de atingir a carga total, as semanas param nas semanas necessárias (o service limita)
+                        -->
+                        <p th:if="${ativo.semanasContadas != null and ativo.jornadaSemanal != null}"><strong>Cálculo da carga horária:</strong>
+                            <span th:if="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
+                                  th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                                          + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h = '
+                                          + #numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0) + ' h de '
+                                          + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h'}"></span>
+                            <span th:unless="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
+                                  th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                                          + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h = carga total de '
+                                          + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h atingida'}"></span>
+                        </p>
+                    </div>
+
+                    <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
+                    <p th:if="${ativo.atividadesTotal != null and ativo.atividadesTotal > 0}"><strong>Atividades da trilha:</strong>
+                        <span th:text="${ativo.atividadesAprovadas + (ativo.atividadesAprovadas == 1 ? ' atividade aprovada' : ' atividades aprovadas') + ', '
+                                + ativo.atividadesRestantes + (ativo.atividadesRestantes == 1 ? ' atividade restante' : ' atividades restantes')}"></span>
+                    </p>
+                    <!-- F2: data em que as entregas do semestre fecham, informada pelo coordenador na turma -->
+                    <p th:if="${ativo.dataEncerramentoEntregas}"><strong>Encerramento das entregas:</strong>
+                        <span th:text="${#temporals.format(ativo.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
+                    </p>
+                    <p th:unless="${ativo.dataEncerramentoEntregas}" class="text-muted">
+                        Data de encerramento das entregas ainda não informada pela coordenação.
+                    </p>
+
+                    <!--
+                       F2: aviso de prazo, só enquanto houver atividade sem aprovação. O nome do aviso fica na primeira linha (d-block) e os dias na linha de baixo. Amarelo de 30 a 11 dias antes,
+                       vermelho a partir de 10 dias e no último dia, e roxo depois da data. Depois da data os dias vêm
+                       negativos do Java, por isso só tiramos o sinal para exibir
+                    -->
+                    <div th:if="${ativo.avisoPrazo == 'AMARELO'}" class="alert alert-warning mb-0" role="alert">
+                        <strong class="d-block">PRAZO SE ESGOTANDO</strong>
+                        <span th:text="${'Faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
+                    </div>
+                    <div th:if="${ativo.avisoPrazo == 'VERMELHO'}" class="alert alert-danger mb-0" role="alert">
+                        <strong class="d-block">PRAZO SE ESGOTANDO</strong>
+                        <span th:text="${ativo.diasParaEncerramentoEntregas == 1
+                                ? 'Falta 1 dia para a data de encerramento das entregas'
+                                : 'Faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
+                    </div>
+                    <div th:if="${ativo.avisoPrazo == 'ULTIMO_DIA'}" class="alert alert-danger mb-0" role="alert">
+                        <strong class="d-block">PRAZO VENCE HOJE</strong> Hoje é o último dia para entregar
+                    </div>
+                    <div th:if="${ativo.avisoPrazo == 'ENCERRADO'}" class="alert mb-0" role="alert"
+                         style="background-color: #e2d9f3; border-color: #6f42c1; color: #432874;">
+                        <strong class="d-block">PRAZO VENCEU</strong>
+                        <span th:text="${-ativo.diasParaEncerramentoEntregas == 1
+                                ? 'Há 1 dia'
+                                : 'Há ' + (-ativo.diasParaEncerramentoEntregas) + ' dias'}"></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

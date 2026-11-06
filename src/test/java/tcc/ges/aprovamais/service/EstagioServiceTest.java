@@ -684,6 +684,38 @@ class EstagioServiceTest {
     }
 
     @Test
+    @DisplayName("Depois de atingir a carga, as semanas param nas semanas necessárias: 270 h com 30 h por semana são 9")
+    void deveLimitarSemanasContadasAsSemanasNecessarias() {
+        // arrange: começou há 20 semanas, mas 9 semanas de 30 h já cumprem as 270 h
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(20));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(9L, resposta.getSemanasContadas());
+        assertEquals(new BigDecimal("270"), resposta.getCargaHorariaCumprida());
+        assertEquals(new BigDecimal("0"), resposta.getCargaHorariaRestante());
+    }
+
+    @Test
+    @DisplayName("Antes de atingir a carga, as semanas continuam sendo contadas normalmente")
+    void naoDeveLimitarSemanasAntesDeAtingirACarga() {
+        // arrange: 3 semanas de 30 h são 90 h, ainda longe das 270 h
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(3));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(3L, resposta.getSemanasContadas());
+    }
+
+    @Test
     @DisplayName("Estágio pendente não conta as atividades, porque o aluno ainda não faz entregas")
     void naoDeveContarAtividadesParaEstagioPendente() {
         // arrange

@@ -19,6 +19,7 @@ import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.repository.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.List;
@@ -508,6 +509,20 @@ public class EstagioService {
         Long semanasContadas = estagio.getStatus() == StatusEstagio.ATIVO
                 ? CalculadoraCargaHoraria.calcularSemanasContadas(estagio.getDataInicio(), LocalDate.now())
                 : null;
+
+        /*
+           F2: depois que a carga total é atingida, as semanas param de ser contadas. O limite são as
+           semanas necessárias para cumprir a carga com a jornada do tipo, arredondando para cima
+           (270 h com 44 h por semana são 7 semanas). Assim o cálculo da carga não passa de 7 semanas
+           mesmo que o estágio continue ATIVO, esperando as atividades serem aprovadas pelo orientador
+        */
+        if (semanasContadas != null && estagio.getCargaHorariaNecessaria() != null
+                && estagio.getJornadaSemanal() != null && estagio.getJornadaSemanal().signum() > 0) {
+            long semanasNecessarias = estagio.getCargaHorariaNecessaria()
+                    .divide(estagio.getJornadaSemanal(), 0, RoundingMode.CEILING)
+                    .longValue();
+            semanasContadas = Math.min(semanasContadas, semanasNecessarias);
+        }
 
         return EstagioResponse.builder()
                 .id(estagio.getId())

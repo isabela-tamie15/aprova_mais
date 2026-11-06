@@ -396,7 +396,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("PRAZO SE ESGOTANDO")))
-                .andExpect(content().string(containsString("faltam 5 dias para a data de encerramento das entregas")))
+                .andExpect(content().string(containsString("Faltam 5 dias para a data de encerramento das entregas")))
                 .andExpect(content().string(containsString("Carga horária restante")));
     }
 
@@ -412,7 +412,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Estágios ativos")))
                 .andExpect(content().string(containsString("Aluno Teste")))
-                .andExpect(content().string(containsString("hoje é o último dia para entregar")));
+                .andExpect(content().string(containsString("Hoje é o último dia para entregar")));
     }
 
     @Test
@@ -457,9 +457,9 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("0 atividades aprovadas, 1 atividade restante")))
                 .andExpect(content().string(containsString("PRAZO VENCEU")))
-                .andExpect(content().string(containsString("há 3 dias")))
+                .andExpect(content().string(containsString("Há 3 dias")))
                 .andExpect(content().string(containsString("#6f42c1")))
-                .andExpect(content().string(containsString("DATA DE CONCLUSÃO PREVISTA DO ESTÁGIO:")));
+                .andExpect(content().string(containsString("Conclusão prevista do estágio:")));
     }
 
     @Test
@@ -485,8 +485,8 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
 
         mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("DATA DE ENCERRAMENTO DAS ENTREGAS DO SEMESTRE:")))
-                .andExpect(content().string(not(containsString("Atividades:"))))
+                .andExpect(content().string(containsString("Encerramento das entregas:")))
+                .andExpect(content().string(not(containsString("Atividades da trilha:"))))
                 .andExpect(content().string(not(containsString("PRAZO SE ESGOTANDO"))));
     }
 
@@ -510,5 +510,25 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("3 semanas × 30 h = 90 h de 270 h")));
+    }
+
+    @Test
+    @DisplayName("Depois de atingir a carga, o cálculo para nas semanas necessárias e mostra a carga total atingida")
+    void deveMostrarCargaTotalAtingidaSemPassarDasSemanasNecessarias() throws Exception {
+        // começou há 20 semanas, mas 9 semanas de 30 h já cumprem as 270 h do Estagiário
+        Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(20));
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.semanasContadas").value(9));
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("9 semanas × 30 h = carga total de 270 h atingida")))
+                .andExpect(content().string(containsString("Carga horária exigida:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Prof. orientador:")));
     }
 }
