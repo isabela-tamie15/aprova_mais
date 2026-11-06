@@ -33,4 +33,12 @@ public class EstagioResponse {
 
     // RF22: semanas completas contadas desde o início, para o extrato da carga. Só vem preenchido no estágio ATIVO
     private final Long semanasContadas;
+
+    /*
+       F2: atividades da trilha do tipo de estágio, contadas no service: as aprovadas, o total
+       de tarefas e as que ainda faltam. Só vêm preenchidas no estágio ATIVO
+    */
+    private final Long atividadesAprovadas;
+    private final Long atividadesTotal;
+    private final Long atividadesRestantes;
 }

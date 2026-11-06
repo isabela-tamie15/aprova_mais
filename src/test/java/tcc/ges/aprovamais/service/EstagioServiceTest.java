@@ -14,27 +14,35 @@ import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.entity.Aluno;
 import tcc.ges.aprovamais.entity.Curso;
+import tcc.ges.aprovamais.entity.Entrega;
 import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.Matricula;
 import tcc.ges.aprovamais.entity.Orientador;
+import tcc.ges.aprovamais.entity.Tarefa;
 import tcc.ges.aprovamais.entity.TipoEstagio;
+import tcc.ges.aprovamais.entity.Trilha;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.ValidacaoEstagio;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
+import tcc.ges.aprovamais.repository.EntregaRepository;
 import tcc.ges.aprovamais.repository.EstagioRepository;
 import tcc.ges.aprovamais.repository.MatriculaRepository;
 import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
+import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
+import tcc.ges.aprovamais.repository.TrilhaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 import tcc.ges.aprovamais.repository.ValidacaoEstagioRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,6 +83,12 @@ class EstagioServiceTest {
     private ValidacaoEstagioRepository validacaoEstagioRepository;
     @Mock
     private ConsultaCnpjService consultaCnpjService;
+    @Mock
+    private TrilhaRepository trilhaRepository;
+    @Mock
+    private TarefaRepository tarefaRepository;
+    @Mock
+    private EntregaRepository entregaRepository;
     @InjectMocks
     private EstagioService estagioService;
     private Aluno aluno;
@@ -82,6 +96,7 @@ class EstagioServiceTest {
     private Matricula matricula;
     private TipoEstagio tipoEstagio;
     private Curso curso;
+    private Trilha trilha;
 
     @BeforeEach
     void setUp() {
@@ -121,6 +136,17 @@ class EstagioServiceTest {
         tipoEstagio.setNome("Estagiário");
         tipoEstagio.setCargaHorariaNecessaria(new BigDecimal("270"));
         tipoEstagio.setJornadaSemanal(new BigDecimal("30"));
+
+        /*
+           F2: por padrão a trilha do tipo tem 1 tarefa e o aluno não tem entrega aprovada,
+           então existe pendência e os testes do aviso de prazo continuam valendo do jeito que estão.
+           lenient porque nem todo teste chega a montar a resposta de um estágio ATIVO
+        */
+        trilha = new Trilha();
+        trilha.setId(6L);
+        trilha.setTipoEstagio(tipoEstagio);
+        lenient().when(trilhaRepository.findByTipoEstagioId(tipoEstagio.getId())).thenReturn(Optional.of(trilha));
+        lenient().when(tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId())).thenReturn(criarTarefas(1));
     }
 
     // Monta um estagio já vinculado à matrícula e ao orientador no status informado
@@ -522,5 +548,187 @@ class EstagioServiceTest {
         assertEquals(1, ativos.size());
         assertEquals("Aluno Teste", ativos.get(0).getNomeAluno());
         assertEquals(CalculadoraCargaHoraria.AVISO_AMARELO, ativos.get(0).getAvisoPrazo());
+    }
+
+    // F2: atividades da trilha aprovadas e restantes, e o aviso de prazo só enquanto houver pendência
+
+    // Monta a quantidade informada de tarefas da trilha, na ordem 1, 2, 3...
+    private List<Tarefa> criarTarefas(int quantidade) {
+        List<Tarefa> tarefas = new ArrayList<>();
+        for (int ordem = 1; ordem <= quantidade; ordem++) {
+            Tarefa tarefa = new Tarefa();
+            tarefa.setId(100L + ordem);
+            tarefa.setTrilha(trilha);
+            tarefa.setOrdem(ordem);
+            tarefas.add(tarefa);
+        }
+        return tarefas;
+    }
+
+    // Monta uma entrega do estágio com o status informado
+    private Entrega criarEntrega(Estagio estagio, StatusEntrega status) {
+        Entrega entrega = new Entrega();
+        entrega.setEstagio(estagio);
+        entrega.setStatus(status);
+        return entrega;
+    }
+
+    @Test
+    @DisplayName("Trilha com 3 tarefas e 1 entrega aprovada mostra 1 aprovada e 2 restantes, e a entrega em revisão não conta")
+    void deveContarAtividadesAprovadasERestantes() {
+        // arrange: 3 tarefas, uma entrega APROVADA e outra EM_REVISAO, faltando 20 dias para o encerramento
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
+        when(tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId())).thenReturn(criarTarefas(3));
+        when(entregaRepository.findByEstagioId(ESTAGIO_ID)).thenReturn(List.of(
+                criarEntrega(estagio, StatusEntrega.APROVADA),
+                criarEntrega(estagio, StatusEntrega.EM_REVISAO)));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(1L, resposta.getAtividadesAprovadas());
+        assertEquals(3L, resposta.getAtividadesTotal());
+        assertEquals(2L, resposta.getAtividadesRestantes());
+        assertEquals(CalculadoraCargaHoraria.AVISO_AMARELO, resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Com todas as atividades aprovadas, faltando 5 dias, não aparece aviso de prazo")
+    void naoDeveMostrarAvisoComTodasAtividadesAprovadas() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
+        when(tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId())).thenReturn(criarTarefas(2));
+        when(entregaRepository.findByEstagioId(ESTAGIO_ID)).thenReturn(List.of(
+                criarEntrega(estagio, StatusEntrega.APROVADA),
+                criarEntrega(estagio, StatusEntrega.APROVADA)));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert: a data e os dias continuam na resposta, só o aviso some
+        assertEquals(5L, resposta.getDiasParaEncerramentoEntregas());
+        assertEquals(0L, resposta.getAtividadesRestantes());
+        assertNull(resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Faltando 10 dias com 1 atividade pendente, o aviso é vermelho")
+    void deveMostrarAvisoVermelhoCom10DiasEAtividadePendente() {
+        // arrange: a trilha do setUp tem 1 tarefa e o aluno não tem entrega aprovada
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(10));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(1L, resposta.getAtividadesRestantes());
+        assertEquals(CalculadoraCargaHoraria.AVISO_VERMELHO, resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Com a data de encerramento de ontem e 1 atividade pendente, o aviso é de prazo vencido")
+    void deveMostrarPrazoVencidoComAtividadePendente() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().minusDays(1));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert: os dias vêm negativos, e a tela mostra "há 1 dia"
+        assertEquals(-1L, resposta.getDiasParaEncerramentoEntregas());
+        assertEquals(CalculadoraCargaHoraria.AVISO_ENCERRADO, resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Trilha sem tarefas não tem atividade pendente, então não aparece aviso de prazo")
+    void naoDeveMostrarAvisoComTrilhaSemTarefas() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
+        when(tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId())).thenReturn(List.of());
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert: a data de encerramento continua, mas sem aviso
+        assertEquals(0L, resposta.getAtividadesTotal());
+        assertEquals(LocalDate.now().plusDays(20), resposta.getDataEncerramentoEntregas());
+        assertNull(resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Tipo de estágio sem trilha cadastrada conta zero atividades e não mostra aviso de prazo")
+    void naoDeveMostrarAvisoQuandoTipoNaoTemTrilha() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
+        when(trilhaRepository.findByTipoEstagioId(tipoEstagio.getId())).thenReturn(Optional.empty());
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(0L, resposta.getAtividadesTotal());
+        assertNull(resposta.getAvisoPrazo());
+    }
+
+    @Test
+    @DisplayName("Depois de atingir a carga, as semanas param nas semanas necessárias: 270 h com 30 h por semana são 9")
+    void deveLimitarSemanasContadasAsSemanasNecessarias() {
+        // arrange: começou há 20 semanas, mas 9 semanas de 30 h já cumprem as 270 h
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(20));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(9L, resposta.getSemanasContadas());
+        assertEquals(new BigDecimal("270"), resposta.getCargaHorariaCumprida());
+        assertEquals(new BigDecimal("0"), resposta.getCargaHorariaRestante());
+    }
+
+    @Test
+    @DisplayName("Antes de atingir a carga, as semanas continuam sendo contadas normalmente")
+    void naoDeveLimitarSemanasAntesDeAtingirACarga() {
+        // arrange: 3 semanas de 30 h são 90 h, ainda longe das 270 h
+        Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(3));
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertEquals(3L, resposta.getSemanasContadas());
+    }
+
+    @Test
+    @DisplayName("Estágio pendente não conta as atividades, porque o aluno ainda não faz entregas")
+    void naoDeveContarAtividadesParaEstagioPendente() {
+        // arrange
+        Estagio estagio = criarEstagio(StatusEstagio.PENDENTE);
+        prepararConsultaDoAluno(estagio);
+
+        // act
+        EstagioResponse resposta = estagioService.buscarEstagioDoAluno(EMAIL_ALUNO).orElseThrow();
+
+        // assert
+        assertNull(resposta.getAtividadesAprovadas());
+        assertNull(resposta.getAtividadesTotal());
+        assertNull(resposta.getAtividadesRestantes());
+        verify(entregaRepository, never()).findByEstagioId(any());
     }
 }
