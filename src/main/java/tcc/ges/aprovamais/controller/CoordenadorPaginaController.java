@@ -38,4 +38,10 @@ public class CoordenadorPaginaController {
     public String trilhas() {
         return "coordenador/trilhas";
     }
+
+    // Endpoint que serve a página da lista de pré-cadastro
+    @GetMapping("/coordenador/pre-cadastros")
+    public String preCadastros() {
+        return "coordenador/pre-cadastros";
+    }
 }
