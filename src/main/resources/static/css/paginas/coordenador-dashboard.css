@@ -1,0 +1,273 @@
+/* =============================================
+   Aprova+ - Dashboard do coordenador (coordenador/dashboard.html)
+   ============================================= */
+
+/* Número da etapa dentro de um círculo, usado nos cartões e nos subtítulos dos gráficos */
+.painel-coordenador .numero-etapa {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25em;
+    height: 1.25em;
+    margin-right: 0.3em;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1;
+}
+
+/* Nos subtítulos dos gráficos, o círculo fica no meio da frase, então o espaço é menor */
+.painel-coordenador .grafico-painel p .numero-etapa {
+    margin: 0 0.1em;
+}
+
+/* Quadradinho colorido das legendas */
+.painel-coordenador .quadrado {
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-right: 0.3rem;
+    border-radius: 2px;
+    vertical-align: -0.1rem;
+}
+
+.painel-coordenador .legenda-jornada,
+.painel-coordenador .legenda-grafico {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+}
+
+.painel-coordenador .legenda-jornada {
+    font-size: 0.95rem;
+}
+
+/* Cores das legendas da jornada */
+.painel-coordenador .cor-etapa   { background-color: #0d6efd; }
+.painel-coordenador .cor-atencao { background-color: #ffc107; }
+.painel-coordenador .cor-alerta  { background-color: #dc3545; }
+
+/* =============================================
+   Cartões da jornada
+   ============================================= */
+
+.painel-coordenador .cartao-jornada {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 0.4rem;
+}
+
+/* Faixa do topo, com o número da etapa. O texto fica em maiúsculas só pelo CSS */
+.painel-coordenador .cartao-faixa {
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.4rem 0.4rem 0 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Corpo do cartão: o número e os textos ficam centralizados na altura */
+.painel-coordenador .cartao-corpo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.6rem 0.75rem;
+}
+
+.painel-coordenador .cartao-numero {
+    font-size: 2.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.painel-coordenador .cartao-rotulo {
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.painel-coordenador .cartao-texto {
+    font-size: 1.05rem;
+    line-height: 1.25;
+}
+
+.painel-coordenador .cartao-detalhe {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+}
+
+.painel-coordenador .cartao-lista {
+    margin: 0.35rem 0 0;
+    padding-left: 0.9rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
+.painel-coordenador .cartao-rodape {
+    padding: 0.35rem 0.7rem;
+    border-radius: 0 0 0.4rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+/* Cores dos cartões: a faixa e o rodapé são um tom mais escuro do que o corpo */
+.painel-coordenador .cartao-atencao { background-color: #ffc107; color: #212529; }
+.painel-coordenador .cartao-atencao .cartao-faixa,
+.painel-coordenador .cartao-atencao .cartao-rodape { background-color: #ebb105; }
+
+.painel-coordenador .cartao-etapa { background-color: #0d6efd; color: #fff; }
+.painel-coordenador .cartao-etapa .cartao-faixa,
+.painel-coordenador .cartao-etapa .cartao-rodape { background-color: #0b5ed7; }
+
+.painel-coordenador .cartao-alerta { background-color: #dc3545; color: #fff; }
+.painel-coordenador .cartao-alerta .cartao-faixa,
+.painel-coordenador .cartao-alerta .cartao-rodape { background-color: #c82f3e; }
+
+/*
+   No computador, os cartões 1 a 5 têm a mesma altura (a do cartão 4, que tem mais texto)
+   e só o cartão 6 é mais alto. A segunda linha alinha pelo topo para o 4 e o 5 não esticarem até o 6
+*/
+@media (min-width: 768px) {
+    .painel-coordenador .jornada {
+        align-items: flex-start;
+    }
+
+    .painel-coordenador .cartao-jornada {
+        min-height: 13.5rem;
+    }
+
+    .painel-coordenador .cartao-jornada.cartao-alto {
+        min-height: 15.5rem;
+    }
+
+    /* Seta "›" entre os cartões, no espaço entre um cartão e outro */
+    .painel-coordenador .cartao-jornada.com-seta::before {
+        content: "›";
+        position: absolute;
+        top: 4.7rem;
+        left: calc(-0.5rem - 13px);
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border: 1px solid #ced4da;
+        border-radius: 50%;
+        background-color: #fff;
+        color: #212529;
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1;
+        padding-bottom: 2px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+}
+
+/* =============================================
+   Gráficos por turma (progress-stacked do Bootstrap 5.3)
+   ============================================= */
+
+.painel-coordenador .grafico-painel {
+    padding: 1.5rem 1.75rem;
+    border-radius: 0.5rem;
+}
+
+.painel-coordenador .grafico-painel h6 {
+    font-size: 1.1rem;
+}
+
+.painel-coordenador .linha-grafico {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.9rem;
+}
+
+.painel-coordenador .linha-grafico:last-child {
+    margin-bottom: 0;
+}
+
+.painel-coordenador .linha-rotulo {
+    flex: 0 0 11.5rem;
+    font-size: 0.92rem;
+    line-height: 1.2;
+}
+
+.painel-coordenador .linha-rotulo .text-muted {
+    font-size: 0.82rem;
+}
+
+.painel-coordenador .linha-trilho {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+/*
+   A largura da barra vem pronta da API (--largura, de 0 a 100). Os 2.5rem descontados
+   são o espaço do número que fica logo depois da barra
+*/
+.painel-coordenador .barra-painel {
+    flex: 0 0 auto;
+    width: calc((100% - 2.5rem) * var(--largura) / 100);
+    height: 1.4rem;
+    background-color: transparent;
+}
+
+.painel-coordenador .barra-painel > .progress {
+    height: 100%;
+}
+
+/* Linha branca fina entre as partes da barra empilhada */
+.painel-coordenador .barra-painel > .progress + .progress {
+    border-left: 2px solid #fff;
+}
+
+.painel-coordenador .barra-painel .progress-bar {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.painel-coordenador .linha-total {
+    font-weight: 700;
+}
+
+/* Cores do gráfico 1 */
+.painel-coordenador .cor-sem-orientador { background-color: #c98a00; color: #fff; }
+.painel-coordenador .cor-aguardando     { background-color: #5b9bfd; color: #0a2a66; }
+.painel-coordenador .cor-andamento      { background-color: #0a4fbf; color: #fff; }
+
+/* Cores do gráfico 3: as mesmas faixas do aviso de prazo da F2 */
+.painel-coordenador .faixa-AMARELO    { background-color: #c98a00; }
+.painel-coordenador .faixa-VERMELHO   { background-color: #e35d6a; }
+.painel-coordenador .faixa-ULTIMO_DIA { background-color: #a3172b; }
+.painel-coordenador .faixa-ENCERRADO  { background-color: #6f42c1; }
+
+/* No celular, o nome da turma fica em cima e a barra embaixo */
+@media (max-width: 575.98px) {
+    .painel-coordenador .linha-grafico {
+        flex-wrap: wrap;
+    }
+
+    .painel-coordenador .linha-rotulo {
+        flex-basis: 100%;
+        margin-bottom: 0.3rem;
+    }
+
+    /* Sem esta linha, a barra ficaria espremida ao lado do nome, com largura zero */
+    .painel-coordenador .linha-trilho {
+        flex-basis: 100%;
+    }
+
+    .painel-coordenador .grafico-painel {
+        padding: 1.25rem;
+    }
+}

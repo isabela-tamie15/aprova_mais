@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Coordenação</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Dashboard: o AdminLTE 4 (só o CSS) é usado apenas nesta página, nos cartões e nos gráficos -->
+    <link href="https://cdn.jsdelivr.net/npm/admin-lte@4.10.0/dist/css/adminlte.min.css" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/paginas/coordenador-dashboard.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script defer th:src="@{/js/comum.js}"></script>
 </head>
 <body class="bg-light">
@@ -15,6 +20,221 @@
     <h4 class="fw-bold mb-1">Painel da Coordenação</h4>
     <p class="text-muted mb-4">Cadastre a estrutura dos seus cursos para os alunos começarem o estágio.</p>
 
+    <!--
+        Dashboard do coordenador (RF50). Todos os números vêm prontos da API /api/v1/coordenador/painel,
+        e a tela só mostra. O script fica em /js/paginas/coordenador-dashboard.js
+    -->
+    <div class="painel-coordenador mb-4" x-data="painelPagina()" x-init="init()" x-cloak>
+
+        <!-- Seletor de curso: "Todos os meus cursos" ou um curso do coordenador -->
+        <div class="row mb-4">
+            <div class="col-md-6 col-lg-5">
+                <label for="cursoPainel" class="form-label">Curso</label>
+                <select id="cursoPainel" class="form-select" x-model="cursoId" @change="carregarPainel()">
+                    <option value="">Todos os meus cursos</option>
+                    <template x-for="curso in cursos" :key="curso.id">
+                        <option :value="curso.id" x-text="curso.nome"></option>
+                    </template>
+                </select>
+            </div>
+        </div>
+
+        <div x-show="erro" class="alert alert-danger" x-text="erro"></div>
+        <p x-show="carregando" class="text-muted">Carregando o painel...</p>
+
+        <div x-show="!carregando && !erro">
+
+            <!-- Jornada do estágio: 6 cartões, na ordem em que o estágio acontece -->
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
+                <div>
+                    <h5 class="fw-bold mb-0">Jornada do estágio</h5>
+                    <span class="text-muted small">números dos cursos que você coordena</span>
+                </div>
+                <div class="legenda-jornada small">
+                    <span><span class="quadrado cor-etapa"></span>etapa</span>
+                    <span><span class="quadrado cor-atencao"></span>atenção</span>
+                    <span><span class="quadrado cor-alerta"></span>alerta</span>
+                </div>
+            </div>
+
+            <div class="row g-3 jornada mb-4">
+                <!-- Cartão 1 -->
+                <div class="col-md-4">
+                    <div class="cartao-jornada cartao-atencao">
+                        <div class="cartao-faixa"><span class="numero-etapa">1</span>Etapa - atenção</div>
+                        <div class="cartao-corpo">
+                            <div class="cartao-numero" x-text="painel.estagiosSemOrientador"></div>
+                            <div class="cartao-rotulo" x-text="painel.estagiosSemOrientador === 1 ? 'Estágio' : 'Estágios'"></div>
+                            <div class="cartao-texto">sem orientador</div>
+                        </div>
+                        <div class="cartao-rodape">Quem resolve: <strong>coordenador</strong></div>
+                    </div>
+                </div>
+                <!-- Cartão 2 -->
+                <div class="col-md-4">
+                    <div class="cartao-jornada cartao-etapa com-seta">
+                        <div class="cartao-faixa"><span class="numero-etapa">2</span>Etapa</div>
+                        <div class="cartao-corpo">
+                            <div class="cartao-numero" x-text="painel.estagiosAguardandoValidacao"></div>
+                            <div class="cartao-rotulo" x-text="painel.estagiosAguardandoValidacao === 1 ? 'Estágio' : 'Estágios'"></div>
+                            <div class="cartao-texto">aguardando validação</div>
+                        </div>
+                        <div class="cartao-rodape">Quem resolve: <strong>orientador</strong></div>
+                    </div>
+                </div>
+                <!-- Cartão 3 -->
+                <div class="col-md-4">
+                    <div class="cartao-jornada cartao-etapa com-seta">
+                        <div class="cartao-faixa"><span class="numero-etapa">3</span>Etapa</div>
+                        <div class="cartao-corpo">
+                            <div class="cartao-numero" x-text="painel.estagiosEmAndamento"></div>
+                            <div class="cartao-rotulo" x-text="painel.estagiosEmAndamento === 1 ? 'Estágio' : 'Estágios'"></div>
+                            <div class="cartao-texto">em andamento</div>
+                        </div>
+                        <div class="cartao-rodape">Quem resolve: <strong>ninguém</strong> (fluxo normal)</div>
+                    </div>
+                </div>
+                <!-- Cartão 4 -->
+                <div class="col-md-4">
+                    <div class="cartao-jornada cartao-atencao com-seta">
+                        <div class="cartao-faixa"><span class="numero-etapa">4</span>Etapa - atenção</div>
+                        <div class="cartao-corpo">
+                            <div class="cartao-numero" x-text="painel.turmasSemDataEncerramento"></div>
+                            <div class="cartao-rotulo" x-text="painel.turmasSemDataEncerramento === 1 ? 'Turma' : 'Turmas'"></div>
+                            <div class="cartao-texto">sem data de encerramento das entregas</div>
+                            <div class="cartao-detalhe">aviso de prazo desligado para os alunos</div>
+                        </div>
+                        <div class="cartao-rodape">Quem resolve: <strong>coordenador</strong></div>
+                    </div>
+                </div>
+                <!-- Cartão 5 -->
+                <div class="col-md-4">
+                    <div class="cartao-jornada cartao-etapa com-seta">
+                        <div class="cartao-faixa"><span class="numero-etapa">5</span>Etapa</div>
+                        <div class="cartao-corpo">
+                            <div class="cartao-numero" x-text="painel.tarefasAguardandoCorrecao"></div>
+                            <div class="cartao-rotulo" x-text="painel.tarefasAguardandoCorrecao === 1 ? 'Tarefa' : 'Tarefas'"></div>
+                            <div class="cartao-texto">aguardando correção</div>
+                        </div>
+                        <div class="cartao-rodape">Quem resolve: <strong>orientador</strong></div>
+                    </div>
+                </div>
+                <!-- Cartão 6: as três linhas não se repetem e somam o número do cartão -->
+                <div class="col-md-4">
+                    <div class="cartao-jornada cartao-alerta cartao-alto com-seta">
+                        <div class="cartao-faixa"><span class="numero-etapa">6</span>Etapa - alertas</div>
+                        <div class="cartao-corpo">
+                            <div class="cartao-numero" x-text="painel.estagiosRetaFinal"></div>
+                            <div class="cartao-rotulo" x-text="painel.estagiosRetaFinal === 1 ? 'Estágio' : 'Estágios'"></div>
+                            <div class="cartao-texto">na reta final com pendências</div>
+                            <ul class="cartao-lista">
+                                <li><span x-text="painel.retaFinalSoTarefas"></span> com tarefas pendentes</li>
+                                <li><span x-text="painel.retaFinalSoHoras"></span> com horas que não fecham no prazo</li>
+                                <li><span x-text="painel.retaFinalDuasPendencias"></span> com as duas pendências</li>
+                            </ul>
+                        </div>
+                        <div class="cartao-rodape">
+                            Resolve tarefas: <strong>aluno e orientador</strong><br>
+                            Resolve horas: <strong>coordenador</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico 1: situação dos estágios por turma (cartões 1, 2 e 3) -->
+            <div class="card grafico-painel mb-4">
+                <h6 class="fw-bold mb-1">Situação dos estágios por turma</h6>
+                <p class="text-muted small mb-2">os cartões <span class="numero-etapa">1</span>, <span class="numero-etapa">2</span> e <span class="numero-etapa">3</span> da jornada, separados por turma</p>
+                <div class="legenda-grafico small mb-3">
+                    <span><span class="quadrado cor-sem-orientador"></span><span class="numero-etapa">1</span>sem orientador</span>
+                    <span><span class="quadrado cor-aguardando"></span><span class="numero-etapa">2</span>aguardando validação</span>
+                    <span><span class="quadrado cor-andamento"></span><span class="numero-etapa">3</span>em andamento</span>
+                </div>
+                <p x-show="painel.situacaoPorTurma.length === 0" class="text-muted small mb-0">Nenhuma turma para mostrar.</p>
+                <template x-for="linha in painel.situacaoPorTurma" :key="linha.turmaId">
+                    <div class="linha-grafico">
+                        <div class="linha-rotulo">
+                            <div x-text="linha.turma + ' · ' + linha.semestre"></div>
+                            <div class="text-muted" x-show="!cursoId" x-text="linha.curso"></div>
+                        </div>
+                        <div class="linha-trilho">
+                            <div class="progress-stacked barra-painel" :style="'--largura: ' + linha.percentualBarra">
+                                <div class="progress" role="progressbar" x-show="linha.semOrientador > 0"
+                                     :style="'width: ' + linha.percentualSemOrientador + '%'">
+                                    <div class="progress-bar cor-sem-orientador" x-text="linha.semOrientador"></div>
+                                </div>
+                                <div class="progress" role="progressbar" x-show="linha.aguardandoValidacao > 0"
+                                     :style="'width: ' + linha.percentualAguardandoValidacao + '%'">
+                                    <div class="progress-bar cor-aguardando" x-text="linha.aguardandoValidacao"></div>
+                                </div>
+                                <div class="progress" role="progressbar" x-show="linha.emAndamento > 0"
+                                     :style="'width: ' + linha.percentualEmAndamento + '%'">
+                                    <div class="progress-bar cor-andamento" x-text="linha.emAndamento"></div>
+                                </div>
+                            </div>
+                            <span class="linha-total" x-text="linha.total"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Gráfico 2: tarefas aguardando correção por turma (cartão 5), com o orientador -->
+            <div class="card grafico-painel mb-4">
+                <h6 class="fw-bold mb-1">Tarefas aguardando correção por turma</h6>
+                <p class="text-muted small mb-3">o cartão <span class="numero-etapa">5</span> separado por turma, com o orientador de cada uma, do maior para o menor</p>
+                <p x-show="painel.correcaoPorTurma.length === 0" class="text-muted small mb-0">Nenhuma turma para mostrar.</p>
+                <template x-for="linha in painel.correcaoPorTurma" :key="linha.turmaId + '-' + linha.orientador">
+                    <div class="linha-grafico">
+                        <div class="linha-rotulo">
+                            <div x-text="linha.turma + ' · ' + linha.semestre"></div>
+                            <div class="text-muted" x-show="!cursoId" x-text="linha.curso"></div>
+                            <div class="text-muted" x-text="linha.orientador"></div>
+                        </div>
+                        <div class="linha-trilho">
+                            <div class="progress-stacked barra-painel" :style="'--largura: ' + linha.percentualBarra">
+                                <div class="progress" role="progressbar" style="width: 100%">
+                                    <div class="progress-bar cor-andamento"></div>
+                                </div>
+                            </div>
+                            <span class="linha-total" x-text="linha.quantidade"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Gráfico 3: prazo das entregas por turma (cartão 6), com as faixas do aviso de prazo da F2 -->
+            <div class="card grafico-painel mb-4">
+                <h6 class="fw-bold mb-1">Prazo das entregas por turma</h6>
+                <p class="text-muted small mb-2">o cartão <span class="numero-etapa">6</span> separado por turma: estágios com pendências e quanto falta para o encerramento das entregas</p>
+                <div class="legenda-grafico small mb-3">
+                    <span><span class="quadrado faixa-AMARELO"></span>faltam 30 a 11 dias</span>
+                    <span><span class="quadrado faixa-VERMELHO"></span>faltam 10 a 1 dia</span>
+                    <span><span class="quadrado faixa-ULTIMO_DIA"></span>vence hoje</span>
+                    <span><span class="quadrado faixa-ENCERRADO"></span>prazo venceu</span>
+                </div>
+                <p x-show="painel.prazoPorTurma.length === 0" class="text-muted small mb-0">Nenhuma turma para mostrar.</p>
+                <template x-for="linha in painel.prazoPorTurma" :key="linha.turmaId">
+                    <div class="linha-grafico">
+                        <div class="linha-rotulo">
+                            <div x-text="linha.turma + ' · ' + linha.semestre"></div>
+                            <div class="text-muted" x-show="!cursoId" x-text="linha.curso"></div>
+                            <div class="text-muted" x-text="linha.textoPrazo"></div>
+                        </div>
+                        <div class="linha-trilho">
+                            <div class="progress-stacked barra-painel" :style="'--largura: ' + linha.percentualBarra">
+                                <div class="progress" role="progressbar" style="width: 100%">
+                                    <div class="progress-bar" :class="'faixa-' + linha.faixa"></div>
+                                </div>
+                            </div>
+                            <span class="linha-total" x-text="linha.quantidade"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="fw-bold mb-3">Cadastros</h5>
     <!-- Atalhos para os cadastros da coordenação. Cada cadastro novo ganha um cartão aqui -->
     <div class="row g-3">
         <div class="col-md-6">
@@ -46,6 +266,8 @@
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
+<script th:src="@{/js/coordenador.js}"></script>
+<script th:src="@{/js/paginas/coordenador-dashboard.js}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
