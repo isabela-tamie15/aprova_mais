@@ -24,4 +24,11 @@ public class OrientadorPaginaController {
         model.addAttribute("entregaId", entregaId);
         return "orientador/correcao";
     }
+
+    // Os dados vem de /api/v1/orientador/estagios/{id}/visao
+    @GetMapping("/orientador/acompanhamento/{estagioId}")
+    public String acompanhamentoAluno(@PathVariable Long estagioId, Model model) {
+        model.addAttribute("estagioId", estagioId);
+        return "orientador/acompanhamento";
+    }
 }
