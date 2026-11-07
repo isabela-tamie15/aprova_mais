@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tcc.ges.aprovamais.dto.AvaliacaoEntregaRequest;
 import tcc.ges.aprovamais.dto.EntregaDetalheResponse;
+import tcc.ges.aprovamais.dto.HistoricoCorrecoesResponse;
 import tcc.ges.aprovamais.dto.PainelCorrecaoResponse;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.service.CorrecaoService;
@@ -43,6 +44,15 @@ public class OrientadorEntregaController {
 
 
         return correcaoService.listar(authentication.getName(), new CorrecaoService.FiltroPainel(alunoId, tarefaId, status, de, ate, pagina, tamanho));
+    }
+
+    // O caminho fixo /historico tem prioridade sobre o /{id}, então não se confunde com o id de uma entrega
+    @Operation(summary = "Listar as correções feitas pelo orientador, com paginação (RF38)")
+    @GetMapping("/historico")
+    public HistoricoCorrecoesResponse historico(@RequestParam(defaultValue = "0") int pagina,
+                                                @RequestParam(defaultValue = "10") int tamanho,
+                                                Authentication authentication) {
+        return correcaoService.listarHistorico(authentication.getName(), pagina, tamanho);
     }
 
     @Operation(summary = "Abrir a entrega para avaliação; ENVIADA passa a EM_REVISAO (RF36)")

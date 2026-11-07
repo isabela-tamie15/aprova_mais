@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.*;
@@ -36,6 +39,9 @@ public class CorrecaoService {
     public static final Set<StatusEntrega> AGUARDANDO_ANALISE = EnumSet.of(StatusEntrega.ENVIADA, StatusEntrega.EM_REVISAO);
 
     public static final int TAMANHO_MAXIMO_PAGINA = 50;
+
+    // Resultados que contam como correção feita
+    public static final Set<StatusEntrega> CORRIGIDAS = EnumSet.of(StatusEntrega.APROVADA, StatusEntrega.DEVOLVIDA);
 
     // Datas do filtro de período são do calendário de SP, como as do resto do sistema
     private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
@@ -109,6 +115,46 @@ public class CorrecaoService {
                 .itens(itens)
                 .alunos(alunos)
                 .tarefas(tarefas)
+                .build();
+    }
+
+    /*
+       Histórico de correções do orientador: cada versão que ele aprovou ou devolveu é uma linha,
+       da avaliação mais recente para a mais antiga. Uma tarefa devolvida e depois aprovada aparece duas vezes, porque foram duas correções
+    */
+    @Transactional(readOnly = true)
+    public HistoricoCorrecoesResponse listarHistorico(String emailOrientador, int pagina, int tamanho) {
+        int tamanhoPagina = Math.clamp(tamanho, 1, TAMANHO_MAXIMO_PAGINA);
+        Sort ordem = Sort.by(Sort.Direction.DESC, "avaliadaEm").and(Sort.by(Sort.Direction.DESC, "id"));
+
+        Page<EntregaVersao> resultado = entregaVersaoRepository.findByAvaliadorEmailAndResultadoIn(
+                emailOrientador, CORRIGIDAS, PageRequest.of(Math.max(pagina, 0), tamanhoPagina, ordem));
+
+        // Página além da última volta para a última, como no painel de correção
+        if (resultado.getTotalPages() > 0 && pagina >= resultado.getTotalPages()) {
+            resultado = entregaVersaoRepository.findByAvaliadorEmailAndResultadoIn(
+                    emailOrientador, CORRIGIDAS, PageRequest.of(resultado.getTotalPages() - 1, tamanhoPagina, ordem));
+        }
+
+        return HistoricoCorrecoesResponse.builder()
+                .totalCorrecoes(resultado.getTotalElements())
+                .pagina(resultado.getNumber())
+                .tamanho(tamanhoPagina)
+                .totalPaginas(Math.max(1, resultado.getTotalPages()))
+                .itens(resultado.getContent().stream().map(this::paraItemHistorico).toList())
+                .build();
+    }
+
+    private ItemHistoricoCorrecaoResponse paraItemHistorico(EntregaVersao versao) {
+        Entrega entrega = versao.getEntrega();
+        return ItemHistoricoCorrecaoResponse.builder()
+                .entregaId(entrega.getId())
+                .nomeAluno(entrega.getEstagio().getMatricula().getAluno().getNome())
+                .nomeTarefa(entrega.getTarefa().getNome())
+                .numeroVersao(versao.getNumero())
+                .resultado(versao.getResultado().name())
+                .feedback(versao.getFeedback())
+                .avaliadaEm(versao.getAvaliadaEm())
                 .build();
     }
 
