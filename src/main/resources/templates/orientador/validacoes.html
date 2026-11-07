@@ -204,6 +204,11 @@
                     </div>
                 </div>
             </div>
+
+            <!-- RF37: visão consolidada do aluno, com as tarefas, as versões e o último feedback -->
+            <div class="text-end mt-3">
+                <a th:href="@{/orientador/acompanhamento/{id}(id=${ativo.id})}" class="btn btn-outline-primary btn-sm">Ver acompanhamento</a>
+            </div>
         </div>
     </div>
 </div>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Acompanhamento do aluno</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/paginas/entregas.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar-orientador :: navbar('validacoes')}"></div>
+
+<!-- Visão consolidada do aluno (F4, RF37): progresso e tarefas da trilha com status, versões e último feedback -->
+<div class="container pb-5" th:attr="x-data=${'acompanhamentoAluno(' + estagioId + ')'}" x-init="carregar()">
+    <a href="/orientador/validacoes" class="btn btn-outline-secondary btn-sm mb-3">← Voltar aos estágios</a>
+
+    <div class="text-muted" x-show="carregando">Carregando...</div>
+    <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+
+    <template x-if="visao">
+        <div>
+            <h4 class="mb-1" x-text="visao.progresso.nomeAluno"></h4>
+            <p class="text-muted mb-4" x-text="visao.progresso.nomeTipoEstagio + ' em ' + visao.progresso.nomeEmpresa"></p>
+
+            <!-- Progresso, com as mesmas contas do painel do aluno (RF30) -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card p-3 h-100">
+                        <div class="small text-muted">Carga horária</div>
+                        <div class="fs-5 fw-semibold"
+                             x-text="horas(visao.progresso.cargaHorariaCumprida) + ' de ' + horas(visao.progresso.cargaHorariaNecessaria)"></div>
+                        <div class="small" x-text="horas(visao.progresso.cargaHorariaRestante) + ' restantes'"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 h-100">
+                        <div class="small text-muted">Atividades da trilha</div>
+                        <div class="fs-5 fw-semibold"
+                             x-text="visao.progresso.atividadesTotal > 0
+                                     ? visao.progresso.atividadesAprovadas + ' de ' + visao.progresso.atividadesTotal + ' aprovadas'
+                                     : 'Trilha sem tarefas'"></div>
+                        <div class="small" x-show="visao.progresso.atividadesTotal > 0"
+                             x-text="visao.progresso.atividadesRestantes + (visao.progresso.atividadesRestantes === 1 ? ' restante' : ' restantes')"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 h-100">
+                        <div class="small text-muted">Encerramento das entregas</div>
+                        <div class="fs-5 fw-semibold"
+                             x-text="visao.progresso.dataEncerramentoEntregas ? formatarData(visao.progresso.dataEncerramentoEntregas) : 'Não informado'"></div>
+                        <div class="small" x-show="visao.progresso.dataPrevistaConclusao"
+                             x-text="'Conclusão prevista: ' + formatarData(visao.progresso.dataPrevistaConclusao)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarefas da trilha, na ordem -->
+            <div class="card">
+                <div class="p-4 text-center text-muted" x-show="visao.tarefas.length === 0">
+                    A trilha deste tipo de estágio ainda não tem tarefas.
+                </div>
+                <div class="table-responsive" x-show="visao.tarefas.length > 0">
+                    <table class="table mb-0 align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Tarefa</th>
+                            <th>Status</th>
+                            <th>Versões</th>
+                            <th>Último feedback</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <template x-for="tarefa in visao.tarefas" :key="tarefa.tarefaId">
+                            <tr>
+                                <td x-text="tarefa.ordem + '. ' + tarefa.nomeTarefa"></td>
+                                <td><span class="badge" :class="classeStatus(tarefa.status)" x-text="nomeStatus(tarefa.status)"></span></td>
+                                <td x-text="tarefa.numeroVersoes === 1 ? '1 versão' : tarefa.numeroVersoes + ' versões'"></td>
+                                <td>
+                                    <template x-if="tarefa.ultimoFeedback">
+                                        <div>
+                                            <div class="small text-muted"
+                                                 x-text="'Versão ' + tarefa.versaoDoUltimoFeedback + ', ' + formatarDataHora(tarefa.ultimoFeedbackEm)"></div>
+                                            <div style="white-space: pre-line;" x-text="tarefa.ultimoFeedback"></div>
+                                        </div>
+                                    </template>
+                                    <span class="text-muted" x-show="!tarefa.ultimoFeedback">-</span>
+                                </td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-secondary" x-show="tarefa.entregaId"
+                                       :href="'/orientador/correcoes/' + tarefa.entregaId">Ver entrega</a>
+                                </td>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/entregas-comum.js}"></script>
+<script th:src="@{/js/paginas/orientador-acompanhamento.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+</body>
+</html>

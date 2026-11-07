@@ -10,10 +10,12 @@ import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.Modalidade;
 import tcc.ges.aprovamais.entity.enums.Periodo;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -105,5 +107,21 @@ class CoordenacaoPreCadastroIntegrationTest extends CoordenacaoTestBase {
     void outroPerfilRecebe403() throws Exception {
         mockMvc.perform(get(URL).with(user("secretaria@teste.com").roles("SECRETARIA"))).andExpect(status().isForbidden());
 
+    }
+
+    @Test
+    @DisplayName("A página do pré-cadastro abre para o coordenador, com o link na barra (RF02)")
+    void paginaDeveAbrirParaOCoordenador() throws Exception {
+        mockMvc.perform(get("/coordenador/pre-cadastros").with(user(EMAIL_COORDENADOR).roles("COORDENADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/js/paginas/coordenador-pre-cadastros.js")))
+                .andExpect(content().string(containsString("href=\"/coordenador/pre-cadastros\"")));
+    }
+
+    @Test
+    @DisplayName("Outro perfil não abre a página do pré-cadastro")
+    void paginaDeveSerBloqueadaParaOutroPerfil() throws Exception {
+        mockMvc.perform(get("/coordenador/pre-cadastros").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isForbidden());
     }
 }

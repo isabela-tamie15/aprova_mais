@@ -1,9 +1,13 @@
 package tcc.ges.aprovamais.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.EntregaVersao;
+import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +27,8 @@ public interface EntregaVersaoRepository extends JpaRepository<EntregaVersao, Lo
 
     // Download pelo orientador, só versões de entregas dos alunos dele
     Optional<EntregaVersao> findByIdAndEntregaEstagioOrientadorEmail(Long id, String emailOrientador);
+
+
+    //Correções feitas pelo orientador: as versões que ele mesmo avaliou. A busca é por quem avaliou, e não pelo orientador atual do estágio, então uma troca de turma não mistura os históricos
+    Page<EntregaVersao> findByAvaliadorEmailAndResultadoIn(String emailAvaliador, Collection<StatusEntrega> resultados, Pageable pageable);
 }
