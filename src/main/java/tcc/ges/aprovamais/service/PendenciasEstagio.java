@@ -1,5 +1,7 @@
 package tcc.ges.aprovamais.service;
 
+import java.time.LocalDate;
+
 /*
    F2: regra das atividades da trilha, separada do service para dar para testar sem banco,
    do mesmo jeito que a CalculadoraCargaHoraria. Ela recebe os números já contados pelo
@@ -23,5 +25,19 @@ public final class PendenciasEstagio {
     */
     public static boolean temPendencia(long total, long aprovadas) {
         return total > 0 && aprovadas < total;
+    }
+
+    /*
+       Dashboard do coordenador: as horas não fecham no prazo quando a data prevista de conclusão
+       (o dia em que o aluno completa a carga horária) cai depois da data de encerramento das
+       entregas da turma. Se as duas datas forem iguais, o aluno completa as horas no próprio
+       último dia, e por isso consideramos que fecham no prazo. Sem uma das duas datas não temos
+       como comparar, então não contamos como pendência
+    */
+    public static boolean temPendenciaDeHoras(LocalDate dataPrevistaConclusao, LocalDate dataEncerramentoEntregas) {
+        if (dataPrevistaConclusao == null || dataEncerramentoEntregas == null) {
+            return false;
+        }
+        return dataPrevistaConclusao.isAfter(dataEncerramentoEntregas);
     }
 }

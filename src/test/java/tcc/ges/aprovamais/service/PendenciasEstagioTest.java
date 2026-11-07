@@ -3,6 +3,8 @@ package tcc.ges.aprovamais.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,5 +46,30 @@ class PendenciasEstagioTest {
     @DisplayName("Trilha sem tarefas não tem pendência, porque não há atividade para entregar")
     void naoDeveTerPendenciaComTrilhaSemTarefas() {
         assertFalse(PendenciasEstagio.temPendencia(0, 0));
+    }
+
+    // Dashboard do coordenador: horas que não fecham no prazo (cartão 6)
+
+    @Test
+    @DisplayName("Horas não fecham quando a data prevista cai depois do encerramento das entregas")
+    void deveTerPendenciaDeHorasQuandoDataPrevistaPassaDoEncerramento() {
+        // João termina as horas em 15/12, mas as entregas da turma 8B fecham em 10/12
+        assertTrue(PendenciasEstagio.temPendenciaDeHoras(LocalDate.of(2026, 12, 15), LocalDate.of(2026, 12, 10)));
+    }
+
+    @Test
+    @DisplayName("Horas fecham no prazo quando a data prevista é antes ou no mesmo dia do encerramento")
+    void naoDeveTerPendenciaDeHorasQuandoFechamNoPrazo() {
+        // Antes do encerramento
+        assertFalse(PendenciasEstagio.temPendenciaDeHoras(LocalDate.of(2026, 12, 15), LocalDate.of(2026, 12, 20)));
+        // No mesmo dia: o aluno completa as horas no próprio último dia das entregas
+        assertFalse(PendenciasEstagio.temPendenciaDeHoras(LocalDate.of(2026, 12, 15), LocalDate.of(2026, 12, 15)));
+    }
+
+    @Test
+    @DisplayName("Sem uma das datas não há como comparar, então não conta como pendência de horas")
+    void naoDeveTerPendenciaDeHorasSemAsDatas() {
+        assertFalse(PendenciasEstagio.temPendenciaDeHoras(null, LocalDate.of(2026, 12, 15)));
+        assertFalse(PendenciasEstagio.temPendenciaDeHoras(LocalDate.of(2026, 12, 15), null));
     }
 }
