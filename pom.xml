@@ -276,6 +276,29 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<!-- Linter (Checkstyle). Regras em checkstyle.xml, na raiz do projeto. Para rodar: ./mvnw checkstyle:check -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>3.6.0</version>
+				<dependencies>
+					<!-- O plugin vem com o Checkstyle 9.3, que não entende Java 25 -->
+					<dependency>
+						<groupId>com.puppycrawl.tools</groupId>
+						<artifactId>checkstyle</artifactId>
+						<version>14.4.0</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<configLocation>checkstyle.xml</configLocation>
+					<inputEncoding>UTF-8</inputEncoding>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<consoleOutput>true</consoleOutput>
+					<violationSeverity>warning</violationSeverity>
+					<failOnViolation>true</failOnViolation>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
