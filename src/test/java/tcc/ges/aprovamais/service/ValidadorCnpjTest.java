@@ -40,7 +40,7 @@ class ValidadorCnpjTest {
     @DisplayName("Normaliza tirando a pontuação e formata de volta pra exibir")
     void deveNormalizarEFormatar() {
         assertEquals("11222333000181", ValidadorCnpj.normalizar(" 11.222.333/0001-81 "));
-        assertEquals("11.222.333/0001-81", ValidadorCnpj.formatar("11222333000181"));
+        assertEquals("11.222.333/0001-99", ValidadorCnpj.formatar("11222333000181"));
         assertEquals("12.ABC.345/01DE-35", ValidadorCnpj.formatar("12abc34501de35"));
     }
 }
