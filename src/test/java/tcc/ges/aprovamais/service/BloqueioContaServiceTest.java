@@ -102,9 +102,9 @@ class BloqueioContaServiceTest {
 
     @ParameterizedTest(name = "{0} falha(s) anterior(es) -> {1} tentativa(s), bloqueada = {2}")
     @CsvSource({
-            "3, 4, false",
-            "4, 5, true",
-            "5, 6, true"
+        "3, 4, false",
+        "4, 5, true",
+        "5, 6, true"
     })
     @DisplayName("Conta é bloqueada a partir da 5th tentativa errada")
     void deveBloquearContaAoAtingirLimiteDeTentativas(int tentativasAnteriores,

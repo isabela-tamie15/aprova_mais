@@ -1,0 +1,95 @@
+# Pipeline de integração contínua do Aprova+
+#
+# Roda a cada Pull Request aberto, atualizado ou reaberto para a develop ou a main.
+# São três checagens independentes, cada uma em um job próprio, que rodam em paralelo
+# e aparecem separadas na página do PR:
+#   - Testes unitários:     só as classes de teste sem Spring (service, dto, external, storage)
+#   - Testes de integração: só as classes *IntegrationTest e o AprovamaisApplicationTests (Spring + H2)
+#   - Linter:               Checkstyle com as regras de checkstyle.xml
+#
+# Se nenhum teste for encontrado pelo filtro -Dtest, o Surefire falha o build
+# (failIfNoSpecifiedTests é true por padrão), então uma seleção vazia não passa.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes-unitarios:
+    name: Testes unitários
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Configurar o Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Executar os testes unitários
+        run: mvn --batch-mode --no-transfer-progress test -Dtest='!*IntegrationTest,!AprovamaisApplicationTests'
+
+      - name: Guardar o relatório dos testes unitários
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: relatorio-testes-unitarios
+          path: target/surefire-reports/
+
+  testes-integracao:
+    name: Testes de integração
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Configurar o Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      # Usa o perfil test (src/test/resources/application-test.properties): H2 em memória
+      # e chaves falsas, então não precisa de banco nem de segredo no workflow
+      - name: Executar os testes de integração
+        run: mvn --batch-mode --no-transfer-progress test -Dtest='*IntegrationTest,AprovamaisApplicationTests'
+
+      - name: Guardar o relatório dos testes de integração
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: relatorio-testes-integracao
+          path: target/surefire-reports/
+
+  linter:
+    name: Linter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Configurar o Java 25
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Validar o estilo com o Checkstyle
+        run: mvn --batch-mode --no-transfer-progress checkstyle:check

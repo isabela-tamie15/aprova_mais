@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+    Regras de estilo do Aprova+.
+
+    Subconjunto do Checkstyle focado no que mais causa problema em revisão:
+    imports não usados, nomes fora do padrão, blocos sem chaves, indentação,
+    espaçamento e linhas longas demais.
+
+    Todas as regras usam severidade warning, e o pom.xml configura
+    violationSeverity=warning, então qualquer violação reprova o build.
+
+    Para rodar localmente: ./mvnw checkstyle:check
+-->
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="warning"/>
+    <property name="fileExtensions" value="java"/>
+
+    <!-- Indentação só com espaços -->
+    <module name="FileTabCharacter">
+        <property name="eachLine" value="false"/>
+    </module>
+
+    <!-- 160 colunas: o projeto usa nomes descritivos em português -->
+    <module name="LineLength">
+        <property name="max" value="160"/>
+        <property name="ignorePattern" value="^(package|import) .*$"/>
+    </module>
+
+    <module name="TreeWalker">
+
+        <!-- Imports -->
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+
+        <!-- Nomes -->
+        <module name="PackageName"/>
+        <module name="TypeName"/>
+        <module name="MemberName"/>
+        <module name="ParameterName"/>
+        <module name="LocalVariableName"/>
+        <!-- Constantes em MAIÚSCULAS, com exceção do logger "log" do SLF4J -->
+        <module name="ConstantName">
+            <property name="format" value="^log$|^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"/>
+        </module>
+        <!-- camelCase; o sublinhado é aceito para separar as partes do nome dos testes
+             (ex.: criar_comDadosValidos_deveRetornar201) -->
+        <module name="MethodName">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*(_[a-zA-Z0-9]+)*$"/>
+        </module>
+
+        <!-- Blocos e chaves -->
+        <module name="NeedBraces"/>
+        <module name="LeftCurly"/>
+        <module name="RightCurly"/>
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
+
+        <!-- Indentação de 4 espaços -->
+        <module name="Indentation"/>
+
+        <!-- Espaçamento -->
+        <module name="WhitespaceAround">
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyTypes" value="true"/>
+            <property name="allowEmptyLambdas" value="true"/>
+        </module>
+        <module name="WhitespaceAfter"/>
+
+        <!-- Boas práticas -->
+        <module name="OneStatementPerLine"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="EmptyStatement"/>
+        <module name="EqualsHashCode"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier"/>
+        <module name="UpperEll"/>
+        <module name="ArrayTypeStyle"/>
+    </module>
+</module>

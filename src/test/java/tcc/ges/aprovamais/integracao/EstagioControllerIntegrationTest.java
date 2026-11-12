@@ -66,7 +66,9 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
 
 
-        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", estagio.getId()).with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR"))).andExpect(status().isOk())
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", estagio.getId())
+                        .with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(estagio.getId()))
                 .andExpect(jsonPath("$.status").value("ATIVO"))
                 .andExpect(jsonPath("$.nomeEmpresa").value("Empresa Teste"));
@@ -80,7 +82,9 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
 
 
-        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", estagio.getId()).with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR"))).andExpect(status().isConflict())
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", estagio.getId())
+                        .with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.mensagem", containsString("pendentes podem ser aprovados")));
 

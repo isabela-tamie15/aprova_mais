@@ -10,7 +10,8 @@ import tcc.ges.aprovamais.security.AesEncryptor;
 import java.time.OffsetDateTime;
 
 
-//Cada decisão do orientador sobre um estagio vira uma linha aqui, aprovação ou rejeição. O registro nunca é alterado nem apagado, assim a justificativa de uma rejeição continua guardada mesmo depois que o aluno reenvia e o estágio é aprovado (RN41 e RF22)
+//Cada decisão do orientador sobre um estagio vira uma linha aqui, aprovação ou rejeição. O registro nunca é alterado nem apagado,
+//assim a justificativa de uma rejeição continua guardada mesmo depois que o aluno reenvia e o estágio é aprovado (RN41 e RF22)
 @Data
 @EntityListeners(AuditingEntityListener.class)
 @Entity

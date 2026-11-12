@@ -51,7 +51,9 @@ public class AesEncryptor implements AttributeConverter<String, String> {
     // Esse é o método que o JPA chama antes de salvar, pra criptografar o valor
     @Override
     public String convertToDatabaseColumn(String atributo) {
-        if (atributo == null) return null;
+        if (atributo == null) {
+            return null;
+        }
         try {
             /*
                Gera um IV aleatório a cada criptografia. Isso é essencial
@@ -89,7 +91,9 @@ public class AesEncryptor implements AttributeConverter<String, String> {
     // Esse é o método que o JPA chama ao ler do banco, pra descriptografar o valor
     @Override
     public String convertToEntityAttribute(String dadosBanco) {
-        if (dadosBanco == null) return null;
+        if (dadosBanco == null) {
+            return null;
+        }
         try {
             ByteBuffer buffer = ByteBuffer.wrap(
                     Base64.getDecoder().decode(dadosBanco));

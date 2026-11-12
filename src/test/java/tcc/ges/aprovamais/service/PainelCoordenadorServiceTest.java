@@ -362,8 +362,12 @@ class PainelCoordenadorServiceTest {
         Estagio de8b = estagio(turma(1L, "8B", engenharia, hoje.plusDays(90)), StatusEstagio.ATIVO, carlos);
         Estagio de6a = estagio(turma(3L, "6A", sistemas, hoje.plusDays(90)), StatusEstagio.ATIVO, carlos);
         List<Entrega> entregas = new ArrayList<>();
-        for (int i = 0; i < 2; i++) entregas.add(entrega(de8a));
-        for (int i = 0; i < 5; i++) entregas.add(entrega(de8b));
+        for (int i = 0; i < 2; i++) {
+            entregas.add(entrega(de8a));
+        }
+        for (int i = 0; i < 5; i++) {
+            entregas.add(entrega(de8b));
+        }
         entregas.add(entrega(de6a));
         prepararBanco(List.of(de8a, de8b, de6a), List.of(), List.of(), entregas);
 

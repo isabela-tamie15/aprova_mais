@@ -29,6 +29,7 @@ public interface EntregaVersaoRepository extends JpaRepository<EntregaVersao, Lo
     Optional<EntregaVersao> findByIdAndEntregaEstagioOrientadorEmail(Long id, String emailOrientador);
 
 
-    //Correções feitas pelo orientador: as versões que ele mesmo avaliou. A busca é por quem avaliou, e não pelo orientador atual do estágio, então uma troca de turma não mistura os históricos
+    //Correções feitas pelo orientador: as versões que ele mesmo avaliou. A busca é por quem avaliou, e não pelo orientador atual do estágio,
+    //então uma troca de turma não mistura os históricos
     Page<EntregaVersao> findByAvaliadorEmailAndResultadoIn(String emailAvaliador, Collection<StatusEntrega> resultados, Pageable pageable);
 }

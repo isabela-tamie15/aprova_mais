@@ -16,7 +16,8 @@ import tcc.ges.aprovamais.repository.UsuarioRepository;
 /*
    Essa service é quem cria as contas iniciais na primeira vez que o sistema sobe
 
-   A conta do Administrador é a definitiva, a da secretaria podemos dexar por enquanto, só a secretaria envia convites, então sem ela ninguém mais entraria no sistema
+   A conta do Administrador é a definitiva, a da secretaria podemos dexar por enquanto, só a secretaria envia convites,
+   então sem ela ninguém mais entraria no sistema
 */
 @Service
 @RequiredArgsConstructor
