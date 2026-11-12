@@ -68,7 +68,7 @@ class CursoControllerIntegrationTest extends ApiIntegrationTestBase {
                 .toEntity(MAPA);
 
         // Assert
-        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(resposta.getBody().get("status")).isEqualTo(401);
         assertThat((String) resposta.getBody().get("mensagem")).contains("Autenticação necessária");
     }
