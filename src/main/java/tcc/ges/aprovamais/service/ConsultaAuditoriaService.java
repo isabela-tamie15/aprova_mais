@@ -109,11 +109,21 @@ public class ConsultaAuditoriaService {
     // Texto que vai para os detalhes do registro da consulta
     private String descreverFiltros(FiltroAuditoriaRequest filtro) {
         List<String> partes = new ArrayList<>();
-        if (temTexto(filtro.getEmail())) partes.add("e-mail \"" + filtro.getEmail().trim() + "\"");
-        if (temTexto(filtro.getAcao())) partes.add("ação " + filtro.getAcao().trim());
-        if (filtro.getSucesso() != null) partes.add(filtro.getSucesso() ? "só sucessos" : "só falhas");
-        if (filtro.getInicio() != null) partes.add("de " + filtro.getInicio());
-        if (filtro.getFim() != null) partes.add("até " + filtro.getFim());
+        if (temTexto(filtro.getEmail())) {
+            partes.add("e-mail \"" + filtro.getEmail().trim() + "\"");
+        }
+        if (temTexto(filtro.getAcao())) {
+            partes.add("ação " + filtro.getAcao().trim());
+        }
+        if (filtro.getSucesso() != null) {
+            partes.add(filtro.getSucesso() ? "só sucessos" : "só falhas");
+        }
+        if (filtro.getInicio() != null) {
+            partes.add("de " + filtro.getInicio());
+        }
+        if (filtro.getFim() != null) {
+            partes.add("até " + filtro.getFim());
+        }
         return partes.isEmpty()
                 ? "Consulta da auditoria sem filtros"
                 : "Consulta da auditoria com filtros: " + String.join(", ", partes);

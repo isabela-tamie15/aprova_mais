@@ -86,7 +86,8 @@ abstract class IntegracaoTestBase {
         aluno.setConsentimentoDado(true);
         aluno.setVersaoConsentimento(ConsentimentoService.VERSAO_TERMOS_ATUAL);
         entityManager.persist(aluno);
-        return aluno;}
+        return aluno;
+    }
 
 
 

@@ -135,7 +135,9 @@ class AuditoriaAdministradorIntegrationTest extends IntegracaoTestBase {
     @Test
     @DisplayName("CA03 (RF01): o primeiro login do administrador exige configurar o 2FA")
     void primeiroLoginDoAdministradorExigeConfigurarDoisFatores() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"" + EMAIL_ADMIN + "\",\"senha\":\"" + SENHA_ADMIN + "\"}"))
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + EMAIL_ADMIN + "\",\"senha\":\"" + SENHA_ADMIN + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requerConfiguracao2FA").value(true))
                 .andExpect(jsonPath("$.token").isNotEmpty());

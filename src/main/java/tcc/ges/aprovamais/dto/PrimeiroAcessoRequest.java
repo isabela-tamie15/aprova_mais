@@ -11,7 +11,8 @@ public class PrimeiroAcessoRequest {
 
     @NotBlank(message = "A senha é obrigatória")
 
-    //Mínimo de 8 caracteres com pelo menos uma letra e um número. O máximo de 72 é limite do BCrypt, que ignora o que passar disso (e versões novas do Spring Security recusam a senha), então é melhor avisar já no formulário
+    //Mínimo de 8 caracteres com pelo menos uma letra e um número. O máximo de 72 é limite do BCrypt, que ignora o que passar disso
+    //(e versões novas do Spring Security recusam a senha), então é melhor avisar já no formulário
 
     @Size(min = 8, max = 72, message = "A senha deve ter entre 8 e 72 caracteres")
     @Pattern(regexp = "^(?=.*\\p{L})(?=.*\\d).*$",

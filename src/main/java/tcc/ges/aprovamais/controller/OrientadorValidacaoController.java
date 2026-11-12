@@ -38,7 +38,9 @@ public class OrientadorValidacaoController {
 
     // Esse é o endpoint que o orientador usa pra aprovar um estágio pendente
     @PostMapping("/{id}/aprovar")
-    public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication, @Valid @RequestBody(required = false) AprovacaoRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication,
+                                                   @Valid @RequestBody(required = false) AprovacaoRequest request,
+                                                   HttpServletRequest httpRequest) {
 
         /*
            O id do estágio vem pela URL e o e-mail vem do token. Os dois

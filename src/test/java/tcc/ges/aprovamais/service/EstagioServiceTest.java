@@ -220,10 +220,12 @@ class EstagioServiceTest {
         prepararCadastro(criarEstagio(StatusEstagio.PENDENTE));
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class, () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
 
         // assert
-        assertEquals("Já existe uma solicitação aguardando aprovação do orientador", excecao.getMessage());verify(estagioRepository, never()).save(any());
+        assertEquals("Já existe uma solicitação aguardando aprovação do orientador", excecao.getMessage());
+        verify(estagioRepository, never()).save(any());
     }
 
     @Test

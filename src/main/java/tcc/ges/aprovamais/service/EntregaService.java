@@ -45,7 +45,8 @@ public class EntregaService {
     }
 
 
-    // O aluno envia um arquivo para uma tarefa da trilha. Cada envio vira uma versão nova, com número igual ao maior anterior mais 1, e a entrega volta para ENVIADA, aparecendo no painel do orientador
+    // O aluno envia um arquivo para uma tarefa da trilha. Cada envio vira uma versão nova, com número igual ao maior anterior mais 1,
+    // e a entrega volta para ENVIADA, aparecendo no painel do orientador
     @Transactional
     public EntregaDetalheResponse enviar(String emailAluno, Long tarefaId, String nomeOriginal,
                                          byte[] conteudo, String comentario, String ipOrigem) {

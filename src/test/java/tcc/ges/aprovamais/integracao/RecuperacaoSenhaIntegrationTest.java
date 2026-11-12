@@ -84,7 +84,9 @@ class RecuperacaoSenhaIntegrationTest extends IntegracaoTestBase {
         String token = link.getValue().substring(link.getValue().indexOf("token=") + 6);
 
         // a página do link abre sem login e mostra o formulário
-        mockMvc.perform(get("/redefinir-senha").param("token", token)).andExpect(status().isOk()).andExpect(content().string(containsString("Salvar nova senha")));
+        mockMvc.perform(get("/redefinir-senha").param("token", token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Salvar nova senha")));
 
         mockMvc.perform(post("/api/v1/auth/recuperacao/redefinir").contentType(MediaType.APPLICATION_JSON).content(redefinir(token, "senhaNova2")))
                 .andExpect(status().isOk());

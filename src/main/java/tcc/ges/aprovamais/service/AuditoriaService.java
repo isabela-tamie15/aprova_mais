@@ -85,7 +85,9 @@ public class AuditoriaService {
        sua camada, então precisa dessa conversão no meio
     */
     private PerfilAuditoria converterPerfil(PerfilUsuario perfil) {
-        if (perfil == null) return null;
+        if (perfil == null) {
+            return null;
+        }
         return switch (perfil) {
             case ADMINISTRADOR -> PerfilAuditoria.ADMINISTRADOR;
             case COORDENADOR -> PerfilAuditoria.COORDENADOR;

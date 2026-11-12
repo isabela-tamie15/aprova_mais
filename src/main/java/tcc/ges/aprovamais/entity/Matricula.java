@@ -41,4 +41,5 @@ public class Matricula {
 
     @LastModifiedDate
     @Column(name = "alterado_em", nullable = false)
-    private OffsetDateTime alteradoEm;}
+    private OffsetDateTime alteradoEm;
+}

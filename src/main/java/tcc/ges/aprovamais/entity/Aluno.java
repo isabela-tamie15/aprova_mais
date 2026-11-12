@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @Table(name = "alunos")
 @Entity
-public class Aluno extends Usuario{
+public class Aluno extends Usuario {
 
     @Column(nullable = false, unique = true)
     private String rgm;

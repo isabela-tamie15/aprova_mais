@@ -12,12 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ActiveProfiles("test")
 class AprovamaisApplicationTests {
 
-	@Autowired
-	private ApplicationContext context;
+    @Autowired
+    private ApplicationContext context;
 
-	@Test
-	void contextLoads() {
-		assertNotNull(context);
-	}
+    @Test
+    void contextLoads() {
+        assertNotNull(context);
+    }
 
 }
