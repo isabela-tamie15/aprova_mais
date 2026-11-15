@@ -96,14 +96,21 @@ public class PaginaController {
 
         // Estágios que já saíram de aberto (concluídos ou encerrados) aparecem na lista de anteriores
         List<EstagioResponse> estagiosAnteriores = new ArrayList<>();
+        EstagioResponse estagioConcluido = null;
         for (EstagioResponse estagio : estagioService.listarEstagiosDoAluno(email)) {
             boolean concluido = estagio.getStatus().equals("CONCLUIDO");
             boolean encerrado = estagio.getStatus().equals("ENCERRADO");
             if (concluido || encerrado) {
                 estagiosAnteriores.add(estagio);
             }
+            if (concluido) {
+                estagioConcluido = estagio;
+            }
         }
         model.addAttribute("estagiosAnteriores", estagiosAnteriores);
+
+        // Com o estágio concluído, a matrícula não recebe outro, e o painel mostra a conclusão no lugar do cadastro
+        model.addAttribute("estagioConcluido", estagioConcluido);
         return "aluno/dashboard";
     }
 
@@ -127,6 +134,10 @@ public class PaginaController {
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis(email));
+        model.addAttribute("estagioConcluido", estagioService.listarEstagiosDoAluno(email).stream()
+                .filter(estagio -> estagio.getStatus().equals("CONCLUIDO"))
+                .findFirst()
+                .orElse(null));
         return "aluno/estagio";
     }
 

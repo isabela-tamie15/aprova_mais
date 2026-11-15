@@ -3,6 +3,7 @@ package tcc.ges.aprovamais.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,5 +72,21 @@ class PendenciasEstagioTest {
     void naoDeveTerPendenciaDeHorasSemAsDatas() {
         assertFalse(PendenciasEstagio.temPendenciaDeHoras(null, LocalDate.of(2026, 12, 15)));
         assertFalse(PendenciasEstagio.temPendenciaDeHoras(LocalDate.of(2026, 12, 15), null));
+    }
+
+    @Test
+    @DisplayName("A conclusão fica liberada com a carga cumprida e todas as tarefas aprovadas")
+    void deveLiberarConclusaoComCargaETarefasCumpridas() {
+        assertTrue(PendenciasEstagio.podeConcluir(new BigDecimal("270"), new BigDecimal("270"), 3, 3));
+        // Trilha sem tarefas depende só da carga
+        assertTrue(PendenciasEstagio.podeConcluir(new BigDecimal("270"), new BigDecimal("270"), 0, 0));
+    }
+
+    @Test
+    @DisplayName("A conclusão fica bloqueada com carga faltando ou tarefa sem aprovação")
+    void naoDeveLiberarConclusaoComPendencia() {
+        assertFalse(PendenciasEstagio.podeConcluir(new BigDecimal("264"), new BigDecimal("270"), 3, 3));
+        assertFalse(PendenciasEstagio.podeConcluir(new BigDecimal("270"), new BigDecimal("270"), 3, 2));
+        assertFalse(PendenciasEstagio.podeConcluir(null, new BigDecimal("270"), 0, 0));
     }
 }

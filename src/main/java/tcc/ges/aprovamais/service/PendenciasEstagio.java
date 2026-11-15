@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /*
@@ -34,5 +35,16 @@ public final class PendenciasEstagio {
             return false;
         }
         return dataPrevistaConclusao.isAfter(dataEncerramentoEntregas);
+    }
+
+    /*
+       O estágio pode ser concluído quando a carga cumprida chega à exigida e todas as tarefas da
+       trilha estão aprovadas. Trilha sem tarefas depende só da carga
+    */
+    public static boolean podeConcluir(BigDecimal cargaCumprida, BigDecimal cargaNecessaria, long total, long aprovadas) {
+        if (cargaCumprida == null || cargaNecessaria == null) {
+            return false;
+        }
+        return cargaCumprida.compareTo(cargaNecessaria) >= 0 && !temPendencia(total, aprovadas);
     }
 }

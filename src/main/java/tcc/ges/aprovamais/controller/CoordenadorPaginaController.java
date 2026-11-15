@@ -37,6 +37,12 @@ public class CoordenadorPaginaController {
         return "coordenador/trilhas";
     }
 
+    // Página dos estágios em aberto, com o encerramento por desligamento
+    @GetMapping("/coordenador/estagios")
+    public String estagios() {
+        return "coordenador/estagios";
+    }
+
     // Endpoint que serve a página da lista de pré-cadastro
     @GetMapping("/coordenador/pre-cadastros")
     public String preCadastros() {

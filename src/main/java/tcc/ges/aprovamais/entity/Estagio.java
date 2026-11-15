@@ -80,6 +80,15 @@ public class Estagio {
     @Column(name = "justificativa_rejeicao", columnDefinition = "TEXT")
     private String justificativaRejeicao;
 
+    // Dia em que o estágio foi concluído ou encerrado
+    @Column(name = "data_finalizacao")
+    private LocalDate dataFinalizacao;
+
+    // Observação de quem encerrou o estágio, cifrada como a justificativa da rejeição
+    @Convert(converter = AesEncryptor.class)
+    @Column(name = "observacao_encerramento", columnDefinition = "TEXT")
+    private String observacaoEncerramento;
+
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
