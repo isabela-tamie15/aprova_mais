@@ -2,6 +2,7 @@ package tcc.ges.aprovamais.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 import tcc.ges.aprovamais.dto.CodigoDoisFatoresRequest;
 import tcc.ges.aprovamais.dto.ConfiguracaoDoisFatoresResponse;
 import tcc.ges.aprovamais.dto.StatusDoisFatoresResponse;
+import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.security.CookieSessao;
+import tcc.ges.aprovamais.security.JwtService;
 import tcc.ges.aprovamais.service.DoisFatoresService;
 
 
@@ -21,6 +25,8 @@ import tcc.ges.aprovamais.service.DoisFatoresService;
 public class DoisFatoresController {
 
     private final DoisFatoresService doisFatoresService;
+    private final JwtService jwtService;
+    private final CookieSessao cookieSessao;
 
     // Esse é o endpoint que diz se o usuário já tem 2fa ativado ou não
     @GetMapping
@@ -56,14 +62,20 @@ public class DoisFatoresController {
     public ResponseEntity<Void> desativar(
             @Valid @RequestBody CodigoDoisFatoresRequest requisicao,
             Authentication authentication,
-            HttpServletRequest request) {
+            HttpServletRequest request,
+            HttpServletResponse respostaHttp) {
 
         /*
            Mesma ideia do ativar, o código é exigido aqui também para evitar
            que alguém desative o 2fa só tendo acesso à sessão
         */
-        doisFatoresService.desativar(
+        Usuario usuario = doisFatoresService.desativar(
                 authentication.getName(), requisicao.getCodigo(), request.getRemoteAddr());
+
+        // Desativar o 2FA encerra as sessões da conta; aqui nós mantemos o usuário logado neste navegador com um token novo
+        String tokenNovo = jwtService.gerarToken(usuario.getEmail(), usuario.getPerfil().name(),
+                usuario.versaoSessaoAtual());
+        cookieSessao.gravar(respostaHttp, tokenNovo);
         return ResponseEntity.ok().build();
     }
 }

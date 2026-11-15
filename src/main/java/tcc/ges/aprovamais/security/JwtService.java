@@ -18,6 +18,7 @@ import java.util.UUID;
 public class JwtService {
 
     private static final String CLAIM_PERFIL = "perfil";
+    private static final String CLAIM_VERSAO_SESSAO = "versaoSessao";
 
     @Value("${jwt.secret}")
     private String segredo;
@@ -44,8 +45,8 @@ public class JwtService {
         );
     }
 
-    // Esse é o método que gera o token no login, com o e-mail e o perfil dentro dele
-    public String gerarToken(String email, String perfil) {
+    // Esse é o método que gera o token no login, com o e-mail, o perfil e a versão da sessão
+    public String gerarToken(String email, String perfil, int versaoSessao) {
         return Jwts.builder()
                 .subject(email)
                 /*
@@ -54,6 +55,8 @@ public class JwtService {
                    de novo
                 */
                 .claim(CLAIM_PERFIL, perfil)
+                // Versão da sessão no momento do login, conferida pelo JwtFilter
+                .claim(CLAIM_VERSAO_SESSAO, versaoSessao)
                 /*
                    Id único de cada token. Sem ele, dois logins do mesmo usuário
                    no mesmo segundo geram o mesmo token, e o logout de um
@@ -74,6 +77,16 @@ public class JwtService {
     // Extrai o perfil que foi gravado como claim no momento da geração
     public String extrairPerfil(String token) {
         return extrairClaims(token).get(CLAIM_PERFIL, String.class);
+    }
+
+    // Versão da sessão gravada no token; token sem esse campo vale como versão zero
+    public int extrairVersaoSessao(String token) {
+        // O JJWT pode devolver o número como Integer, Long ou Double, por isso lemos como Number
+        Object versao = extrairClaims(token).get(CLAIM_VERSAO_SESSAO);
+        if (versao instanceof Number numero) {
+            return numero.intValue();
+        }
+        return 0;
     }
 
     // Momento em que o token expira, usado para saber até quando ele precisa ficar na lista de revogados

@@ -79,6 +79,10 @@ public abstract class Usuario {
     @Column(nullable = false)
     private Boolean ativo = true;
 
+    // Versão da sessão gravada no JWT. Somar 1 encerra todas as sessões abertas da conta (nulo vale como zero)
+    @Column(name = "versao_sessao")
+    private Integer versaoSessao = 0;
+
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
@@ -86,4 +90,14 @@ public abstract class Usuario {
     @LastModifiedDate
     @Column(name = "alterado_em", nullable = false)
     private OffsetDateTime alteradoEm;
+
+    // Versão atual da sessão, com nulo valendo zero
+    public int versaoSessaoAtual() {
+        return versaoSessao == null ? 0 : versaoSessao;
+    }
+
+    // Encerra todas as sessões abertas da conta: os tokens emitidos antes deixam de valer
+    public void encerrarSessoes() {
+        versaoSessao = versaoSessaoAtual() + 1;
+    }
 }

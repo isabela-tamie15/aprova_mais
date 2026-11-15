@@ -13,13 +13,14 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 import java.io.IOException;
+import java.util.Optional;
 
 // Esse filtro roda em toda requisição, é ele quem lê o JWT e autentica o usuário antes do controller
 @Component
@@ -29,7 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final UsuarioRepository usuarioRepository;
     private final TokenRevogadoService tokenRevogadoService;
 
     // Esse é o método principal do filtro, chamado uma vez por requisição
@@ -65,14 +66,22 @@ public class JwtFilter extends OncePerRequestFilter {
         if (SecurityContextHolder.getContext().getAuthentication() == null
                 && jwtService.tokenValido(token, email)) {
 
-            UserDetails usuarioDetalhes;
-            try {
-                usuarioDetalhes = userDetailsService.loadUserByUsername(email);
-            } catch (UsernameNotFoundException excecao) {
-                // E-mail do token não existe mais (tipo conta anonimizada), segue sem autenticar
+            // E-mail do token não existe mais (tipo conta anonimizada), segue sem autenticar
+            Optional<Usuario> usuarioDoToken = usuarioRepository.findByEmail(email);
+            if (usuarioDoToken.isEmpty()) {
                 cadeiaFiltros.doFilter(requisicao, resposta);
                 return;
             }
+            Usuario usuario = usuarioDoToken.get();
+
+            // O token só vale se foi emitido na versão de sessão atual da conta
+            if (jwtService.extrairVersaoSessao(token) != usuario.versaoSessaoAtual()) {
+                log.warn("[AUTH] Token de uma sessão encerrada recusado para: {}", email);
+                cadeiaFiltros.doFilter(requisicao, resposta);
+                return;
+            }
+
+            UserDetails usuarioDetalhes = UserDetailsServiceImpl.paraUserDetails(usuario);
 
             /*
                Conta desativada (anonimizada ou desativada pelo admin) perde

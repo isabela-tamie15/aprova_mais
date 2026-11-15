@@ -113,6 +113,9 @@ public class RecuperacaoSenhaService {
         usuario.setExpiracaoTokenRecuperacao(null);
         usuario.setTokenPreAutenticacao(null);
         usuario.setExpiracaoPreAutenticacao(null);
+
+        // Encerra as sessões abertas com a senha antiga
+        usuario.encerrarSessoes();
         usuarioRepository.save(usuario);
         bloqueioContaService.limparFalhas(usuario);
 

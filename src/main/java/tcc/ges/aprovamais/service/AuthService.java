@@ -216,7 +216,8 @@ public class AuthService {
         // Login deu certo, então limpa qualquer falha anterior e desbloqueia a conta
         bloqueioContaService.limparFalhas(usuario);
 
-        String token = jwtService.gerarToken(usuario.getEmail(), usuario.getPerfil().name());
+        String token = jwtService.gerarToken(usuario.getEmail(), usuario.getPerfil().name(),
+                usuario.versaoSessaoAtual());
 
         auditoriaService.registrar(
                 usuario,

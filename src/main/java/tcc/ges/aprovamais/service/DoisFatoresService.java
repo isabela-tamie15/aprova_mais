@@ -179,9 +179,9 @@ public class DoisFatoresService {
         ativar(usuario, ipOrigem);
     }
 
-    // Desativa o 2fa, mas exige um código válido antes para confirmar
+    // Desativa o 2fa, exigindo um código válido. Devolve o usuário para o controller gerar o token novo
     @Transactional(noRollbackFor = {CodigoDoisFatoresInvalidoException.class, AuthenticationException.class})
-    public void desativar(String email, String codigo, String ipOrigem) {
+    public Usuario desativar(String email, String codigo, String ipOrigem) {
         Usuario usuario = buscarPorEmail(email);
 
         if (usuario.getPerfil().exigeDoisFatores()) {
@@ -200,10 +200,14 @@ public class DoisFatoresService {
 
         usuario.setDoisFatoresAtivo(false);
         usuario.setDoisFatoresSegredo(null);
+
+        // Encerra as outras sessões da conta
+        usuario.encerrarSessoes();
         usuarioRepository.save(usuario);
 
         auditoriaService.registrar(usuario, "DOIS_FATORES_DESATIVADO",
                 "Autenticação de dois fatores desativada", ipOrigem, true);
+        return usuario;
     }
 
     // ===== Auxiliares =====

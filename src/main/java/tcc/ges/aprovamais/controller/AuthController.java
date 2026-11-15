@@ -1,13 +1,12 @@
 package tcc.ges.aprovamais.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +16,7 @@ import tcc.ges.aprovamais.dto.LoginRequest;
 import tcc.ges.aprovamais.dto.LoginResponse;
 import tcc.ges.aprovamais.dto.PreAutenticacaoRequest;
 import tcc.ges.aprovamais.dto.VerificacaoDoisFatoresRequest;
+import tcc.ges.aprovamais.security.CookieSessao;
 import tcc.ges.aprovamais.security.TokenRevogadoService;
 import tcc.ges.aprovamais.service.AuthService;
 
@@ -30,10 +30,7 @@ public class AuthController {
     private final AuthService authService;
     private final TokenRevogadoService tokenRevogadoService;
 
-
-    // Diz se o cookie vai com o atributo Secure (só trafega em HTTPS).
-    @Value("${app.cookie.secure:false}")
-    private boolean cookieSeguro;
+    private final CookieSessao cookieSessao;
 
     // Esse é o endpoint que recebe o login e decide se o usuário já pode entrar ou se falta a segunda etapa
     @PostMapping("/login")
@@ -51,7 +48,7 @@ public class AuthController {
            cookie de sessão
         */
         if (!loginResponse.isRequer2FA() && !loginResponse.isRequerConfiguracao2FA()) {
-            adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
+            cookieSessao.gravar(respostaHttp, loginResponse.getToken());
             return ResponseEntity.ok(loginResponse.semToken());
         }
 
@@ -70,7 +67,7 @@ public class AuthController {
                 requisicao.getToken(), requisicao.getCodigo(), request.getRemoteAddr());
 
         // Deu certo, então agora sim grava o cookie e devolve a resposta sem o token no corpo
-        adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
+        cookieSessao.gravar(respostaHttp, loginResponse.getToken());
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
@@ -93,7 +90,7 @@ public class AuthController {
                 requisicao.getToken(), requisicao.getCodigo(), request.getRemoteAddr());
 
         // Configurou certo, então já loga de vez e grava o cookie
-        adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
+        cookieSessao.gravar(respostaHttp, loginResponse.getToken());
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
@@ -110,11 +107,8 @@ public class AuthController {
             tokenRevogadoService.revogar(cookieJwt.getValue());
         }
 
-        /*
-           Grava um cookie com valor vazio e Max-Age 0, que é a forma padrão
-           de dizer para o navegador apagar o cookie
-        */
-        adicionarCookieJwt(respostaHttp, "", 0);
+        // Pede ao navegador para apagar o cookie
+        cookieSessao.apagar(respostaHttp);
 
         /*
            Só registra no log se tiver alguém autenticado, porque o logout
@@ -125,24 +119,5 @@ public class AuthController {
         }
 
         return ResponseEntity.ok().build();
-    }
-
-    // Esse é o auxiliar que monta e adiciona o cookie do JWT na resposta
-    private void adicionarCookieJwt(HttpServletResponse respostaHttp, String valorDoCookie, int segundosDeValidade) {
-
-        // Em produção, adiciona o Secure para o cookie só trafegar em HTTPS
-        String secure = cookieSeguro ? "; Secure" : "";
-
-        /*
-           Monta na mão em vez de usar a classe Cookie do Java porque ela não
-           expõe o atributo SameSite. O HttpOnly impede leitura por JavaScript,
-           o Path=/ faz valer para toda aplicação e o SameSite=Strict evita
-           envio em requisições de outros sites
-        */
-        String cookie = String.format(
-                "jwt=%s; HttpOnly; Path=/; Max-Age=%d; SameSite=Strict%s",
-                valorDoCookie, segundosDeValidade, secure
-        );
-        respostaHttp.addHeader("Set-Cookie", cookie);
     }
 }

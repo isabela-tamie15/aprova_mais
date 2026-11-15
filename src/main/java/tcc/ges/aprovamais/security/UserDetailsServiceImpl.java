@@ -42,6 +42,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         log.info("[AUTH] Usuário carregado com sucesso: {} - Perfil: {}",
                 usuario.getEmail(), usuario.getPerfil());
 
+        return paraUserDetails(usuario);
+    }
+
+    // Monta o UserDetails a partir do usuário, usado no login e no JwtFilter
+    public static UserDetails paraUserDetails(Usuario usuario) {
         /*
            Monta o UserDetails. O ROLE_ no começo é convenção do Spring, ele
            espera esse prefixo quando nós usamos hasRole em algum lugar. Já o
