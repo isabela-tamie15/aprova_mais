@@ -3,6 +3,7 @@ package tcc.ges.aprovamais.config;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -43,6 +44,14 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+
+    // Porta em que a aplicação recebe HTTP (no Render, a da variável PORT)
+    @Value("${server.port:8080}")
+    private int portaHttp;
+
+    // Endereço público do sistema (APP_URL), aceito também no CORS
+    @Value("${app.url}")
+    private String appUrl;
 
     // Esse é o bean principal que monta a cadeia de filtros do Spring Security
     @Bean
@@ -129,16 +138,24 @@ public class SecurityConfig {
 
         /*
            Só força HTTPS em produção. Em dev fica livre para rodar em HTTP,
-           senão atrapalharia o desenvolvimento local
+           senão atrapalharia o desenvolvimento local. O /livez e o /readyz ficam
+           de fora, porque o health check do Render chama por HTTP na rede interna
         */
         if (env.acceptsProfiles(Profiles.of("prod"))) {
-            http.requiresChannel(channel -> channel
-                    .anyRequest().requiresSecure()
+            http.redirectToHttps(https -> https
+                    .requestMatchers(requisicao -> !ehHealthCheck(requisicao))
             );
+            // Redireciona para a porta 443 do domínio público
+            http.portMapper(portas -> portas.http(portaHttp).mapsTo(443));
         }
         return http.build();
     }
 
+
+    private static boolean ehHealthCheck(HttpServletRequest requisicao) {
+        String caminho = requisicao.getRequestURI();
+        return caminho.equals("/livez") || caminho.equals("/readyz");
+    }
 
     private void responderNaoAutenticado(HttpServletRequest requisicao,
                                          HttpServletResponse resposta,
@@ -185,12 +202,13 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         /*
-           Só essas duas origens podem chamar a API. O allowCredentials é
+           Só essas origens podem chamar a API. O allowCredentials é
            necessário para que o cookie JWT seja enviado nas requisições
         */
         config.setAllowedOrigins(List.of(
                 "http://localhost:8080",
-                "https://localhost:8443"
+                "https://localhost:8443",
+                appUrl
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));

@@ -22,12 +22,9 @@ public class EmailService {
     @Value("${resend.api-key}")
     private String apiKey;
 
-    /*
-       Remetente padrão do Resend. Como o domínio da UMC não está verificado
-       na conta, o Resend só permite enviar a partir do próprio domínio de
-       teste deles. Em produção isso vira algo tipo no-reply@aprova.com.br
-    */
-    private static final String REMETENTE = "Aprova+ <onboarding@resend.dev>";
+    // Remetente dos e-mails, da variável EMAIL_REMETENTE
+    @Value("${app.email.remetente}")
+    private String remetente;
 
     // Esse é o método que envia o e-mail de convite para quem foi convidado
     @Async
@@ -41,7 +38,7 @@ public class EmailService {
             Resend resend = new Resend(apiKey);
 
             CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(REMETENTE)
+                    .from(remetente)
                     .to(destinatario)
                     .subject("Convite de acesso - Aprova+")
                     .html(montarCorpoConvite(nomeDestinatario, linkConvite))
@@ -64,7 +61,7 @@ public class EmailService {
             Resend resend = new Resend(apiKey);
 
             CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(REMETENTE)
+                    .from(remetente)
                     .to(destinatario)
                     .subject("Recuperação de senha - Aprova+")
                     .html(montarCorpoRecuperacaoSenha(nomeDestinatario, linkRecuperacao))
@@ -89,7 +86,7 @@ public class EmailService {
         try {
             Resend resend = new Resend(apiKey);
             CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(REMETENTE)
+                    .from(remetente)
                     .to(destinatario)
                     .subject((aprovada ? "Entrega aprovada" : "Entrega devolvida para ajustes") + " - Aprova+")
                     .html(montarCorpoResultadoEntrega(nomeDestinatario, nomeTarefa, aprovada, linkTrilha))
@@ -112,7 +109,7 @@ public class EmailService {
         try {
             Resend resend = new Resend(apiKey);
             CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(REMETENTE)
+                    .from(remetente)
                     .to(destinatario)
                     .subject((aprovado ? "Estágio aprovado" : "Estágio rejeitado para ajustes") + " - Aprova+")
                     .html(montarCorpoResultadoValidacao(nomeDestinatario, aprovado, linkEstagio))
