@@ -25,8 +25,15 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
     // Busca estágio por matrícula e status, útil para pegar o ativo de um aluno
     Optional<Estagio> findByMatriculaIdAndStatus(Long matriculaId, StatusEstagio status);
 
-    // Lista estágios de um orientador filtrando por vários status, usado na tela de validações
-    List<Estagio> findByOrientadorEmailAndStatusIn(String email, List<StatusEstagio> statuses);
+    /*
+       Estágios do orientador para a tela de validações, numa ordem fixa: o alterado há mais tempo
+       primeiro, e no empate o de menor id. Sem o OrderBy, o banco devolvia em qualquer ordem e a
+       lista mudava de posição entre um acesso e outro
+    */
+    List<Estagio> findByOrientadorEmailAndStatusInOrderByAlteradoEmAscIdAsc(String email, List<StatusEstagio> statuses);
+
+    // Estágios do orientador para a tela de acompanhamento, do cadastrado há mais tempo para o mais recente
+    List<Estagio> findByOrientadorEmailAndStatusInOrderByIdAsc(String email, List<StatusEstagio> statuses);
 
     /*
        Esse aqui é o mais importante da segurança, busca o estágio pelo id

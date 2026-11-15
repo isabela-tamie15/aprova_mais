@@ -543,7 +543,7 @@ class EstagioServiceTest {
         // arrange
         Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
         matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
-        when(estagioRepository.findByOrientadorEmailAndStatusIn(EMAIL_ORIENTADOR, List.of(StatusEstagio.ATIVO)))
+        when(estagioRepository.findByOrientadorEmailAndStatusInOrderByIdAsc(EMAIL_ORIENTADOR, List.of(StatusEstagio.ATIVO)))
                 .thenReturn(List.of(estagio));
 
         // act

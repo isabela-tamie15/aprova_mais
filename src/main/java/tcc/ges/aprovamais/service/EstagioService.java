@@ -253,7 +253,7 @@ public class EstagioService {
     // Esse é o método que lista os estágios pendentes de um orientador, incluindo os que ele já rejeitou
     @Transactional(readOnly = true)
     public List<EstagioResponse> listarPendentes(String emailOrientador) {
-        List<Estagio> estagiosParaValidar = estagioRepository.findByOrientadorEmailAndStatusIn(
+        List<Estagio> estagiosParaValidar = estagioRepository.findByOrientadorEmailAndStatusInOrderByAlteradoEmAscIdAsc(
                 emailOrientador, List.of(StatusEstagio.PENDENTE, StatusEstagio.REJEITADO));
 
         // Transforma cada estágio do banco na resposta que vai para a tela de validações
@@ -277,7 +277,7 @@ public class EstagioService {
     */
     @Transactional(readOnly = true)
     public List<EstagioResponse> listarAtivosDoOrientador(String emailOrientador) {
-        List<Estagio> estagiosAtivos = estagioRepository.findByOrientadorEmailAndStatusIn(
+        List<Estagio> estagiosAtivos = estagioRepository.findByOrientadorEmailAndStatusInOrderByIdAsc(
                 emailOrientador, List.of(StatusEstagio.ATIVO));
 
         // Transforma cada estágio do banco na resposta que vai para a tela de acompanhamento
