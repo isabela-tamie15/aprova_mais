@@ -4,7 +4,7 @@
 
 /*
    Desenha o QR Code do 2fa dentro do elemento passado. A geração roda
-   toda no navegador com o qrcodejs, o segredo não vai pra nenhum
+   toda no navegador com o qrcodejs, o segredo não vai para nenhum
    serviço externo
 */
 function desenharQrCode(elemento, texto) {
@@ -17,7 +17,7 @@ function desenharQrCode(elemento, texto) {
     });
 }
 
-// Converte a resposta de erro da API numa mensagem amigável pro usuário
+// Converte a resposta de erro da API numa mensagem amigável para o usuário
 function mensagemDeErro(resposta, dados, mensagemPadrao) {
 
     // Erro 5xx é problema do servidor, então não faz sentido expor o detalhe real
@@ -33,10 +33,10 @@ function mensagemDeErro(resposta, dados, mensagemPadrao) {
 
 /*
    Componente Alpine do formulário de login. Passa por até três etapas,
-   primeiro credenciais, depois código do 2fa pra quem já tem ativado,
-   e por último configuração com QR Code pra quem tem perfil que exige
+   primeiro credenciais, depois código do 2fa para quem já tem ativado,
+   e por último configuração com QR Code para quem tem perfil que exige
    mas ainda não configurou. O token de pré-autenticação fica só na
-   memória, nunca vai pra localStorage
+   memória, nunca vai para localStorage
 */
 function loginForm() {
     return {
@@ -49,7 +49,7 @@ function loginForm() {
         erro: '',
         carregando: false,
 
-        // Esse é o passo 1, envia email e senha e decide pra onde ir depois
+        // Esse é o passo 1, envia email e senha e decide para onde ir depois
         async entrar() {
             this.erro = '';
             this.carregando = true;
@@ -71,27 +71,34 @@ function loginForm() {
                 });
 
                 /*
-                   O catch vazio serve pra quando o backend devolve resposta
+                   O catch vazio serve para quando o backend devolve resposta
                    sem corpo, tipo 204 ou um 401 sem body. Sem isso o .json()
                    estouraria exceção
                 */
-                const dados = await resposta.json().catch(() => ({}));
+                // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
 
                 if (!resposta.ok) {
                     this.erro = mensagemDeErro(resposta, dados, 'E-mail ou senha inválidos.');
                     return;
                 }
 
-                // Usuário já tem 2fa, então vai pra etapa do código
+                // Usuário já tem 2fa, então vai para a etapa do código
                 if (dados.requer2FA) {
                     this.preAuthToken = dados.token;
                     this.senha = '';
                     this.etapa = 'codigo';
+                    // O $nextTick espera a tela atualizar e só depois roda o que está dentro de () =>
                     this.$nextTick(() => this.$refs.campoCodigo.focus());
                     return;
                 }
 
-                // Perfil exige 2fa mas ainda não configurou, então vai pra etapa de configuração
+                // Perfil exige 2fa mas ainda não configurou, então vai para a etapa de configuração
                 if (dados.requerConfiguracao2FA) {
                     this.preAuthToken = dados.token;
                     this.senha = '';
@@ -102,7 +109,7 @@ function loginForm() {
                 // Login completo, sem 2fa pendente, redireciona
                 this.redirecionar();
 
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
@@ -116,10 +123,16 @@ function loginForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: this.preAuthToken })
             });
-            const dados = await resposta.json().catch(() => ({}));
+            // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+            let dados = {};
+            try {
+                dados = await resposta.json();
+            } catch (erroDeLeitura) {
+                dados = {};
+            }
 
             if (!resposta.ok) {
-                // Se falhou, reinicia o fluxo e volta pra etapa de credenciais
+                // Se falhou, reinicia o fluxo e volta para a etapa de credenciais
                 this.reiniciar();
                 this.erro = 'Não foi possível iniciar a verificação em duas etapas. Faça login novamente.';
                 return;
@@ -132,7 +145,7 @@ function loginForm() {
             this.$nextTick(() => desenharQrCode(this.$refs.qrcode, dados.otpauthUri));
         },
 
-        // Esse método serve tanto pra etapa de código quanto pra de configuração, o endpoint muda
+        // Esse método serve tanto para a etapa de código quanto para de configuração, o endpoint muda
         async confirmarCodigo() {
             this.erro = '';
             this.carregando = true;
@@ -148,7 +161,13 @@ function loginForm() {
                     credentials: 'include',
                     body: JSON.stringify({ token: this.preAuthToken, codigo: this.codigo })
                 });
-                const dados = await resposta.json().catch(() => ({}));
+                // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
 
                 if (!resposta.ok) {
                     this.codigo = '';
@@ -166,7 +185,7 @@ function loginForm() {
 
                     /*
                        401 é código errado OU token de pré-autenticação expirado,
-                       o backend responde genérico pra não dar pista, então a
+                       o backend responde genérico para não dar pista, então a
                        mensagem cobre os dois casos
                     */
                     this.erro = resposta.status === 401
@@ -177,14 +196,14 @@ function loginForm() {
 
                 this.redirecionar();
 
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
             }
         },
 
-        // Volta tudo pro estado inicial, usado quando dá erro ou quando a pessoa desiste
+        // Volta tudo para o estado inicial, usado quando dá erro ou quando a pessoa desiste
         reiniciar() {
             this.etapa = 'credenciais';
             this.senha = '';
@@ -195,8 +214,8 @@ function loginForm() {
         },
 
         /*
-           Manda pro endpoint /inicio em vez de decidir aqui pra onde ir.
-           Assim o mapeamento de perfil pra página inicial fica em um só
+           Manda para o endpoint /inicio em vez de decidir aqui para onde ir.
+           Assim o mapeamento de perfil para página inicial fica em um só
            lugar, no backend, sem duplicar essa regra no frontend
         */
         redirecionar() {
@@ -209,7 +228,7 @@ function loginForm() {
 /*
    Componente Alpine da tela de segurança da conta. Deixa o usuário
    ativar o 2fa (gerando QR Code e confirmando o primeiro código) e,
-   pros perfis em que ele é opcional, desativar mediante um código
+   para os perfis em que ele é opcional, desativar mediante um código
    válido. As regras de perfil e limite de tentativas ficam no backend
 */
 function segurancaConta() {
@@ -239,14 +258,14 @@ function segurancaConta() {
                 const dados = await resposta.json();
                 this.ativo = dados.ativo;
                 this.obrigatorio = dados.obrigatorio;
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregado = true;
             }
         },
 
-        // Chama o backend pra gerar o QR Code e entra no modo de ativação
+        // Chama o backend para gerar o QR Code e entra no modo de ativação
         async iniciarAtivacao() {
             this.limparMensagens();
             this.processando = true;
@@ -255,15 +274,22 @@ function segurancaConta() {
                     method: 'POST',
                     credentials: 'include'
                 });
-                const dados = await resposta.json().catch(() => ({}));
+                // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
                 if (!resposta.ok) {
                     this.erro = mensagemDeErro(resposta, dados, 'Não foi possível gerar o QR Code.');
                     return;
                 }
                 this.segredo = dados.segredo;
                 this.modo = 'ativando';
+                // O $nextTick espera a tela atualizar e só depois roda o que está dentro de () =>
                 this.$nextTick(() => desenharQrCode(this.$refs.qrcode, dados.otpauthUri));
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.processando = false;
@@ -288,7 +314,13 @@ function segurancaConta() {
                     credentials: 'include',
                     body: JSON.stringify({ codigo: this.codigo })
                 });
-                const dados = await resposta.json().catch(() => ({}));
+                // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
                 if (!resposta.ok) {
                     this.codigo = '';
                     this.erro = mensagemDeErro(resposta, dados, 'Não foi possível concluir a operação.');
@@ -299,9 +331,9 @@ function segurancaConta() {
                     : 'Verificação em duas etapas desativada.';
                 this.cancelar();
 
-                // Recarrega o status pra atualizar a tela com o novo estado
+                // Recarrega o status para atualizar a tela com o novo estado
                 await this.carregarStatus();
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.processando = false;

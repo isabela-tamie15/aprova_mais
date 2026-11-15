@@ -32,7 +32,7 @@ public class AuthService {
     private final DoisFatoresService doisFatoresService;
 
     /*
-       O noRollbackFor é essencial aqui. Quando o login falha, a gente lança
+       O noRollbackFor é essencial aqui. Quando o login falha, nós lançamos
        BadCredentialsException, mas antes disso registra a falha no banco.
        Sem esse ajuste, o Spring reverteria a transação e a tentativa falha
        nunca seria gravada, o que quebraria todo o sistema de bloqueio
@@ -56,7 +56,7 @@ public class AuthService {
                     return new BadCredentialsException("Credenciais inválidas");
                 });
 
-        // Confere se a conta tá bloqueada antes de tentar autenticar
+        // Confere se a conta está bloqueada antes de tentar autenticar
         bloqueioContaService.verificarBloqueio(usuario, "LOGIN_FALHA", ip);
 
         try {
@@ -72,7 +72,7 @@ public class AuthService {
                     )
             );
 
-        } catch (BadCredentialsException e) {
+        } catch (BadCredentialsException excecao) {
             // Senha errada, registra a falha e devolve a mesma mensagem genérica
             int tentativas = bloqueioContaService.registrarFalha(usuario);
 
@@ -86,7 +86,7 @@ public class AuthService {
 
             throw new BadCredentialsException("Credenciais inválidas");
 
-        } catch (DisabledException e) {
+        } catch (DisabledException excecao) {
             // Conta desativada, registra e devolve genérica também
             auditoriaService.registrar(
                     usuario,
@@ -101,7 +101,7 @@ public class AuthService {
 
         /*
            Senha ok. Agora verifica se o usuário já usa 2fa. Se usa, ainda
-           não entrega o JWT, devolve um token temporário pra próxima etapa
+           não entrega o JWT, devolve um token temporário para a próxima etapa
         */
         if (Boolean.TRUE.equals(usuario.getDoisFatoresAtivo())) {
             String preAuthToken = doisFatoresService.gerarTokenPreAutenticacao(usuario);
@@ -113,7 +113,7 @@ public class AuthService {
         /*
            Caso diferente, o perfil exige 2fa mas a conta ainda não configurou.
            Nesse caso também não entrega o JWT, devolve um token temporário
-           pra ele fazer a configuração antes de entrar
+           para ele fazer a configuração antes de entrar
         */
         if (usuario.getPerfil().exigeDoisFatores()) {
             String preAuthToken = doisFatoresService.gerarTokenPreAutenticacao(usuario);
@@ -139,7 +139,7 @@ public class AuthService {
 
         validarCodigoDoLogin(usuario, usuario.getDoisFatoresSegredo(), codigo, ip);
 
-        // Código ok, então invalida o token temporário pra não poder ser reusado
+        // Código ok, então invalida o token temporário para não poder ser reusado
         doisFatoresService.invalidarPreAutenticacao(usuario);
         return concluirLogin(usuario, ip);
     }
@@ -149,7 +149,7 @@ public class AuthService {
     public ConfiguracaoDoisFatoresResponse iniciarConfiguracaoObrigatoria(String preAuthToken) {
         Usuario usuario = buscarUsuarioEmConfiguracaoObrigatoria(preAuthToken);
 
-        // Renova o token pra dar tempo do usuário escanear o QR Code e digitar o código
+        // Renova o token para dar tempo do usuário escanear o QR Code e digitar o código
         doisFatoresService.renovarPreAutenticacao(usuario);
         return doisFatoresService.gerarNovoSegredo(usuario);
     }
@@ -179,11 +179,11 @@ public class AuthService {
                 auditoriaService.registrar(usuario, "LOGOUT", "Logout realizado com sucesso", ip, true));
     }
 
-    // Esse é o auxiliar que busca o usuário e confirma que ele tá no fluxo de configuração obrigatória
+    // Esse é o auxiliar que busca o usuário e confirma que ele está no fluxo de configuração obrigatória
     private Usuario buscarUsuarioEmConfiguracaoObrigatoria(String preAuthToken) {
         Usuario usuario = doisFatoresService.buscarPorTokenPreAutenticacao(preAuthToken);
 
-        // Esse fluxo só vale pra quem é obrigado a ter 2fa e ainda não ativou
+        // Esse fluxo só vale para quem é obrigado a ter 2fa e ainda não ativou
         if (Boolean.TRUE.equals(usuario.getDoisFatoresAtivo()) || !usuario.getPerfil().exigeDoisFatores()) {
             throw new BadCredentialsException("Credenciais inválidas");
         }

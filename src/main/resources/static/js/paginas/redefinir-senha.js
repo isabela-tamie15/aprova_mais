@@ -17,8 +17,8 @@ function redefinirSenhaForm() {
         },
 
         podeSalvar() {
-            const r = this.requisitos();
-            return !this.enviando && r.tamanho && r.letra && r.numero && this.senha === this.confirmacaoSenha;
+            const requisitosDaSenha = this.requisitos();
+            return !this.enviando && requisitosDaSenha.tamanho && requisitosDaSenha.letra && requisitosDaSenha.numero && this.senha === this.confirmacaoSenha;
         },
 
         async salvar() {
@@ -30,7 +30,7 @@ function redefinirSenhaForm() {
             const token = new URLSearchParams(window.location.search).get('token');
             this.enviando = true;
             try {
-                const resp = await fetch('/api/v1/auth/recuperacao/redefinir', {
+                const resposta = await fetch('/api/v1/auth/recuperacao/redefinir', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -40,15 +40,21 @@ function redefinirSenhaForm() {
                     })
                 });
 
-                if (resp.ok) {
+                if (resposta.ok) {
                     window.location.href = '/login?senha=redefinida';
                     return;
                 }
-                const dados = await resp.json().catch(() => ({}));
-                this.erro = resp.status >= 500
+                // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
+                this.erro = resposta.status >= 500
                     ? 'Erro interno no servidor. Tente novamente.'
                     : (dados.mensagem || 'Não foi possível alterar a senha.');
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.enviando = false;

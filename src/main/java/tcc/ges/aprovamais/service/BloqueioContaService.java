@@ -27,7 +27,7 @@ public class BloqueioContaService {
 
     /*
        Chamado antes de cada tentativa de login ou de validação de 2fa. Se a
-       conta não tá bloqueada, sai fora na hora. Se tá bloqueada e o tempo
+       conta não está bloqueada, sai fora na hora. Se está bloqueada e o tempo
        ainda não passou, registra na auditoria e recusa. Se já passou, libera
        a conta automaticamente e deixa o fluxo seguir
     */
@@ -53,8 +53,8 @@ public class BloqueioContaService {
     /*
        Soma mais uma falha no contador do usuário. Quando atinge o limite
        definido em MAX_TENTATIVAS, bloqueia a conta e marca o momento exato
-       pra depois poder calcular quando liberar. Devolve o número de
-       tentativas atualizado pra quem chamou poder usar na mensagem de log
+       para depois poder calcular quando liberar. Devolve o número de
+       tentativas atualizado para quem chamou poder usar na mensagem de log
     */
     public int registrarFalha(Usuario usuario) {
         int tentativas = usuario.getTentativasFalhas() + 1;
