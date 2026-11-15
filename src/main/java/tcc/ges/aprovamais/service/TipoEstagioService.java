@@ -12,6 +12,7 @@ import tcc.ges.aprovamais.entity.TipoEstagio;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -33,29 +34,33 @@ public class TipoEstagioService {
     @Transactional(readOnly = true)
     public List<TipoEstagioResponse> listar(Long cursoId, String emailCoordenador) {
         Curso curso = cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
-        return tipoEstagioRepository.findByCursoIdOrderByNomeAsc(curso.getId())
-                .stream()
-                .map(this::paraResponse)
-                .toList();
+        List<TipoEstagio> tiposDoCurso = tipoEstagioRepository.findByCursoIdOrderByNomeAsc(curso.getId());
+
+        // Transforma cada tipo de estágio do banco na resposta que vai para a tela
+        List<TipoEstagioResponse> respostas = new ArrayList<>();
+        for (TipoEstagio tipoEstagio : tiposDoCurso) {
+            respostas.add(paraResponse(tipoEstagio));
+        }
+        return respostas;
     }
 
     // Esse é o método que cadastra um tipo de estágio num curso do coordenador
     @Transactional
     public TipoEstagioResponse cadastrar(String emailCoordenador, TipoEstagioRequest request, String ipOrigem) {
         Curso curso = cursoService.buscarCursoDoCoordenador(request.getCursoId(), emailCoordenador);
-        String nome = request.getNome().trim();
+        String nomeDoTipoEstagio = request.getNome().trim();
 
-        if (tipoEstagioRepository.existsByCursoIdAndNomeIgnoreCase(curso.getId(), nome)) {
-            throw new IllegalStateException("Já existe o tipo de estágio " + nome + " neste curso");
+        if (tipoEstagioRepository.existsByCursoIdAndNomeIgnoreCase(curso.getId(), nomeDoTipoEstagio)) {
+            throw new IllegalStateException("Já existe o tipo de estágio " + nomeDoTipoEstagio + " neste curso");
         }
 
-        TipoEstagio tipo = new TipoEstagio();
-        tipo.setCurso(curso);
-        preencher(tipo, request, nome);
-        TipoEstagio salvo = tipoEstagioRepository.save(tipo);
+        TipoEstagio tipoEstagio = new TipoEstagio();
+        tipoEstagio.setCurso(curso);
+        preencher(tipoEstagio, request, nomeDoTipoEstagio);
+        TipoEstagio salvo = tipoEstagioRepository.save(tipoEstagio);
 
         auditoriaService.registrar(curso.getCoordenador(), "TIPO_ESTAGIO_CADASTRADO",
-                "Tipo de estágio id=" + salvo.getId() + " (" + nome + ") no curso id=" + curso.getId(),
+                "Tipo de estágio id=" + salvo.getId() + " (" + nomeDoTipoEstagio + ") no curso id=" + curso.getId(),
                 ipOrigem, true);
         log.info("[TIPO ESTÁGIO] Tipo {} cadastrado no curso {} por {}", salvo.getId(), curso.getId(), emailCoordenador);
 
@@ -70,22 +75,22 @@ public class TipoEstagioService {
     @Transactional
     public TipoEstagioResponse atualizar(Long tipoId, String emailCoordenador, TipoEstagioRequest request,
                                          String ipOrigem) {
-        TipoEstagio tipo = tipoEstagioRepository.findByIdAndCursoCoordenadorEmail(tipoId, emailCoordenador)
+        TipoEstagio tipoEstagio = tipoEstagioRepository.findByIdAndCursoCoordenadorEmail(tipoId, emailCoordenador)
                 .orElseThrow(() -> new ResourceNotFoundException("Tipo de estágio não encontrado"));
 
-        if (!tipo.getCurso().getId().equals(request.getCursoId())) {
+        if (!tipoEstagio.getCurso().getId().equals(request.getCursoId())) {
             throw new IllegalStateException("Um tipo de estágio não pode mudar de curso");
         }
 
-        String nome = request.getNome().trim();
-        if (tipoEstagioRepository.existsByCursoIdAndNomeIgnoreCaseAndIdNot(tipo.getCurso().getId(), nome, tipoId)) {
-            throw new IllegalStateException("Já existe o tipo de estágio " + nome + " neste curso");
+        String nomeDoTipoEstagio = request.getNome().trim();
+        if (tipoEstagioRepository.existsByCursoIdAndNomeIgnoreCaseAndIdNot(tipoEstagio.getCurso().getId(), nomeDoTipoEstagio, tipoId)) {
+            throw new IllegalStateException("Já existe o tipo de estágio " + nomeDoTipoEstagio + " neste curso");
         }
 
-        preencher(tipo, request, nome);
-        TipoEstagio salvo = tipoEstagioRepository.save(tipo);
+        preencher(tipoEstagio, request, nomeDoTipoEstagio);
+        TipoEstagio salvo = tipoEstagioRepository.save(tipoEstagio);
 
-        auditoriaService.registrar(tipo.getCurso().getCoordenador(), "TIPO_ESTAGIO_ALTERADO",
+        auditoriaService.registrar(tipoEstagio.getCurso().getCoordenador(), "TIPO_ESTAGIO_ALTERADO",
                 "Tipo de estágio id=" + tipoId + " alterado (carga " + request.getCargaHorariaNecessaria()
                         + " h, jornada " + request.getJornadaSemanal() + " h)", ipOrigem, true);
         log.info("[TIPO ESTÁGIO] Tipo {} alterado por {}", tipoId, emailCoordenador);
@@ -93,22 +98,22 @@ public class TipoEstagioService {
         return paraResponse(salvo);
     }
 
-    private void preencher(TipoEstagio tipo, TipoEstagioRequest request, String nome) {
-        tipo.setNome(nome);
-        tipo.setDescricao(request.getDescricao() == null || request.getDescricao().isBlank()
+    private void preencher(TipoEstagio tipoEstagio, TipoEstagioRequest request, String nomeDoTipoEstagio) {
+        tipoEstagio.setNome(nomeDoTipoEstagio);
+        tipoEstagio.setDescricao(request.getDescricao() == null || request.getDescricao().isBlank()
                 ? null
                 : request.getDescricao().trim());
-        tipo.setCargaHorariaNecessaria(request.getCargaHorariaNecessaria());
-        tipo.setJornadaSemanal(request.getJornadaSemanal());
+        tipoEstagio.setCargaHorariaNecessaria(request.getCargaHorariaNecessaria());
+        tipoEstagio.setJornadaSemanal(request.getJornadaSemanal());
     }
 
-    private TipoEstagioResponse paraResponse(TipoEstagio tipo) {
+    private TipoEstagioResponse paraResponse(TipoEstagio tipoEstagio) {
         return TipoEstagioResponse.builder()
-                .id(tipo.getId())
-                .nome(tipo.getNome())
-                .descricao(tipo.getDescricao())
-                .cargaHorariaNecessaria(tipo.getCargaHorariaNecessaria())
-                .jornadaSemanal(tipo.getJornadaSemanal())
+                .id(tipoEstagio.getId())
+                .nome(tipoEstagio.getNome())
+                .descricao(tipoEstagio.getDescricao())
+                .cargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria())
+                .jornadaSemanal(tipoEstagio.getJornadaSemanal())
                 .build();
     }
 }

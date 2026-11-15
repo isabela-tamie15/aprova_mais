@@ -12,6 +12,7 @@ import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.TurmaRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -30,10 +31,14 @@ public class TurmaService {
     @Transactional(readOnly = true)
     public List<TurmaResponse> listar(Long cursoId, String emailCoordenador) {
         Curso curso = cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
-        return turmaRepository.findByCursoIdOrderBySemestreDescIdentificadorAsc(curso.getId())
-                .stream()
-                .map(this::paraResponse)
-                .toList();
+        List<Turma> turmasDoCurso = turmaRepository.findByCursoIdOrderBySemestreDescIdentificadorAsc(curso.getId());
+
+        // Transforma cada turma do banco na resposta que vai para a tela
+        List<TurmaResponse> respostas = new ArrayList<>();
+        for (Turma turma : turmasDoCurso) {
+            respostas.add(paraResponse(turma));
+        }
+        return respostas;
     }
 
     /*

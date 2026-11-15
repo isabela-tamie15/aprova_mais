@@ -16,12 +16,12 @@ function cursosPagina() {
 
         async carregar() {
             this.carregando = true;
-            const r = await requisicaoJson('/api/v1/coordenador/cursos');
+            const resposta = await requisicaoJson('/api/v1/coordenador/cursos');
             this.carregando = false;
-            if (r.ok) {
-                this.cursos = r.dados;
+            if (resposta.ok) {
+                this.cursos = resposta.dados;
             } else {
-                this.erro = r.dados.mensagem || 'Erro ao carregar os cursos.';
+                this.erro = resposta.dados.mensagem || 'Erro ao carregar os cursos.';
             }
         },
 
@@ -74,17 +74,17 @@ function cursosPagina() {
             this.salvando = true;
             const editando = this.form.id !== null;
             const url = editando ? '/api/v1/coordenador/cursos/' + this.form.id : '/api/v1/coordenador/cursos';
-            const r = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
+            const resposta = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
                 nome: this.form.nome.trim(),
                 codigoMec: this.form.codigoMec.trim()
             });
             this.salvando = false;
 
-            if (!r.ok) {
-                if (r.dados.campos) {
-                    this.erros = r.dados.campos;
+            if (!resposta.ok) {
+                if (resposta.dados.campos) {
+                    this.erros = resposta.dados.campos;
                 }
-                this.erro = r.dados.mensagem || 'Erro ao salvar o curso.';
+                this.erro = resposta.dados.mensagem || 'Erro ao salvar o curso.';
                 return;
             }
 

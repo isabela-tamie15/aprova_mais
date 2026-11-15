@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.CoordenadorRepository;
 import tcc.ges.aprovamais.repository.CursoRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // Esse service é quem cuida do cadastro de cursos pelo coordenador (RF11)
@@ -29,10 +30,14 @@ public class CursoService {
     // Esse é o método que lista os cursos do coordenador logado, e só os dele (RN21)
     @Transactional(readOnly = true)
     public List<CursoResponse> listarDoCoordenador(String emailCoordenador) {
-        return cursoRepository.findByCoordenadorEmailOrderByNomeAsc(emailCoordenador)
-                .stream()
-                .map(this::paraResponse)
-                .toList();
+        List<Curso> cursosDoCoordenador = cursoRepository.findByCoordenadorEmailOrderByNomeAsc(emailCoordenador);
+
+        // Transforma cada curso do banco na resposta que vai para a tela
+        List<CursoResponse> respostas = new ArrayList<>();
+        for (Curso curso : cursosDoCoordenador) {
+            respostas.add(paraResponse(curso));
+        }
+        return respostas;
     }
 
     /*

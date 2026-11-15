@@ -21,6 +21,7 @@ import tcc.ges.aprovamais.repository.MatriculaRepository;
 import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TrilhaRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -42,8 +43,8 @@ public class TrilhaService {
     public TrilhaResponse buscarTrilhaDoAluno(String emailAluno) {
 
         /*
-           Cada passo depende do anterior, então se qualquer um falhar a
-           gente já para ali com 404. A ordem importa, se não tiver matrícula
+           Cada passo depende do anterior, então se qualquer um falhar,
+           nós já paramos ali com 404. A ordem importa, se não tiver matrícula
            ativa não faz sentido procurar estágio, e por aí vai
         */
         Matricula matricula = buscarMatriculaAtiva(emailAluno);
@@ -61,13 +62,13 @@ public class TrilhaService {
                 .build();
     }
 
-    // Esse é o método usado quando só tem o id do tipo de estágio em mãos, só repassa pro auxiliar
+    // Esse é o método usado quando só tem o id do tipo de estágio em mãos, só repassa para o auxiliar
     @Transactional(readOnly = true)
     public Trilha buscarTrilhaPorTipoEstagio(Long tipoEstagioId) {
         return buscarTrilhaPorTipo(tipoEstagioId);
     }
 
-    // Busca a matrícula ativa do aluno, primeiro passo pra chegar na trilha
+    // Busca a matrícula ativa do aluno, primeiro passo para chegar na trilha
     private Matricula buscarMatriculaAtiva(String emailAluno) {
         return matriculaRepository
                 .findFirstByAlunoEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
@@ -77,7 +78,7 @@ public class TrilhaService {
                 });
     }
 
-    // Busca o estágio ativo da matrícula, segundo passo pra chegar na trilha
+    // Busca o estágio ativo da matrícula, segundo passo para chegar na trilha
     private Estagio buscarEstagioAtivo(Long matriculaId) {
         return estagioRepository
                 .findByMatriculaIdAndStatus(matriculaId, StatusEstagio.ATIVO)
@@ -87,7 +88,7 @@ public class TrilhaService {
                 });
     }
 
-    // Busca a trilha vinculada ao tipo de estágio, terceiro passo pra chegar nas tarefas
+    // Busca a trilha vinculada ao tipo de estágio, terceiro passo para chegar nas tarefas
     private Trilha buscarTrilhaPorTipo(Long tipoEstagioId) {
         return trilhaRepository
                 .findByTipoEstagioId(tipoEstagioId)
@@ -98,16 +99,19 @@ public class TrilhaService {
                 });
     }
 
-    // Busca as tarefas da trilha já na ordem certa, e converte cada uma pro DTO com o status da entrega do aluno
+    // Busca as tarefas da trilha já na ordem certa, e converte cada uma para o DTO com o status da entrega do aluno
     private List<TarefaResponse> buscarTarefas(Long trilhaId, Map<Long, Entrega> entregas) {
-        return tarefaRepository
-                .findByTrilhaIdOrderByOrdem(trilhaId)
-                .stream()
-                .map(tarefa -> toTarefaResponse(tarefa, entregas.get(tarefa.getId())))
-                .toList();
+        List<Tarefa> tarefasDaTrilha = tarefaRepository.findByTrilhaIdOrderByOrdem(trilhaId);
+
+        // Para cada tarefa, montamos a resposta com o status da entrega do aluno naquela tarefa
+        List<TarefaResponse> respostas = new ArrayList<>();
+        for (Tarefa tarefa : tarefasDaTrilha) {
+            respostas.add(toTarefaResponse(tarefa, entregas.get(tarefa.getId())));
+        }
+        return respostas;
     }
 
-    // Converte a entidade Tarefa pro DTO que vai ser devolvido pro frontend
+    // Converte a entidade Tarefa para o DTO que vai ser devolvido para o frontend
     private TarefaResponse toTarefaResponse(Tarefa tarefa, Entrega entrega) {
         return TarefaResponse.builder()
                 .id(tarefa.getId())

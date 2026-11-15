@@ -40,12 +40,12 @@ function trilhasPagina() {
             this.tipos = [];
             this.tipoId = '';
             this.trilha = null;
-            const r = await requisicaoJson('/api/v1/coordenador/tipos-estagio?cursoId=' + this.cursoId);
-            if (!r.ok) {
-                this.erro = r.dados.mensagem || 'Erro ao carregar os tipos de estágio.';
+            const resposta = await requisicaoJson('/api/v1/coordenador/tipos-estagio?cursoId=' + this.cursoId);
+            if (!resposta.ok) {
+                this.erro = resposta.dados.mensagem || 'Erro ao carregar os tipos de estágio.';
                 return;
             }
-            this.tipos = r.dados;
+            this.tipos = resposta.dados;
             if (this.tipos.length > 0) {
                 this.tipoId = String(this.tipos[0].id);
                 await this.carregarTrilha();
@@ -61,15 +61,15 @@ function trilhasPagina() {
         async carregarTrilha() {
             this.editandoTrilha = false;
             this.cancelarTarefa();
-            const r = await requisicaoJson('/api/v1/coordenador/trilhas?tipoEstagioId=' + this.tipoId);
-            if (r.status === 204) {
+            const resposta = await requisicaoJson('/api/v1/coordenador/trilhas?tipoEstagioId=' + this.tipoId);
+            if (resposta.status === 204) {
                 this.trilha = null;
                 this.formTrilha = { nome: '', descricao: '' };
-            } else if (r.ok) {
-                this.trilha = r.dados;
+            } else if (resposta.ok) {
+                this.trilha = resposta.dados;
                 this.formTarefa.ordem = String(this.proximaOrdem());
             } else {
-                this.erro = r.dados.mensagem || 'Erro ao carregar a trilha.';
+                this.erro = resposta.dados.mensagem || 'Erro ao carregar a trilha.';
             }
         },
 
@@ -78,7 +78,14 @@ function trilhasPagina() {
             if (!this.trilha || this.trilha.tarefas.length === 0) {
                 return 1;
             }
-            return Math.max(...this.trilha.tarefas.map(t => t.ordem)) + 1;
+            // Procuramos a maior ordem entre as tarefas e somamos 1
+            let maiorOrdem = 0;
+            for (const tarefa of this.trilha.tarefas) {
+                if (tarefa.ordem > maiorOrdem) {
+                    maiorOrdem = tarefa.ordem;
+                }
+            }
+            return maiorOrdem + 1;
         },
 
         // ---------- trilha ----------
@@ -112,18 +119,18 @@ function trilhasPagina() {
             this.salvando = true;
             const editando = this.trilha !== null;
             const url = editando ? '/api/v1/coordenador/trilhas/' + this.trilha.id : '/api/v1/coordenador/trilhas';
-            const r = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
+            const resposta = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
                 tipoEstagioId: Number(this.tipoId),
                 nome: this.formTrilha.nome.trim(),
                 descricao: this.formTrilha.descricao.trim()
             });
             this.salvando = false;
 
-            if (!r.ok) {
-                this.mostrarErro(r, 'Erro ao salvar a trilha.');
+            if (!resposta.ok) {
+                this.mostrarErro(resposta, 'Erro ao salvar a trilha.');
                 return;
             }
-            this.trilha = r.dados;
+            this.trilha = resposta.dados;
             this.editandoTrilha = false;
             this.formTarefa.ordem = String(this.proximaOrdem());
             this.sucesso = editando ? 'Trilha alterada.' : 'Trilha criada. Agora adicione as tarefas.';
@@ -182,7 +189,7 @@ function trilhasPagina() {
             const url = editando
                 ? '/api/v1/coordenador/trilhas/tarefas/' + this.formTarefa.id
                 : '/api/v1/coordenador/trilhas/' + this.trilha.id + '/tarefas';
-            const r = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
+            const resposta = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
                 nome: this.formTarefa.nome.trim(),
                 descricao: this.formTarefa.descricao.trim(),
                 ordem: Number(this.formTarefa.ordem),
@@ -190,11 +197,11 @@ function trilhasPagina() {
             });
             this.salvando = false;
 
-            if (!r.ok) {
-                this.mostrarErro(r, 'Erro ao salvar a tarefa.');
+            if (!resposta.ok) {
+                this.mostrarErro(resposta, 'Erro ao salvar a tarefa.');
                 return;
             }
-            this.trilha = r.dados;
+            this.trilha = resposta.dados;
             this.cancelarTarefa();
             this.sucesso = editando ? 'Tarefa alterada.' : 'Tarefa adicionada.';
         },
@@ -204,20 +211,20 @@ function trilhasPagina() {
                 return;
             }
             this.limparMensagens();
-            const r = await requisicaoJson('/api/v1/coordenador/trilhas/tarefas/' + tarefa.id, 'DELETE');
-            if (!r.ok) {
-                this.mostrarErro(r, 'Erro ao remover a tarefa.');
+            const resposta = await requisicaoJson('/api/v1/coordenador/trilhas/tarefas/' + tarefa.id, 'DELETE');
+            if (!resposta.ok) {
+                this.mostrarErro(resposta, 'Erro ao remover a tarefa.');
                 return;
             }
             await this.carregarTrilha();
             this.sucesso = 'Tarefa removida.';
         },
 
-        mostrarErro(r, padrao) {
-            if (r.dados && r.dados.campos) {
-                this.erros = r.dados.campos;
+        mostrarErro(resposta, padrao) {
+            if (resposta.dados && resposta.dados.campos) {
+                this.erros = resposta.dados.campos;
             }
-            this.erro = (r.dados && r.dados.mensagem) || padrao;
+            this.erro = (resposta.dados && resposta.dados.mensagem) || padrao;
         }
     }
 }

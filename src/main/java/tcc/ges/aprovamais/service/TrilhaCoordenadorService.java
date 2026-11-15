@@ -19,6 +19,8 @@ import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
 import tcc.ges.aprovamais.repository.TrilhaRepository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /*
@@ -42,27 +44,31 @@ public class TrilhaCoordenadorService {
     // Esse é o método que busca a trilha de um tipo. Vazio quer dizer que o tipo ainda não tem trilha
     @Transactional(readOnly = true)
     public Optional<TrilhaDetalheResponse> buscarPorTipo(Long tipoEstagioId, String emailCoordenador) {
-        TipoEstagio tipo = buscarTipoDoCoordenador(tipoEstagioId, emailCoordenador);
-        return trilhaRepository.findByTipoEstagioId(tipo.getId()).map(this::paraResponse);
+        TipoEstagio tipoEstagio = buscarTipoDoCoordenador(tipoEstagioId, emailCoordenador);
+        Optional<Trilha> trilhaDoTipo = trilhaRepository.findByTipoEstagioId(tipoEstagio.getId());
+        if (trilhaDoTipo.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(paraResponse(trilhaDoTipo.get()));
     }
 
     // Esse é o método que cria a trilha de um tipo de estágio. Cada tipo tem no máximo uma (RN32)
     @Transactional
     public TrilhaDetalheResponse criar(String emailCoordenador, TrilhaRequest request, String ipOrigem) {
-        TipoEstagio tipo = buscarTipoDoCoordenador(request.getTipoEstagioId(), emailCoordenador);
+        TipoEstagio tipoEstagio = buscarTipoDoCoordenador(request.getTipoEstagioId(), emailCoordenador);
 
-        if (trilhaRepository.existsByTipoEstagioId(tipo.getId())) {
+        if (trilhaRepository.existsByTipoEstagioId(tipoEstagio.getId())) {
             throw new IllegalStateException("Este tipo de estágio já tem uma trilha");
         }
 
         Trilha trilha = new Trilha();
-        trilha.setTipoEstagio(tipo);
+        trilha.setTipoEstagio(tipoEstagio);
         trilha.setNome(request.getNome().trim());
         trilha.setDescricao(textoOuNulo(request.getDescricao()));
         Trilha salva = trilhaRepository.save(trilha);
 
-        registrar(tipo, "TRILHA_CRIADA", "Trilha id=" + salva.getId() + " criada para o tipo id=" + tipo.getId(), ipOrigem);
-        log.info("[TRILHA] Trilha {} criada para o tipo {} por {}", salva.getId(), tipo.getId(), emailCoordenador);
+        registrar(tipoEstagio, "TRILHA_CRIADA", "Trilha id=" + salva.getId() + " criada para o tipo id=" + tipoEstagio.getId(), ipOrigem);
+        log.info("[TRILHA] Trilha {} criada para o tipo {} por {}", salva.getId(), tipoEstagio.getId(), emailCoordenador);
 
         return paraResponse(salva);
     }
@@ -124,22 +130,20 @@ public class TrilhaCoordenadorService {
     }
 
     /*
-       Esse é o método que remove uma tarefa da trilha. Por enquanto pode remover
-       sempre, porque as entregas ainda não existem. Quando o envio de entregas
-       for implementado, a remoção precisa ser bloqueada para tarefa que já tem
-       entrega, senão o histórico do aluno perde a referência
+       Remove uma tarefa da trilha. Tarefa que já tem entrega de aluno não pode
+       sair, senão o histórico do aluno perde a referência (RN56)
     */
     @Transactional
     public void removerTarefa(Long tarefaId, String emailCoordenador, String ipOrigem) {
         Tarefa tarefa = buscarTarefaDoCoordenador(tarefaId, emailCoordenador);
-        TipoEstagio tipo = tarefa.getTrilha().getTipoEstagio();
+        TipoEstagio tipoEstagio = tarefa.getTrilha().getTipoEstagio();
 
         if (entregaRepository.existsByTarefaId(tarefa.getId())) {
             throw new IllegalStateException("Esta tarefa já tem entregas de alunos e não pode ser removida.");
         }
         tarefaRepository.delete(tarefa);
 
-        registrar(tipo, "TAREFA_REMOVIDA",
+        registrar(tipoEstagio, "TAREFA_REMOVIDA",
                 "Tarefa id=" + tarefaId + " removida da trilha id=" + tarefa.getTrilha().getId(), ipOrigem);
         log.info("[TRILHA] Tarefa {} removida por {}", tarefaId, emailCoordenador);
     }
@@ -174,29 +178,34 @@ public class TrilhaCoordenadorService {
     }
 
     // Quem responde na auditoria é o coordenador do curso do tipo de estágio
-    private void registrar(TipoEstagio tipo, String acao, String detalhes, String ipOrigem) {
-        Coordenador coordenador = tipo.getCurso().getCoordenador();
+    private void registrar(TipoEstagio tipoEstagio, String acao, String detalhes, String ipOrigem) {
+        Coordenador coordenador = tipoEstagio.getCurso().getCoordenador();
         auditoriaService.registrar(coordenador, acao, detalhes, ipOrigem, true);
     }
 
     // As tarefas vêm do repositório, já na ordem em que o aluno vê
     private TrilhaDetalheResponse paraResponse(Trilha trilha) {
+        List<Tarefa> tarefasDaTrilha = tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId());
+
+        // Transforma cada tarefa do banco na resposta que vai para a tela de montagem da trilha
+        List<TarefaResponse> tarefas = new ArrayList<>();
+        for (Tarefa tarefa : tarefasDaTrilha) {
+            tarefas.add(TarefaResponse.builder()
+                    .id(tarefa.getId())
+                    .nome(tarefa.getNome())
+                    .descricao(tarefa.getDescricao())
+                    .ordem(tarefa.getOrdem())
+                    .linkApoio(tarefa.getLinkApoio())
+                    .build());
+        }
+
         return TrilhaDetalheResponse.builder()
                 .id(trilha.getId())
                 .tipoEstagioId(trilha.getTipoEstagio().getId())
                 .nomeTipoEstagio(trilha.getTipoEstagio().getNome())
                 .nome(trilha.getNome())
                 .descricao(trilha.getDescricao())
-                .tarefas(tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId())
-                        .stream()
-                        .map(t -> TarefaResponse.builder()
-                                .id(t.getId())
-                                .nome(t.getNome())
-                                .descricao(t.getDescricao())
-                                .ordem(t.getOrdem())
-                                .linkApoio(t.getLinkApoio())
-                                .build())
-                        .toList())
+                .tarefas(tarefas)
                 .build();
     }
 }

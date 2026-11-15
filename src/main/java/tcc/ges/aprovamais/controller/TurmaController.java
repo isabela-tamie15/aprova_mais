@@ -14,7 +14,7 @@ import tcc.ges.aprovamais.service.TurmaService;
 
 import java.util.List;
 
-// Esse controller recebe as requisições do coordenador pra cadastrar e alterar as turmas dos cursos dele
+// Esse controller recebe as requisições do coordenador para cadastrar e alterar as turmas dos cursos dele
 @Tag(name = "Cadastros da coordenação", description = "Cursos, turmas, tipos de estágio e trilhas do coordenador")
 @RestController
 @RequestMapping("/api/v1/coordenador/turmas")
