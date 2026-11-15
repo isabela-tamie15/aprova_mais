@@ -102,7 +102,11 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/actuator/health"
+                                "/livez",
+                                "/readyz",
+                                // Respondem só na porta de gerenciamento (9090), usada pelo Prometheus
+                                "/actuator/health/**",
+                                "/actuator/prometheus"
                         ).permitAll()
                         /*
                            Aqui começa a proteção por perfil, cada rota só aceita

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -213,6 +214,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(construirErro(HttpStatus.NOT_FOUND, excecao.getMessage()));
+    }
+
+    // 404 endereço que não existe
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErroResposta> handleRotaInexistente(NoResourceFoundException excecao) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(construirErro(HttpStatus.NOT_FOUND, "Endereço não encontrado."));
     }
 
     // 500 erro genérico nao tratado
