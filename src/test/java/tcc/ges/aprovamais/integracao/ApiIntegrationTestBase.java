@@ -17,6 +17,7 @@ import tcc.ges.aprovamais.entity.Aluno;
 import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+import tcc.ges.aprovamais.service.ConsentimentoService;
 
 import java.util.List;
 import java.util.Map;
@@ -98,6 +99,7 @@ abstract class ApiIntegrationTestBase {
         coordenador.setDoisFatoresSegredo(segredo);
         coordenador.setPrimeiroAcesso(false);
         coordenador.setConsentimentoDado(true);
+        coordenador.setVersaoConsentimento(ConsentimentoService.VERSAO_TERMOS_ATUAL);
         usuarioRepository.save(coordenador);
         return segredo;
     }
@@ -112,6 +114,7 @@ abstract class ApiIntegrationTestBase {
         aluno.setRgm("RGM" + System.nanoTime());
         aluno.setPrimeiroAcesso(false);
         aluno.setConsentimentoDado(true);
+        aluno.setVersaoConsentimento(ConsentimentoService.VERSAO_TERMOS_ATUAL);
         usuarioRepository.save(aluno);
 
         return extrairJwt(client.post().uri("/api/v1/auth/login")

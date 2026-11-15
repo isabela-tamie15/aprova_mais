@@ -58,8 +58,11 @@ public class ConsentimentoService {
             return false;
         }
 
-        // Precisa aceitar quem nunca aceitou ou quem aceitou uma versão antiga dos documentos (RN60)
-        Usuario usuario = usuarioDoEmail.get();
+        return precisaConsentir(usuarioDoEmail.get());
+    }
+
+    // Precisa aceitar quem nunca aceitou ou quem aceitou uma versão antiga dos documentos (RN60)
+    public static boolean precisaConsentir(Usuario usuario) {
         boolean nuncaAceitou = !Boolean.TRUE.equals(usuario.getConsentimentoDado());
         boolean aceitouVersaoAntiga = !VERSAO_TERMOS_ATUAL.equals(usuario.getVersaoConsentimento());
         return nuncaAceitou || aceitouVersaoAntiga;
