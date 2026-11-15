@@ -7,8 +7,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.ConfiguracaoDoisFatoresResponse;
@@ -30,6 +32,10 @@ public class AuthService {
     private final AuditoriaService auditoriaService;
     private final BloqueioContaService bloqueioContaService;
     private final DoisFatoresService doisFatoresService;
+    private final PasswordEncoder passwordEncoder;
+
+    // Hash de uma senha aleatória: conferido quando o e-mail não existe, para o tempo de resposta ser o mesmo de uma conta real
+    private static final String HASH_FICTICIO = "$2a$10$go3.2kJnPr9K04ToKTI2M.6pDFe8o/AmB7zWJoEXGCpHwF4vuF4ku";
 
     /*
        O noRollbackFor é essencial aqui. Quando o login falha, nós lançamos
@@ -47,6 +53,7 @@ public class AuthService {
         */
         Usuario usuario = usuarioRepository.findByEmail(requisicao.getEmail())
                 .orElseThrow(() -> {
+                    passwordEncoder.matches(requisicao.getSenha(), HASH_FICTICIO);
                     auditoriaService.registrarTentativa(
                             requisicao.getEmail(),
                             "LOGIN_FALHA",
@@ -56,8 +63,13 @@ public class AuthService {
                     return new BadCredentialsException("Credenciais inválidas");
                 });
 
-        // Confere se a conta está bloqueada antes de tentar autenticar
-        bloqueioContaService.verificarBloqueio(usuario, "LOGIN_FALHA", ip);
+        // Conta bloqueada recebe a mesma resposta da senha errada, para não revelar que o e-mail existe
+        try {
+            bloqueioContaService.verificarBloqueio(usuario, "LOGIN_FALHA", ip);
+        } catch (LockedException excecao) {
+            passwordEncoder.matches(requisicao.getSenha(), HASH_FICTICIO);
+            throw new BadCredentialsException("Credenciais inválidas");
+        }
 
         try {
             /*

@@ -54,13 +54,14 @@ public class GlobalExceptionHandler {
         );
     }
 
-    // 401 credenciais inválidas
+    // 401 credenciais inválidas, com a mesma mensagem para e-mail sem cadastro, senha errada e conta bloqueada
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErroResposta> handleBadCredentials(BadCredentialsException excecao) {
         log.warn("[EXCEPTION] Credenciais inválidas: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(construirErro(HttpStatus.UNAUTHORIZED, "Credenciais inválidas."));
+                .body(construirErro(HttpStatus.UNAUTHORIZED,
+                        "E-mail ou senha inválidos. Depois de 5 tentativas erradas, o acesso fica bloqueado por 5 minutos."));
     }
 
     // 423 conta bloqueada ou desativada
