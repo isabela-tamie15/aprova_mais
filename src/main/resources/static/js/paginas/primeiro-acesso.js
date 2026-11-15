@@ -17,9 +17,9 @@ function primeiroAcessoForm() {
         },
 
         podeConcluir() {
-            const r = this.requisitos();
+            const requisitosDaSenha = this.requisitos();
             return this.aceitou && !this.enviando &&
-                   r.tamanho && r.letra && r.numero &&
+                   requisitosDaSenha.tamanho && requisitosDaSenha.letra && requisitosDaSenha.numero &&
                    this.senha === this.confirmacaoSenha;
         },
          async aceitar() {
@@ -30,7 +30,7 @@ function primeiroAcessoForm() {
             const token = params.get('token');
 
             try {
-                const resp = await fetch('/primeiro-acesso/aceitar?token=' + encodeURIComponent(token), {
+                const resposta = await fetch('/primeiro-acesso/aceitar?token=' + encodeURIComponent(token), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -39,14 +39,20 @@ function primeiroAcessoForm() {
                     })
                 });
 
-                if (resp.ok) {
+                if (resposta.ok) {
                     window.location.href = '/login?cadastro=concluido';
                 } else {
                     // Erro de validação vem com a mensagem do campo, os demais ficam com a genérica
-                    const dados = await resp.json().catch(() => ({}));
+                    // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                    let dados = {};
+                    try {
+                        dados = await resposta.json();
+                    } catch (erroDeLeitura) {
+                        dados = {};
+                    }
                     this.erro = dados.mensagem || 'Erro ao concluir cadastro. Tente novamente.';
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.enviando = false;
@@ -63,7 +69,7 @@ function primeiroAcessoForm() {
                     method: 'POST'
                 });
                 window.location.href = '/login?convite=recusado';
-            } catch (e) {
+            } catch (erro) {
                 window.location.href = '/login?convite=recusado';
             }
         }

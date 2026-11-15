@@ -23,6 +23,7 @@ import tcc.ges.aprovamais.security.HashToken;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,7 +55,7 @@ public class ConviteService {
     private final AuditoriaService auditoriaService;
     private final PreCadastroService preCadastroService;
 
-    // URL base da aplicação, usada pra montar o link do convite que vai no e-mail
+    // URL base da aplicação, usada para montar o link do convite que vai no e-mail
     @Value("${app.url}")
     private String appUrl;
 
@@ -93,7 +94,7 @@ public class ConviteService {
 
         /*
            Se ainda não existe usuário com esse email, cria um já com status
-           pendente. A ideia é deixar o registro pronto pra quando a pessoa
+           pendente. A ideia é deixar o registro pronto para quando a pessoa
            aceitar o convite e definir a senha de verdade. Fica ativo=false
            e primeiroAcesso=true até lá. Quem já tem conta ativa não é convidado
            de novo e um cadastro pendente de outro perfil também barra o envio
@@ -158,17 +159,21 @@ public class ConviteService {
     // Esse é o método que lista os convites enviados pelo usuário logado, do mais recente para o mais antigo
     @Transactional(readOnly = true)
     public List<ConviteResponse> listarEnviados(String emailRemetente) {
-        return conviteRepository.findByRemetenteEmailOrderByCriadoEmDesc(emailRemetente)
-                .stream()
-                .map(convite -> ConviteResponse.builder()
-                        .id(convite.getId())
-                        .email(convite.getEmail())
-                        .perfilDestino(convite.getPerfilDestino().name())
-                        .status(convite.getStatus().name())
-                        .criadoEm(convite.getCriadoEm())
-                        .expiracaoToken(convite.getExpiracaoToken())
-                        .build())
-                .toList();
+        List<Convite> convitesEnviados = conviteRepository.findByRemetenteEmailOrderByCriadoEmDesc(emailRemetente);
+
+        // Transforma cada convite do banco na resposta que vai para a tela
+        List<ConviteResponse> respostas = new ArrayList<>();
+        for (Convite convite : convitesEnviados) {
+            respostas.add(ConviteResponse.builder()
+                    .id(convite.getId())
+                    .email(convite.getEmail())
+                    .perfilDestino(convite.getPerfilDestino().name())
+                    .status(convite.getStatus().name())
+                    .criadoEm(convite.getCriadoEm())
+                    .expiracaoToken(convite.getExpiracaoToken())
+                    .build());
+        }
+        return respostas;
     }
 
     /*
@@ -238,7 +243,7 @@ public class ConviteService {
         /*
            Se o prazo já venceu, marca como expirado no banco antes de lançar.
            Assim o registro fica atualizado e a pessoa sabe que o convite
-           realmente passou da validade, não que o token tá errado.
+           realmente passou da validade, não que o token está errado.
            A transação é só leitura e a exceção logo abaixo desfaz tudo, então o update roda numa transação própria
         */
         if (OffsetDateTime.now(ZoneOffset.UTC).isAfter(convite.getExpiracaoToken())) {

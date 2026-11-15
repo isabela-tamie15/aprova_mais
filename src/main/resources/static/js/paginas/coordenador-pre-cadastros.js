@@ -33,8 +33,8 @@ function preCadastrosPagina() {
         async init() {
             this.cursos = await carregarCursosDoCoordenador();
             for (const curso of this.cursos) {
-                const r = await requisicaoJson('/api/v1/coordenador/turmas?cursoId=' + curso.id);
-                this.turmasPorCurso[curso.id] = r.ok ? r.dados : [];
+                const resposta = await requisicaoJson('/api/v1/coordenador/turmas?cursoId=' + curso.id);
+                this.turmasPorCurso[curso.id] = resposta.ok ? resposta.dados : [];
             }
             this.form = formularioVazio(this.primeiroCurso());
             await this.carregarLista();
@@ -46,19 +46,22 @@ function preCadastrosPagina() {
         },
 
         async carregarLista() {
-            const r = await requisicaoJson('/api/v1/coordenador/pre-cadastros');
-            if (r.ok) {
-                this.preCadastros = r.dados;
+            const resposta = await requisicaoJson('/api/v1/coordenador/pre-cadastros');
+            if (resposta.ok) {
+                this.preCadastros = resposta.dados;
             } else {
-                this.erro = r.dados.mensagem || 'Erro ao carregar o pré-cadastro.';
+                this.erro = resposta.dados.mensagem || 'Erro ao carregar o pré-cadastro.';
             }
         },
 
         // O curso não vem na resposta, então é achado pela turma
         cursoDaTurma(turmaId) {
             for (const [cursoId, turmas] of Object.entries(this.turmasPorCurso)) {
-                if (turmas.some(t => t.id === turmaId)) {
-                    return cursoId;
+                // Se alguma turma deste curso tem o id procurado, achamos o curso
+                for (const turma of turmas) {
+                    if (turma.id === turmaId) {
+                        return cursoId;
+                    }
                 }
             }
             return this.primeiroCurso();
@@ -127,7 +130,7 @@ function preCadastrosPagina() {
             const url = editando
                 ? '/api/v1/coordenador/pre-cadastros/' + this.form.id
                 : '/api/v1/coordenador/pre-cadastros';
-            const r = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
+            const resposta = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
                 nome: this.form.nome.trim(),
                 email: this.form.email.trim(),
                 perfil: this.form.perfil,
@@ -136,11 +139,11 @@ function preCadastrosPagina() {
             });
             this.salvando = false;
 
-            if (!r.ok) {
-                if (r.dados.campos) {
-                    this.erros = r.dados.campos;
+            if (!resposta.ok) {
+                if (resposta.dados.campos) {
+                    this.erros = resposta.dados.campos;
                 }
-                this.erro = r.dados.mensagem || 'Erro ao salvar o pré-cadastro.';
+                this.erro = resposta.dados.mensagem || 'Erro ao salvar o pré-cadastro.';
                 return;
             }
 

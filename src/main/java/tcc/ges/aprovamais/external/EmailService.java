@@ -23,19 +23,19 @@ public class EmailService {
     private String apiKey;
 
     /*
-       Remetente padrão do Resend. Como o domínio da UMC não tá verificado
+       Remetente padrão do Resend. Como o domínio da UMC não está verificado
        na conta, o Resend só permite enviar a partir do próprio domínio de
        teste deles. Em produção isso vira algo tipo no-reply@aprova.com.br
     */
     private static final String REMETENTE = "Aprova+ <onboarding@resend.dev>";
 
-    // Esse é o método que envia o e-mail de convite pra quem foi convidado
+    // Esse é o método que envia o e-mail de convite para quem foi convidado
     @Async
     public void enviarConvite(String destinatario, String nomeDestinatario, String linkConvite) {
         try {
             /*
                Cria um cliente novo do Resend a cada chamada. Como o método
-               roda em thread separada por causa do @Async, não dá pra manter
+               roda em thread separada por causa do @Async, não dá para manter
                uma instância única compartilhada com segurança
             */
             Resend resend = new Resend(apiKey);
@@ -51,9 +51,9 @@ public class EmailService {
 
             log.info("[EMAIL] Convite enviado para: {}", destinatario);
 
-        } catch (ResendException | RuntimeException e) {
+        } catch (ResendException | RuntimeException excecao) {
             // Se o envio falhar, o erro fica só no log
-            log.error("[EMAIL] Erro ao enviar convite para {}: {}", destinatario, e.getMessage(), e);
+            log.error("[EMAIL] Erro ao enviar convite para {}: {}", destinatario, excecao.getMessage(), excecao);
         }
     }
 
@@ -74,8 +74,8 @@ public class EmailService {
 
             log.info("[EMAIL] Recuperação de senha enviada para: {}", destinatario);
 
-        } catch (ResendException | RuntimeException e) {
-            log.error("[EMAIL] Erro ao enviar recuperação de senha para {}: {}", destinatario, e.getMessage(), e);
+        } catch (ResendException | RuntimeException excecao) {
+            log.error("[EMAIL] Erro ao enviar recuperação de senha para {}: {}", destinatario, excecao.getMessage(), excecao);
         }
     }
 
@@ -96,8 +96,8 @@ public class EmailService {
                     .build();
             resend.emails().send(email);
             log.info("[EMAIL] Resultado da entrega enviado para: {}", destinatario);
-        } catch (ResendException | RuntimeException e) {
-            log.error("[EMAIL] Erro ao enviar resultado da entrega para {}: {}", destinatario, e.getMessage(), e);
+        } catch (ResendException | RuntimeException excecao) {
+            log.error("[EMAIL] Erro ao enviar resultado da entrega para {}: {}", destinatario, excecao.getMessage(), excecao);
         }
     }
 
@@ -106,7 +106,7 @@ public class EmailService {
        clientes de e-mail tipo Gmail e Outlook ignoram CSS externo, então
        a única forma de garantir a aparência é colocar tudo direto nas tags
     */
-    private String montarCorpoConvite(String nome, String link) {
+    private String montarCorpoConvite(String nomeDoDestinatario, String link) {
         return """
                 <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2B4ECC;">Bem-vindo ao Aprova+</h2>
@@ -125,12 +125,12 @@ public class EmailService {
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(HtmlUtils.htmlEscape(nome), link);
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), link);
     }
 
     // O nome da tarefa vem do cadastro do coordenador, então passa pelo escape de HTML antes de entrar no corpo
-    private String montarCorpoResultadoEntrega(String nome, String tarefa, boolean aprovada, String link) {
-        String resultado = aprovada
+    private String montarCorpoResultadoEntrega(String nomeDoDestinatario, String tarefa, boolean aprovada, String link) {
+        String textoDoResultado = aprovada
                 ? "foi <strong>aprovada</strong> pelo seu orientador."
                 : "foi <strong>devolvida para ajustes</strong>. Confira o feedback do orientador e envie uma nova versão.";
         return """
@@ -147,11 +147,11 @@ public class EmailService {
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(HtmlUtils.htmlEscape(nome), HtmlUtils.htmlEscape(tarefa), resultado, link);
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), HtmlUtils.htmlEscape(tarefa), textoDoResultado, link);
     }
 
     // Mesma ideia do convite, mas com texto e prazo de expiração diferentes
-    private String montarCorpoRecuperacaoSenha(String nome, String link) {
+    private String montarCorpoRecuperacaoSenha(String nomeDoDestinatario, String link) {
         return """
                 <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2B4ECC;">Recuperação de senha</h2>
@@ -170,6 +170,6 @@ public class EmailService {
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(HtmlUtils.htmlEscape(nome), link);
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), link);
     }
 }
