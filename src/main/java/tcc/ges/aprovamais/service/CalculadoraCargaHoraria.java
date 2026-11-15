@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.service;
 
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -45,6 +46,14 @@ public final class CalculadoraCargaHoraria {
         long semanasCompletas = calcularSemanasContadas(dataInicio, hoje);
         BigDecimal cumprida = jornadaSemanal.multiply(BigDecimal.valueOf(semanasCompletas));
         return cumprida.min(cargaTotal);
+    }
+
+    // Início usado nas contas, que anda para frente os dias em que o estágio ficou suspenso
+    public static LocalDate calcularInicioEfetivo(LocalDate dataInicio, Integer diasSuspensos) {
+        if (dataInicio == null || diasSuspensos == null || diasSuspensos <= 0) {
+            return dataInicio;
+        }
+        return dataInicio.plusDays(diasSuspensos);
     }
 
     /*

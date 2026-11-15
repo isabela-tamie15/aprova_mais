@@ -45,4 +45,7 @@ public class EstagioResponse {
     // Data e observação da conclusão ou do encerramento
     private final LocalDate dataFinalizacao;
     private final String observacaoEncerramento;
+
+    // Dias de suspensão descontados da carga e somados à data prevista
+    private final Integer diasSuspensos;
 }

@@ -125,6 +125,13 @@ public class PaginaController {
         return "aluno/trilha";
     }
 
+    // Página das solicitações do aluno: troca de modalidade, trancamento e reabertura
+    @GetMapping("/aluno/solicitacoes")
+    @PreAuthorize("hasRole('ALUNO')")
+    public String solicitacoesAluno() {
+        return "aluno/solicitacoes";
+    }
+
     // Página em que o aluno cadastra ou atualiza o estágio
     @GetMapping("/estagio")
     @PreAuthorize("hasRole('ALUNO')")
@@ -172,6 +179,13 @@ public class PaginaController {
     @PreAuthorize("hasRole('SECRETARIA')")
     public String dashboardSecretaria() {
         return "secretaria/dashboard";
+    }
+
+    // Página dos pedidos de trancamento e de reabertura
+    @GetMapping("/secretaria/solicitacoes")
+    @PreAuthorize("hasRole('SECRETARIA')")
+    public String solicitacoesSecretaria() {
+        return "secretaria/solicitacoes";
     }
 
     // Página de envio de convite

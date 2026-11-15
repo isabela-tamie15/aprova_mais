@@ -119,7 +119,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**", "/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/v1/coordenador/**").hasRole("COORDENADOR")
                         .requestMatchers("/api/v1/orientador/**").hasRole("ORIENTADOR")
-                        .requestMatchers("/secretaria/**").hasRole("SECRETARIA")
+                        .requestMatchers("/secretaria/**", "/api/v1/secretaria/**").hasRole("SECRETARIA")
                         .requestMatchers("/api/v1/convites/**").hasAnyRole("ADMINISTRADOR", "COORDENADOR", "SECRETARIA")
                         .requestMatchers("/api/v1/lgpd/**").hasAnyRole("ALUNO", "ORIENTADOR", "COORDENADOR", "SECRETARIA")
                         .requestMatchers("/api/v1/aluno/**").hasRole("ALUNO")

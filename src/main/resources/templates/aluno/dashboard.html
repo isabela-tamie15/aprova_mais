@@ -10,6 +10,7 @@
 <nav class="navbar navbar-dark bg-dark px-3 mb-4">
     <span class="navbar-brand fw-bold">Aprova+</span>
     <div>
+        <a href="/aluno/solicitacoes" class="btn btn-outline-light btn-sm me-2">Solicitações</a>
         <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
         <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
     </div>
@@ -49,6 +50,18 @@
             <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
         </p>
         <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'SUSPENSO'}" class="card p-4">
+        <h5 class="card-title mb-3">Meu Estágio</h5>
+        <span class="badge bg-secondary mb-3 align-self-start">Suspenso por trancamento</span>
+        <p><strong>Tipo de estágio:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+        <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Carga horária mantida:</strong>
+            <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0) + 'h de ' + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
+        </p>
+        <p class="mb-0">A matrícula está trancada. Dentro do prazo de arrependimento, você pode pedir a reabertura, e o estágio volta de onde parou.</p>
+        <a href="/aluno/solicitacoes" class="btn btn-primary mt-3">Ver solicitações</a>
     </div>
 
     <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="card p-4">
@@ -112,6 +125,8 @@
                                       + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h = carga total de '
                                       + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h atingida'}"></span>
                     </p>
+                    <p th:if="${estagio.diasSuspensos != null and estagio.diasSuspensos > 0}" class="small text-muted"
+                       th:text="${'Não contam os ' + estagio.diasSuspensos + ' dias em que o estágio ficou suspenso por trancamento.'}"></p>
                 </div>
 
                 <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->

@@ -13,10 +13,12 @@ import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.Orientador;
 import tcc.ges.aprovamais.entity.PreCadastro;
 import tcc.ges.aprovamais.entity.Secretaria;
+import tcc.ges.aprovamais.entity.Solicitacao;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
+import tcc.ges.aprovamais.entity.enums.StatusSolicitacao;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
@@ -29,6 +31,7 @@ import tcc.ges.aprovamais.repository.OrientadorRepository;
 import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.PreCadastroRepository;
 import tcc.ges.aprovamais.repository.SecretariaRepository;
+import tcc.ges.aprovamais.repository.SolicitacaoRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 import java.time.LocalDate;
@@ -55,6 +58,7 @@ public class AnonimizacaoService {
     private final ConviteRepository conviteRepository;
     private final LogAuditoriaRepository logAuditoriaRepository;
     private final EstagioRepository estagioRepository;
+    private final SolicitacaoRepository solicitacaoRepository;
     private final OrientadorTurmaRepository orientadorTurmaRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditoriaService auditoriaService;
@@ -175,7 +179,7 @@ public class AnonimizacaoService {
         }
     }
 
-    // Aluno. O RGM sai e os estágios em aberto são encerrados por desligamento
+    // Aluno. O RGM sai, os estágios em aberto são encerrados por desligamento e os motivos das solicitações são apagados
     private void anonimizarAluno(Long alunoId, String sufixo) {
         Optional<Aluno> alunoEncontrado = alunoRepository.findById(alunoId);
         if (alunoEncontrado.isPresent()) {
@@ -187,7 +191,16 @@ public class AnonimizacaoService {
         for (Estagio estagio : estagioRepository.findByMatriculaAlunoIdAndStatusIn(alunoId, EstagioService.STATUS_EM_ABERTO)) {
             estagio.setStatus(StatusEstagio.ENCERRADO);
             estagio.setMotivoEncerramento(MotivoEncerramento.DESLIGAMENTO);
+            estagio.setDataFinalizacao(LocalDate.now());
             estagioRepository.save(estagio);
+        }
+
+        for (Solicitacao solicitacao : solicitacaoRepository.findByEstagioMatriculaAlunoId(alunoId)) {
+            solicitacao.setMotivo("REMOVIDO");
+            if (SolicitacaoService.STATUS_EM_ANALISE.contains(solicitacao.getStatus())) {
+                solicitacao.setStatus(StatusSolicitacao.CANCELADA);
+            }
+            solicitacaoRepository.save(solicitacao);
         }
     }
 

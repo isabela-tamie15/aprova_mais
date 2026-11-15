@@ -166,6 +166,8 @@
                                           + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + 'h = carga total de '
                                           + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + 'h atingida'}"></span>
                         </p>
+                        <p th:if="${ativo.diasSuspensos != null and ativo.diasSuspensos > 0}" class="small text-muted"
+                           th:text="${'Não contam os ' + ativo.diasSuspensos + ' dias em que o estágio ficou suspenso por trancamento.'}"></p>
                     </div>
 
                     <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
