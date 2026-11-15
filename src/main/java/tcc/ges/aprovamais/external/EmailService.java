@@ -102,6 +102,29 @@ public class EmailService {
     }
 
     /*
+       RF19: avisa o aluno de que o orientador aprovou ou rejeitou o cadastro do estágio.
+       Como no resultado da entrega, o e-mail traz só a decisão e o link: a justificativa
+       da rejeição fica no sistema, que exige login
+    */
+    @Async
+    public void enviarResultadoValidacaoEstagio(String destinatario, String nomeDestinatario,
+                                                boolean aprovado, String linkEstagio) {
+        try {
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions email = CreateEmailOptions.builder()
+                    .from(REMETENTE)
+                    .to(destinatario)
+                    .subject((aprovado ? "Estágio aprovado" : "Estágio rejeitado para ajustes") + " - Aprova+")
+                    .html(montarCorpoResultadoValidacao(nomeDestinatario, aprovado, linkEstagio))
+                    .build();
+            resend.emails().send(email);
+            log.info("[EMAIL] Resultado da validação do estágio enviado para: {}", destinatario);
+        } catch (ResendException | RuntimeException excecao) {
+            log.error("[EMAIL] Erro ao enviar resultado da validação para {}: {}", destinatario, excecao.getMessage(), excecao);
+        }
+    }
+
+    /*
        Monta o HTML do e-mail de convite. O estilo é todo inline porque
        clientes de e-mail tipo Gmail e Outlook ignoram CSS externo, então
        a única forma de garantir a aparência é colocar tudo direto nas tags
@@ -148,6 +171,28 @@ public class EmailService {
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
                 """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), HtmlUtils.htmlEscape(tarefa), textoDoResultado, link);
+    }
+
+    // Mesmo modelo do resultado da entrega, com o texto da decisão do orientador sobre o estágio
+    private String montarCorpoResultadoValidacao(String nomeDoDestinatario, boolean aprovado, String link) {
+        String textoDoResultado = aprovado
+                ? "O seu estágio foi <strong>aprovado</strong> pelo orientador. A partir de agora a carga horária é contada e as tarefas da trilha ficam liberadas."
+                : "O seu estágio foi <strong>rejeitado para ajustes</strong>. Confira a justificativa do orientador no sistema, corrija os dados e envie novamente.";
+        return """
+                <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2B4ECC;">Seu estágio foi analisado</h2>
+                    <p>Olá, <strong>%s</strong>!</p>
+                    <p>%s</p>
+                    <a href="%s"
+                       style="display: inline-block; background: #2B4ECC; color: white;
+                              padding: 12px 24px; border-radius: 8px; text-decoration: none;
+                              font-weight: 600; margin: 16px 0;">
+                        Ver meu estágio
+                    </a>
+                    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
+                </div>
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), textoDoResultado, link);
     }
 
     // Mesma ideia do convite, mas com texto e prazo de expiração diferentes

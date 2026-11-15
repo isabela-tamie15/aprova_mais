@@ -3,6 +3,7 @@ package tcc.ges.aprovamais.service;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
@@ -15,6 +16,7 @@ import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.*;
 
@@ -51,6 +53,12 @@ public class EstagioService {
     private final TrilhaRepository trilhaRepository;
     private final TarefaRepository tarefaRepository;
     private final EntregaRepository entregaRepository;
+
+    // RF19: aviso por e-mail ao aluno quando o orientador decide sobre o estágio
+    private final EmailService emailService;
+
+    @Value("${app.url}")
+    private String appUrl;
 
     // Esse é o método que busca o estágio ativo de um aluno, usado quando nós precisamos garantir que existe
     @Transactional(readOnly = true)
@@ -316,6 +324,7 @@ public class EstagioService {
 
         Estagio salvo = estagioRepository.save(estagio);
         registrarDecisao(salvo, true, null);
+        avisarAluno(salvo, true);
 
         /*
            Busca o usuário do orientador só para registrar na auditoria.
@@ -354,6 +363,7 @@ public class EstagioService {
 
         Estagio salvo = estagioRepository.save(estagio);
         registrarDecisao(salvo, false, justificativa);
+        avisarAluno(salvo, false);
 
         // Mesma ideia do aprovar, auditoria não pode travar o fluxo
         Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
@@ -424,6 +434,12 @@ public class EstagioService {
         validacao.setAprovado(aprovado);
         validacao.setJustificativa(justificativa);
         validacaoEstagioRepository.save(validacao);
+    }
+
+    // O envio é assíncrono (@Async no EmailService), então uma falha do Resend não desfaz a decisão do orientador
+    private void avisarAluno(Estagio estagio, boolean aprovado) {
+        Aluno aluno = estagio.getMatricula().getAluno();
+        emailService.enviarResultadoValidacaoEstagio(aluno.getEmail(), aluno.getNome(), aprovado, appUrl + "/aluno/estagio");
     }
 
     private List<ValidacaoEstagioResponse> listarHistorico(Long estagioId) {

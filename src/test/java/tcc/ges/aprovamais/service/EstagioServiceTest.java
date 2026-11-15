@@ -30,6 +30,7 @@ import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.ConsultaCnpjService;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.EntregaRepository;
 import tcc.ges.aprovamais.repository.EstagioRepository;
@@ -90,6 +91,8 @@ class EstagioServiceTest {
     private TarefaRepository tarefaRepository;
     @Mock
     private EntregaRepository entregaRepository;
+    @Mock
+    private EmailService emailService;
     @InjectMocks
     private EstagioService estagioService;
     private Aluno aluno;
@@ -216,6 +219,8 @@ class EstagioServiceTest {
         assertEquals(StatusEstagio.ATIVO, estagio.getStatus());
         assertNull(resposta.getJustificativaRejeicao());
         verify(auditoriaService).registrar(eq(orientador), eq("ESTAGIO_APROVADO"), anyString(), eq(IP), eq(true));
+        // RF19: o aluno recebe o aviso da aprovação por e-mail
+        verify(emailService).enviarResultadoValidacaoEstagio(eq(EMAIL_ALUNO), anyString(), eq(true), anyString());
 
     }
 
@@ -380,6 +385,9 @@ class EstagioServiceTest {
         assertEquals(orientador, rejeicao.getOrientador());
         assertTrue(aprovacao.getAprovado());
         assertNull(aprovacao.getJustificativa());
+        // RF19: um e-mail para cada decisão, primeiro o da rejeição e depois o da aprovação
+        verify(emailService).enviarResultadoValidacaoEstagio(eq(EMAIL_ALUNO), anyString(), eq(false), anyString());
+        verify(emailService).enviarResultadoValidacaoEstagio(eq(EMAIL_ALUNO), anyString(), eq(true), anyString());
     }
 
     @Test
