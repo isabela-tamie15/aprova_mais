@@ -242,9 +242,6 @@ DB_URL=jdbc:postgresql://postgres:5432/dbaprovamais
 DB_USERNAME=usuario_aprovamais
 DB_PASSWORD=sua_senha
 
-MAIL_USERNAME=seu@email.com
-MAIL_PASSWORD=sua_senha_app
-
 SSL_KEYSTORE_PASSWORD=senha123
 
 # Mínimo de 32 bytes aleatórios (assinatura HMAC-SHA256 do JWT). Gere com: openssl rand -base64 48
