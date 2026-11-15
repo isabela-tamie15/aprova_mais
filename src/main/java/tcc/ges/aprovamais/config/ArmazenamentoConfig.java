@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -20,7 +22,8 @@ import java.nio.file.Path;
 /*
    Escolhe onde os arquivos das entregas são guardados. Com as variáveis
    R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY e R2_BUCKET preenchidas, usa o
-   Cloudflare R2, sem essas variáveis ele usa a pasta local ARMAZENAMENTO_DIRETORIO (padrão "uploads", que no Docker é um volume)
+   Cloudflare R2, sem essas variáveis ele usa a pasta local ARMAZENAMENTO_DIRETORIO (padrão "uploads", que no Docker é um volume).
+   No perfil prod, o R2 é obrigatório
 */
 @Configuration
 public class ArmazenamentoConfig {
@@ -34,9 +37,18 @@ public class ArmazenamentoConfig {
             @Value("${r2.secret-key:}") String chaveSecreta,
             @Value("${r2.bucket:}") String bucket,
             @Value("${r2.region:auto}") String regiao,
-            @Value("${aprova.armazenamento.diretorio:uploads}") String diretorio) {
+            @Value("${aprova.armazenamento.diretorio:uploads}") String diretorio,
+            Environment ambiente) {
 
-        if (endpoint.isBlank() || chaveAcesso.isBlank() || chaveSecreta.isBlank() || bucket.isBlank()) {
+        boolean r2Configurado = !endpoint.isBlank() && !chaveAcesso.isBlank() && !chaveSecreta.isBlank() && !bucket.isBlank();
+
+        // No perfil prod o R2 é obrigatório, porque o disco do Render é apagado a cada deploy
+        if (!r2Configurado && ambiente.acceptsProfiles(Profiles.of("prod"))) {
+            throw new IllegalStateException(
+                    "No perfil prod, configure o Cloudflare R2: R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY e R2_BUCKET");
+        }
+
+        if (!r2Configurado) {
             log.info("[ARQUIVO] Arquivos das entregas no disco local, pasta {}", diretorio);
             return new ArmazenamentoLocal(Path.of(diretorio));
         }
