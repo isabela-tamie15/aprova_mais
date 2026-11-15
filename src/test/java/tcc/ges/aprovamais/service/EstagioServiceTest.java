@@ -177,6 +177,11 @@ class EstagioServiceTest {
 
 
 
+    // O controller consulta a BrasilAPI antes de chamar o service; aqui nós pegamos o resultado do mock da consulta
+    private ConsultaCnpjResponse consultarCnpj() {
+        return consultaCnpjService.consultar("11222333000181");
+    }
+
     private void prepararCadastro(Estagio estagioExistente) {
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
@@ -220,7 +225,7 @@ class EstagioServiceTest {
         prepararCadastro(criarEstagio(StatusEstagio.PENDENTE));
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class, () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+        IllegalStateException excecao = assertThrows(IllegalStateException.class, () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("Já existe uma solicitação aguardando aprovação do orientador", excecao.getMessage());verify(estagioRepository, never()).save(any());
@@ -255,8 +260,7 @@ class EstagioServiceTest {
 
 
         // act
-        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(
-                EMAIL_ALUNO, criarRequest(), IP);
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP);
 
 
         // assert
@@ -283,7 +287,7 @@ class EstagioServiceTest {
         when(estagioRepository.findById(ESTAGIO_ID)).thenAnswer(inv -> Optional.of(captor.getValue()));
 
         // act
-        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP);
 
         // assert: 270h com 30h semanais são 9 semanas a partir de 01/10/2026
         Estagio salvo = captor.getValue();
@@ -308,7 +312,7 @@ class EstagioServiceTest {
 
         // act
         IllegalStateException excecao = assertThrows(IllegalStateException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação",
@@ -344,7 +348,7 @@ class EstagioServiceTest {
 
         // act
         ResourceNotFoundException excecao = assertThrows(ResourceNotFoundException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("Perfil de estágio não encontrado", excecao.getMessage());
@@ -405,7 +409,7 @@ class EstagioServiceTest {
 
         // act
         IllegalStateException excecao = assertThrows(IllegalStateException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertTrue(excecao.getMessage().contains("troca de modalidade"));
@@ -430,7 +434,7 @@ class EstagioServiceTest {
         when(estagioRepository.findById(ESTAGIO_ID)).thenAnswer(inv -> Optional.of(captor.getValue()));
 
         // act
-        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP);
 
         // assert CNPJ gravado sem pontuação, situação vazia para o orientador conferir
         assertEquals("11222333000181", captor.getValue().getCnpjEmpresa());
@@ -447,7 +451,7 @@ class EstagioServiceTest {
 
         // act
         IllegalStateException excecao = assertThrows(IllegalStateException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("CNPJ não encontrado na Receita Federal. Confira o número digitado", excecao.getMessage());

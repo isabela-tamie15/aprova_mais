@@ -72,8 +72,13 @@ public class AlunoEstagioController {
            service para ficar registrado na auditoria
         */
         String email = authentication.getName();
+
+        // A consulta à BrasilAPI é feita antes, fora da transação do cadastro (AUD-10)
+        ConsultaCnpjResponse consultaNaReceita = consultaCnpjService.consultar(
+                ValidadorCnpj.normalizar(request.getCnpjEmpresa()));
+
         EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(
-                email, request, httpRequest.getRemoteAddr());
+                email, request, consultaNaReceita, httpRequest.getRemoteAddr());
         return ResponseEntity.ok(resposta);
     }
 

@@ -15,7 +15,6 @@ import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
-import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.repository.*;
 
 import java.math.BigDecimal;
@@ -46,7 +45,6 @@ public class EstagioService {
     private final AuditoriaService auditoriaService;
     private final UsuarioRepository usuarioRepository;
     private final ValidacaoEstagioRepository validacaoEstagioRepository;
-    private final ConsultaCnpjService consultaCnpjService;
 
     // F2: usados para contar as tarefas da trilha do tipo de estágio e as entregas aprovadas do aluno
     private final TrilhaRepository trilhaRepository;
@@ -136,10 +134,16 @@ public class EstagioService {
         return respostas;
     }
 
-    // Esse é o método que o aluno usa para cadastrar um estágio novo ou atualizar um que já existe
+    /*
+       Esse é o método que o aluno usa para cadastrar um estágio novo ou atualizar um que já existe.
+       A consulta do CNPJ na BrasilAPI chega pronta do controller: ela é uma chamada externa que pode
+       demorar até o tempo limite, e feita aqui dentro deixaria a transação e a conexão do banco
+       presas esse tempo todo (AUD-10)
+    */
     @Transactional
     public EstagioResponse cadastrarOuAtualizarEstagio(String emailAluno,
                                                        EstagioCadastroRequest request,
+                                                       ConsultaCnpjResponse consultaNaReceita,
                                                        String ipOrigem) {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
         Matricula matricula = buscarMatriculaAtiva(aluno);
@@ -180,12 +184,11 @@ public class EstagioService {
         }
 
         /*
-           Consulta o CNPJ na BrasilAPI (Seção 6.9.2 da monografia). Se a Receita disser que
+           Resultado da consulta do CNPJ na BrasilAPI (Seção 6.9.2 da monografia). Se a Receita disser que
            o CNPJ não existe, recusamos. Se a consulta não for possível, o cadastro segue sem a
            situação, e o orientador confere o CNPJ no termo de compromisso
         */
         String cnpj = ValidadorCnpj.normalizar(request.getCnpjEmpresa());
-        ConsultaCnpjResponse consultaNaReceita = consultaCnpjService.consultar(cnpj);
         if (consultaNaReceita.status() == ConsultaCnpjResponse.Status.NAO_ENCONTRADO) {
             throw new IllegalStateException(
                     "CNPJ não encontrado na Receita Federal. Confira o número digitado");
