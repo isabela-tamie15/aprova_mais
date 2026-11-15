@@ -54,6 +54,8 @@ class AnonimizacaoServiceTest {
     @Mock
     private EstagioRepository estagioRepository;
     @Mock
+    private SolicitacaoRepository solicitacaoRepository;
+    @Mock
     private OrientadorTurmaRepository orientadorTurmaRepository;
     @Mock
     private PasswordEncoder passwordEncoder;

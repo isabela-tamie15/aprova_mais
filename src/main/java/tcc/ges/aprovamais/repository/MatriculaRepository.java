@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.Matricula;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
@@ -15,6 +16,9 @@ public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
 
     // Pega a primeira matrícula ativa do aluno, usado quando só pode ter uma por vez
     Optional<Matricula> findFirstByAlunoIdAndStatus(Long alunoId, StatusMatricula status);
+
+    // Matrícula mais recente do aluno entre esses status, usada para achar a ativa ou a trancada
+    Optional<Matricula> findFirstByAlunoIdAndStatusInOrderByIdDesc(Long alunoId, Collection<StatusMatricula> statuses);
 
     // Versão por e-mail, usada quando o dado disponível é o e-mail do token em vez do id
     Optional<Matricula> findFirstByAlunoEmailAndStatus(String email, StatusMatricula status);

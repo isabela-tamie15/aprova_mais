@@ -178,4 +178,18 @@ class CalculadoraCargaHorariaTest {
                 .compareTo(new BigDecimal("90")));
 
     }
+
+    @Test
+    @DisplayName("Duas semanas de suspensão empurram o início das contas e a data prevista em duas semanas")
+    void deveDescontarSuspensao() {
+        LocalDate inicio = LocalDate.of(2026, 3, 2);
+        LocalDate inicioEfetivo = CalculadoraCargaHoraria.calcularInicioEfetivo(inicio, 14);
+        assertEquals(LocalDate.of(2026, 3, 16), inicioEfetivo);
+        assertEquals(LocalDate.of(2026, 5, 18),
+                CalculadoraCargaHoraria.calcularDataPrevista(inicioEfetivo, new BigDecimal("270"), new BigDecimal("30")));
+        // Em 23/03, só a primeira semana depois da suspensão conta
+        assertEquals(new BigDecimal("30"), CalculadoraCargaHoraria.calcularCargaCumprida(
+                inicioEfetivo, new BigDecimal("270"), new BigDecimal("30"), LocalDate.of(2026, 3, 23)));
+        assertEquals(inicio, CalculadoraCargaHoraria.calcularInicioEfetivo(inicio, null));
+    }
 }

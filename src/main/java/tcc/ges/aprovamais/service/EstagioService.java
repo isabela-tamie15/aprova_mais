@@ -16,8 +16,8 @@ import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
-import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.*;
 
 import java.math.BigDecimal;
@@ -87,7 +87,7 @@ public class EstagioService {
     // Lista os tipos de estágio que o aluno pode escolher no cadastro, só os do curso da matrícula ativa dele
     @Transactional(readOnly = true)
     public List<TipoEstagioResponse> listarTiposEstagioDisponiveis(String emailAluno) {
-        Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
+        Matricula matricula = buscarMatriculaAtual(buscarAlunoPorEmail(emailAluno));
 
         List<TipoEstagio> tiposDoCurso = tipoEstagioRepository.findByCursoIdOrderByNomeAsc(idDoCurso(matricula));
 
@@ -108,7 +108,7 @@ public class EstagioService {
     @Transactional(readOnly = true)
     public Optional<EstagioResponse> buscarEstagioDoAluno(String emailAluno) {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
-        Matricula matricula = buscarMatriculaAtiva(aluno);
+        Matricula matricula = buscarMatriculaAtual(aluno);
 
         // Sem estágio em aberto, devolvemos vazio, e a tela mostra o formulário de cadastro
         Optional<Estagio> estagioEmAberto = buscarEstagioEmAberto(matricula);
@@ -121,7 +121,7 @@ public class EstagioService {
     // Lista todos os estágios da matrícula do aluno, inclusive os concluídos e encerrados
     @Transactional(readOnly = true)
     public List<EstagioResponse> listarEstagiosDoAluno(String emailAluno) {
-        Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
+        Matricula matricula = buscarMatriculaAtual(buscarAlunoPorEmail(emailAluno));
 
         List<Estagio> estagiosDaMatricula = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId());
 
@@ -358,7 +358,7 @@ public class EstagioService {
     // Histórico de decisões do estágio do aluno logado
     @Transactional(readOnly = true)
     public List<ValidacaoEstagioResponse> listarHistoricoDoAluno(String emailAluno) {
-        Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
+        Matricula matricula = buscarMatriculaAtual(buscarAlunoPorEmail(emailAluno));
 
         // Aluno sem estágio em aberto recebe uma lista vazia
         Optional<Estagio> estagioEmAberto = buscarEstagioEmAberto(matricula);
@@ -463,17 +463,47 @@ public class EstagioService {
     }
 
     /*
-       Carga cumprida. Conta só no estágio ATIVO, e o CONCLUIDO já tem a carga toda.
-       Os outros status ficam com zero
+       Matrícula que o aluno consulta, a ativa ou, depois de um trancamento, a trancada. O cadastro de
+       estágio continua exigindo a ativa
     */
-    private BigDecimal calcularCargaCumprida(Estagio estagio) {
+    public Matricula buscarMatriculaAtual(Aluno aluno) {
+        return matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)
+                .or(() -> matriculaRepository.findFirstByAlunoIdAndStatusInOrderByIdDesc(
+                        aluno.getId(), List.of(StatusMatricula.TRANCADA)))
+                .orElseThrow(() -> new ResourceNotFoundException("Aluno não possui matrícula ativa"));
+    }
+
+    /*
+       Dia até o qual a carga é contada. No ATIVO é hoje, no SUSPENSO é o dia da suspensão e no
+       ENCERRADO é a suspensão ou o encerramento, desde que o estágio tenha sido aprovado antes.
+       Nos outros casos não há carga
+    */
+    private LocalDate dataReferenciaDaCarga(Estagio estagio) {
         return switch (estagio.getStatus()) {
-            case ATIVO -> CalculadoraCargaHoraria.calcularCargaCumprida(
-                    estagio.getDataInicio(), estagio.getCargaHorariaNecessaria(),
-                    estagio.getJornadaSemanal(), LocalDate.now());
-            case CONCLUIDO -> estagio.getCargaHorariaNecessaria();
-            default -> BigDecimal.ZERO;
+            case ATIVO -> LocalDate.now();
+            case SUSPENSO -> estagio.getSuspensoDesde();
+            case ENCERRADO -> {
+                if (!validacaoEstagioRepository.existsByEstagioIdAndAprovadoTrue(estagio.getId())) {
+                    yield null;
+                }
+                yield estagio.getSuspensoDesde() != null ? estagio.getSuspensoDesde() : estagio.getDataFinalizacao();
+            }
+            default -> null;
         };
+    }
+
+    // Carga cumprida até a data de referência, sem os dias de suspensão. O CONCLUIDO já tem a carga toda
+    private BigDecimal calcularCargaCumprida(Estagio estagio) {
+        if (estagio.getStatus() == StatusEstagio.CONCLUIDO) {
+            return estagio.getCargaHorariaNecessaria();
+        }
+        LocalDate referencia = dataReferenciaDaCarga(estagio);
+        if (referencia == null) {
+            return BigDecimal.ZERO;
+        }
+        return CalculadoraCargaHoraria.calcularCargaCumprida(
+                CalculadoraCargaHoraria.calcularInicioEfetivo(estagio.getDataInicio(), estagio.getDiasSuspensos()),
+                estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal(), referencia);
     }
 
     // Converte a entidade Estagio para o DTO que vai ser devolvido para o frontend
@@ -482,7 +512,8 @@ public class EstagioService {
         // Estágios antigos podem não ter a data prevista gravada, então calcula na hora
         LocalDate dataPrevista = estagio.getDataPrevistaConclusao() != null
                 ? estagio.getDataPrevistaConclusao()
-                : CalculadoraCargaHoraria.calcularDataPrevista(estagio.getDataInicio(),
+                : CalculadoraCargaHoraria.calcularDataPrevista(
+                CalculadoraCargaHoraria.calcularInicioEfetivo(estagio.getDataInicio(), estagio.getDiasSuspensos()),
                 estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal());
 
         /*
@@ -532,9 +563,12 @@ public class EstagioService {
                     estagio.getCargaHorariaNecessaria(), atividadesTotal, atividadesAprovadas);
         }
 
-        // Semanas usadas no cálculo da carga horária, só no estágio ATIVO
-        Long semanasContadas = estagio.getStatus() == StatusEstagio.ATIVO
-                ? CalculadoraCargaHoraria.calcularSemanasContadas(estagio.getDataInicio(), LocalDate.now())
+        // Semanas usadas no cálculo da carga horária, no estágio ATIVO e no SUSPENSO, sem os dias de suspensão
+        boolean contaSemanas = estagio.getStatus() == StatusEstagio.ATIVO || estagio.getStatus() == StatusEstagio.SUSPENSO;
+        Long semanasContadas = contaSemanas
+                ? CalculadoraCargaHoraria.calcularSemanasContadas(
+                        CalculadoraCargaHoraria.calcularInicioEfetivo(estagio.getDataInicio(), estagio.getDiasSuspensos()),
+                        dataReferenciaDaCarga(estagio))
                 : null;
 
         /*
@@ -584,6 +618,7 @@ public class EstagioService {
                 .podeConcluir(podeConcluir)
                 .dataFinalizacao(estagio.getDataFinalizacao())
                 .observacaoEncerramento(estagio.getObservacaoEncerramento())
+                .diasSuspensos(estagio.getDiasSuspensos())
                 .build();
     }
 }

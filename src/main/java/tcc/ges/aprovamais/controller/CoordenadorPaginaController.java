@@ -43,6 +43,12 @@ public class CoordenadorPaginaController {
         return "coordenador/estagios";
     }
 
+    // Página das solicitações de troca de modalidade e de trancamento dos cursos
+    @GetMapping("/coordenador/solicitacoes")
+    public String solicitacoes() {
+        return "coordenador/solicitacoes";
+    }
+
     // Endpoint que serve a página da lista de pré-cadastro
     @GetMapping("/coordenador/pre-cadastros")
     public String preCadastros() {

@@ -135,6 +135,28 @@ public class EmailService {
         }
     }
 
+    /*
+       Aviso sobre o andamento de uma solicitação do aluno. O texto vem pronto de quem chama e não traz
+       o motivo nem a justificativa, que ficam no sistema
+    */
+    @Async
+    public void enviarAvisoSolicitacao(String destinatario, String nomeDestinatario, String assunto,
+                                       String texto, String link) {
+        try {
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions email = CreateEmailOptions.builder()
+                    .from(remetente)
+                    .to(destinatario)
+                    .subject(assunto + " - Aprova+")
+                    .html(montarCorpoAvisoSolicitacao(nomeDestinatario, assunto, texto, link))
+                    .build();
+            resend.emails().send(email);
+            log.info("[EMAIL] Aviso de solicitação enviado para: {}", destinatario);
+        } catch (ResendException | RuntimeException excecao) {
+            log.error("[EMAIL] Erro ao enviar aviso de solicitação para {}: {}", destinatario, excecao.getMessage(), excecao);
+        }
+    }
+
     // Monta o HTML do e-mail de convite. O estilo fica inline porque Gmail e Outlook ignoram CSS externo
     private String montarCorpoConvite(String nomeDoDestinatario, String link) {
         return """
@@ -221,6 +243,25 @@ public class EmailService {
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
                 """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), textoDoResultado, link);
+    }
+
+    private String montarCorpoAvisoSolicitacao(String nomeDoDestinatario, String assunto, String texto, String link) {
+        return """
+                <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2B4ECC;">%s</h2>
+                    <p>Olá, <strong>%s</strong>!</p>
+                    <p>%s</p>
+                    <a href="%s"
+                       style="display: inline-block; background: #2B4ECC; color: white;
+                              padding: 12px 24px; border-radius: 8px; text-decoration: none;
+                              font-weight: 600; margin: 16px 0;">
+                        Abrir no Aprova+
+                    </a>
+                    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
+                </div>
+                """.formatted(HtmlUtils.htmlEscape(assunto), HtmlUtils.htmlEscape(nomeDoDestinatario),
+                HtmlUtils.htmlEscape(texto), link);
     }
 
     // Mesma ideia do convite, mas com texto e prazo de expiração diferentes

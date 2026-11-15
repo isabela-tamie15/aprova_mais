@@ -6,8 +6,8 @@ import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
+import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.security.AesEncryptor;
 
 import java.math.BigDecimal;
@@ -88,6 +88,14 @@ public class Estagio {
     @Convert(converter = AesEncryptor.class)
     @Column(name = "observacao_encerramento", columnDefinition = "TEXT")
     private String observacaoEncerramento;
+
+    // Dias em que o estágio ficou suspenso por trancamento e depois foi reaberto. Não contam na carga horária
+    @Column(name = "dias_suspensos")
+    private Integer diasSuspensos;
+
+    // Dia em que o estágio foi suspenso. A carga para de contar nessa data
+    @Column(name = "suspenso_desde")
+    private LocalDate suspensoDesde;
 
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)

@@ -11,4 +11,7 @@ public interface ValidacaoEstagioRepository extends JpaRepository<ValidacaoEstag
 
     // Historico de decisões de um estágio, da mais antiga para mais recente (o serve de id desempate)
     List<ValidacaoEstagio> findByEstagioIdOrderByDataDecisaoAscIdAsc(Long estagioId);
+
+    // Indica se o estágio chegou a ser aprovado pelo orientador
+    boolean existsByEstagioIdAndAprovadoTrue(Long estagioId);
 }
