@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tcc.ges.aprovamais.dto.TrilhaResponse;
 import tcc.ges.aprovamais.service.TrilhaService;
 
-// Esse controller é quem recebe a requisição do aluno pra buscar a trilha dele
+// Esse controller é quem recebe a requisição do aluno para buscar a trilha dele
 @Tag(name = "Trilha", description = "Consulta da trilha de tarefas do estágio do aluno")
 @RestController
 @RequestMapping("/api/v1/aluno")

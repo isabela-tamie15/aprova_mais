@@ -37,7 +37,7 @@ class ValidadorCnpjTest {
     }
 
     @Test
-    @DisplayName("Normaliza tirando a pontuação e formata de volta pra exibir")
+    @DisplayName("Normaliza tirando a pontuação e formata de volta para exibir")
     void deveNormalizarEFormatar() {
         assertEquals("11222333000181", ValidadorCnpj.normalizar(" 11.222.333/0001-81 "));
         assertEquals("11.222.333/0001-81", ValidadorCnpj.formatar("11222333000181"));

@@ -285,7 +285,7 @@ class EstagioServiceTest {
         // act
         EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
 
-        // assert: 270 h com 30 h por semana são 9 semanas a partir de 01/10/2026
+        // assert: 270h com 30h semanais são 9 semanas a partir de 01/10/2026
         Estagio salvo = captor.getValue();
         assertEquals(new BigDecimal("270"), salvo.getCargaHorariaNecessaria());
         assertEquals(new BigDecimal("30"), salvo.getJornadaSemanal());
@@ -390,7 +390,7 @@ class EstagioServiceTest {
         EstagioResponse resposta = estagioService.aprovar(
                 ESTAGIO_ID, EMAIL_ORIENTADOR, LocalDate.of(2026, 3, 2), IP);
 
-        // assert: 270 h com 30 h por semana, 9 semanas depois de 02/03
+        // assert: 270h com 30h semanais, 9 semanas depois de 02/03
         assertEquals(LocalDate.of(2026, 3, 2), estagio.getDataInicio());
         assertEquals(LocalDate.of(2026, 5, 4), estagio.getDataPrevistaConclusao());
         assertEquals(LocalDate.of(2026, 5, 4), resposta.getDataPrevistaConclusao());
@@ -432,7 +432,7 @@ class EstagioServiceTest {
         // act
         EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
 
-        // assert CNPJ gravado sem pontuação, situação vazia pro orientador conferir
+        // assert CNPJ gravado sem pontuação, situação vazia para o orientador conferir
         assertEquals("11222333000181", captor.getValue().getCnpjEmpresa());
         assertNull(captor.getValue().getSituacaoCnpj());
         assertEquals("11.222.333/0001-81", resposta.getCnpjEmpresa());
@@ -467,7 +467,7 @@ class EstagioServiceTest {
     @Test
     @DisplayName("Estágio ativo mostra as horas restantes e o aviso amarelo quando faltam 20 dias para o encerramento das entregas")
     void deveMostrarHorasRestantesEAvisoAmarelo() {
-        // arrange: 3 semanas completas de 30 h (90 h) e encerramento das entregas daqui a 20 dias
+        // arrange: 3 semanas completas de 30h (90h) e encerramento das entregas daqui a 20 dias
         Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
         estagio.setDataInicio(LocalDate.now().minusWeeks(3));
         matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
@@ -684,9 +684,9 @@ class EstagioServiceTest {
     }
 
     @Test
-    @DisplayName("Depois de atingir a carga, as semanas param nas semanas necessárias: 270 h com 30 h por semana são 9")
+    @DisplayName("Depois de atingir a carga, as semanas param nas semanas necessárias: 270h com 30h semanais são 9")
     void deveLimitarSemanasContadasAsSemanasNecessarias() {
-        // arrange: começou há 20 semanas, mas 9 semanas de 30 h já cumprem as 270 h
+        // arrange: começou há 20 semanas, mas 9 semanas de 30h já cumprem as 270h
         Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
         estagio.setDataInicio(LocalDate.now().minusWeeks(20));
         prepararConsultaDoAluno(estagio);
@@ -703,7 +703,7 @@ class EstagioServiceTest {
     @Test
     @DisplayName("Antes de atingir a carga, as semanas continuam sendo contadas normalmente")
     void naoDeveLimitarSemanasAntesDeAtingirACarga() {
-        // arrange: 3 semanas de 30 h são 90 h, ainda longe das 270 h
+        // arrange: 3 semanas de 30h são 90h, ainda longe das 270h
         Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
         estagio.setDataInicio(LocalDate.now().minusWeeks(3));
         prepararConsultaDoAluno(estagio);

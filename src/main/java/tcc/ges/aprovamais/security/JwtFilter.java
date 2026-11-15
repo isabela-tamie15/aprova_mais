@@ -57,7 +57,7 @@ public class JwtFilter extends OncePerRequestFilter {
                no catch e a requisição segue sem autenticação
             */
             email = jwtService.extrairEmail(token);
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException excecao) {
             cadeiaFiltros.doFilter(requisicao, resposta);
             return;
         }
@@ -68,7 +68,7 @@ public class JwtFilter extends OncePerRequestFilter {
             UserDetails usuarioDetalhes;
             try {
                 usuarioDetalhes = userDetailsService.loadUserByUsername(email);
-            } catch (UsernameNotFoundException e) {
+            } catch (UsernameNotFoundException excecao) {
                 // E-mail do token não existe mais (tipo conta anonimizada), segue sem autenticar
                 cadeiaFiltros.doFilter(requisicao, resposta);
                 return;
@@ -103,7 +103,7 @@ public class JwtFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(autenticacao);
         }
 
-        // Segue pro próximo filtro ou pro controller, agora com ou sem autenticação
+        // Segue para o próximo filtro ou para o controller, agora com ou sem autenticação
         cadeiaFiltros.doFilter(requisicao, resposta);
     }
 
@@ -111,8 +111,8 @@ public class JwtFilter extends OncePerRequestFilter {
     private String extrairToken(HttpServletRequest requisicao) {
 
         /*
-           O header Authorization com Bearer é o padrão pra APIs. Mas como a
-           gente usa cookie HttpOnly nas páginas, também aceita o token vindo
+           O header Authorization com Bearer é o padrão para APIs. Mas como nós
+           usamos cookie HttpOnly nas páginas, também aceitamos o token vindo
            por cookie, senão o navegador não conseguiria autenticar
         */
         String cabecalho = requisicao.getHeader("Authorization");
@@ -128,4 +128,4 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         return null;
     }
-}
+}

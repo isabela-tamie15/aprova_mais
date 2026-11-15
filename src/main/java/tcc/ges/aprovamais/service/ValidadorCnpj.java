@@ -25,34 +25,36 @@ public final class ValidadorCnpj {
     }
 
     public static boolean valido(String cnpj) {
-        String valor = normalizar(cnpj);
-        if (valor == null || !valor.matches("[0-9A-Z]{12}[0-9]{2}")) {
+        String cnpjSemPontuacao = normalizar(cnpj);
+        if (cnpjSemPontuacao == null || !cnpjSemPontuacao.matches("[0-9A-Z]{12}[0-9]{2}")) {
             return false;
         }
 
-        if (valor.chars().distinct().count() == 1) {
+        // Todos os caracteres iguais (ex.: 00000000000000) passam na conta dos dígitos, então recusamos.
+        // chars().distinct().count() conta quantos caracteres diferentes existem; se for 1, todos são iguais
+        if (cnpjSemPontuacao.chars().distinct().count() == 1) {
             return false;
         }
 
-        int primeiro = calcularDigito(valor, PESOS_PRIMEIRO);
-        int segundo = calcularDigito(valor, PESOS_SEGUNDO);
-        return valor.charAt(12) - '0' == primeiro && valor.charAt(13) - '0' == segundo;
+        int primeiroDigitoEsperado = calcularDigito(cnpjSemPontuacao, PESOS_PRIMEIRO);
+        int segundoDigitoEsperado = calcularDigito(cnpjSemPontuacao, PESOS_SEGUNDO);
+        return cnpjSemPontuacao.charAt(12) - '0' == primeiroDigitoEsperado && cnpjSemPontuacao.charAt(13) - '0' == segundoDigitoEsperado;
     }
 
-    // Formata pra exibir no formato 11.222.333/0001-81
+    // Formata para exibir no formato 11.222.333/0001-81
     public static String formatar(String cnpj) {
-        String valor = normalizar(cnpj);
-        if (valor == null || valor.length() != 14) {
+        String cnpjSemPontuacao = normalizar(cnpj);
+        if (cnpjSemPontuacao == null || cnpjSemPontuacao.length() != 14) {
             return cnpj;
         }
-        return valor.substring(0, 2) + "." + valor.substring(2, 5) + "." + valor.substring(5, 8)
-                + "/" + valor.substring(8, 12) + "-" + valor.substring(12);
+        return cnpjSemPontuacao.substring(0, 2) + "." + cnpjSemPontuacao.substring(2, 5) + "." + cnpjSemPontuacao.substring(5, 8)
+                + "/" + cnpjSemPontuacao.substring(8, 12) + "-" + cnpjSemPontuacao.substring(12);
     }
 
-    private static int calcularDigito(String valor, int[] pesos) {
+    private static int calcularDigito(String cnpjSemPontuacao, int[] pesos) {
         int soma = 0;
-        for (int i = 0; i < pesos.length; i++) {
-            soma += (valor.charAt(i) - '0') * pesos[i];
+        for (int posicao = 0; posicao < pesos.length; posicao++) {
+            soma += (cnpjSemPontuacao.charAt(posicao) - '0') * pesos[posicao];
         }
         int resto = soma % 11;
         return resto < 2 ? 0 : 11 - resto;

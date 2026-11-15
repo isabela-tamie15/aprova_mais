@@ -26,7 +26,7 @@ public class ConsentimentoController {
 
         /*
            E-mail vem do token e o IP da requisição. Os dois são guardados
-           na auditoria pra servir de comprovação de que o usuário aceitou
+           na auditoria para servir de comprovação de que o usuário aceitou
            os termos naquele momento
         */
         consentimentoService.registrarAceite(authentication.getName(), request.getRemoteAddr());

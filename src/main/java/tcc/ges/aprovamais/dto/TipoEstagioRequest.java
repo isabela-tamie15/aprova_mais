@@ -25,7 +25,7 @@ public class TipoEstagioRequest {
     @Size(max = 255, message = "A descrição deve ter no máximo 255 caracteres")
     private String descricao;
 
-    // Carga horária total exigida pelo curso nesse tipo (RN31), ex: 270 h
+    // Carga horária total exigida pelo curso nesse tipo (RN31), ex: 270h
     @NotNull(message = "Informe a carga horária total")
     @DecimalMin(value = "1", message = "A carga horária total deve ser maior que zero")
     @DecimalMax(value = "2000", message = "A carga horária total deve ser de no máximo 2000 horas")
@@ -33,8 +33,8 @@ public class TipoEstagioRequest {
     private BigDecimal cargaHorariaNecessaria;
 
     /*
-       Horas por semana que o tipo abate (RN31). O teto de 44 h vem da Constituição
-       (art. 7º, XIII). Para o estágio da Lei 11.788/2008 o teto é 30 h, e cabe ao
+       Horas por semana que o tipo abate (RN31). O teto de 44h vem da Constituição
+       (art. 7º, XIII). Para o estágio da Lei 11.788/2008 o teto é 30h, e cabe ao
        coordenador respeitá-lo ao cadastrar esse tipo
     */
     @NotNull(message = "Informe a jornada semanal")

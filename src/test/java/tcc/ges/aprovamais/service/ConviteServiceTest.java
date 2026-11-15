@@ -121,7 +121,7 @@ class ConviteServiceTest {
         assertFalse(aluno.getAtivo());
         assertTrue(aluno.getPrimeiroAcesso());
 
-        // assert: convite pendente, com a turma do pré-cadastro e validade de 24 h
+        // assert: convite pendente, com a turma do pré-cadastro e validade de 24h
         ArgumentCaptor<Convite> conviteCaptor = ArgumentCaptor.forClass(Convite.class);
         verify(conviteRepository).save(conviteCaptor.capture());
         Convite convite = conviteCaptor.getValue();

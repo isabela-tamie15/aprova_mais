@@ -386,7 +386,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
     }
 
     @Test
-    @DisplayName("Painel do aluno mostra o aviso PRAZO SE ESGOTANDO quando faltam 5 dias")
+    @DisplayName("Painel do aluno mostra o aviso FINALIZAÇÃO DO PRAZO quando faltam 5 dias")
     void deveMostrarAvisoNoPainelDoAluno() throws Exception {
         criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
         criarTrilhaComTarefas(1);
@@ -395,7 +395,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
 
         mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("PRAZO SE ESGOTANDO")))
+                .andExpect(content().string(containsString("FINALIZAÇÃO DO PRAZO")))
                 .andExpect(content().string(containsString("Faltam 5 dias para a data de encerramento das entregas")))
                 .andExpect(content().string(containsString("Carga horária restante")));
     }
@@ -423,6 +423,76 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ainda não informada pela coordenação")));
+    }
+
+    /*
+       F1 com os mesmos nomes da F2: o estágio pendente mostra os campos com os mesmos rótulos
+       e a mesma data (dd/MM/yyyy) do estágio ativo, para a tela não mudar de nome quando o
+       orientador aprovar. O estágio de teste é do tipo Estagiario, com 30h semanais,
+       começa em 01/08/2026 e não tem CNPJ gravado
+    */
+    @Test
+    @DisplayName("Página Meu Estágio mostra o estágio pendente com os mesmos nomes da F2")
+    void deveMostrarEstagioPendenteComOsNomesDaF2NaPaginaMeuEstagio() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+        mockMvc.perform(get("/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Prof. orientador:")))
+                .andExpect(content().string(containsString("Orientador Teste")))
+                .andExpect(content().string(containsString("Tipo de estágio:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Empresa a estagiar:")))
+                .andExpect(content().string(containsString("CNPJ da empresa:")))
+                .andExpect(content().string(containsString("Não informado")))
+                .andExpect(content().string(containsString("Início do estágio:")))
+                .andExpect(content().string(containsString("01/08/2026")))
+                .andExpect(content().string(not(containsString("<strong>Tipo:</strong>"))));
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra o estágio pendente com os mesmos nomes da F2")
+    void deveMostrarEstagioPendenteComOsNomesDaF2NoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Aguardando aprovação do orientador")))
+                .andExpect(content().string(containsString("Prof. orientador:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Empresa a estagiar:")))
+                .andExpect(content().string(containsString("CNPJ da empresa:")))
+                .andExpect(content().string(containsString("01/08/2026")))
+                .andExpect(content().string(not(containsString("<strong>Tipo:</strong>"))))
+                .andExpect(content().string(not(containsString("<strong>Orientador:</strong>"))));
+    }
+
+    @Test
+    @DisplayName("Página de validações mostra o estágio pendente com os mesmos nomes da F2")
+    void deveMostrarEstagioPendenteComOsNomesDaF2NasValidacoes() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Aluno Teste")))
+                .andExpect(content().string(containsString("Tipo de estágio:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Empresa a estagiar:")))
+                .andExpect(content().string(containsString("CNPJ da empresa:")))
+                .andExpect(content().string(containsString("Início do estágio:")))
+                .andExpect(content().string(containsString("01/08/2026")))
+                .andExpect(content().string(not(containsString("<strong>Tipo:</strong>"))));
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra o estágio rejeitado como Rejeitado pelo orientador")
+    void deveMostrarEstagioRejeitadoNoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.REJEITADO);
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Rejeitado pelo orientador")))
+                .andExpect(content().string(not(containsString("Reprovado pelo orientador"))));
     }
 
     /*
@@ -487,14 +557,14 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Encerramento das entregas:")))
                 .andExpect(content().string(not(containsString("Atividades da trilha:"))))
-                .andExpect(content().string(not(containsString("PRAZO SE ESGOTANDO"))));
+                .andExpect(content().string(not(containsString("FINALIZAÇÃO DO PRAZO"))));
     }
 
-    // RF22: extrato da carga, com a conta das semanas
+    // RF22: cálculo da carga horária, com a conta das semanas
 
     @Test
-    @DisplayName("Extrato da carga: 3 semanas de Estagiário aparecem como 3 semanas × 30 h = 90 h de 270 h (CA01)")
-    void deveMostrarExtratoDaCargaParaAlunoEOrientador() throws Exception {
+    @DisplayName("Cálculo da carga horária: 3 semanas de Estagiário aparecem como 3 semanas × 30h = 90h de 270h (CA01)")
+    void deveMostrarCalculoDaCargaParaAlunoEOrientador() throws Exception {
         Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
         estagio.setDataInicio(LocalDate.now().minusWeeks(3));
         entityManager.flush();
@@ -505,17 +575,17 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
 
         mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("3 semanas × 30 h = 90 h de 270 h")));
+                .andExpect(content().string(containsString("3 semanas × 30h = 90h de 270h")));
 
         mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("3 semanas × 30 h = 90 h de 270 h")));
+                .andExpect(content().string(containsString("3 semanas × 30h = 90h de 270h")));
     }
 
     @Test
     @DisplayName("Depois de atingir a carga, o cálculo para nas semanas necessárias e mostra a carga total atingida")
     void deveMostrarCargaTotalAtingidaSemPassarDasSemanasNecessarias() throws Exception {
-        // começou há 20 semanas, mas 9 semanas de 30 h já cumprem as 270 h do Estagiário
+        // começou há 20 semanas, mas 9 semanas de 30h já cumprem as 270h do Estagiário
         Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
         estagio.setDataInicio(LocalDate.now().minusWeeks(20));
         entityManager.flush();
@@ -526,7 +596,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
 
         mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("9 semanas × 30 h = carga total de 270 h atingida")))
+                .andExpect(content().string(containsString("9 semanas × 30h = carga total de 270h atingida")))
                 .andExpect(content().string(containsString("Carga horária exigida:")))
                 .andExpect(content().string(containsString("Estagiario (30h semanais)")))
                 .andExpect(content().string(containsString("Prof. orientador:")));

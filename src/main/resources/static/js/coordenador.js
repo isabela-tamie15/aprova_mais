@@ -15,23 +15,31 @@ async function requisicaoJson(url, metodo = 'GET', corpo = null) {
         opcoes.body = JSON.stringify(corpo);
     }
 
-    let resp;
+    let resposta;
     try {
-        resp = await fetch(url, opcoes);
-    } catch (e) {
+        resposta = await fetch(url, opcoes);
+    } catch (erro) {
         return { ok: false, status: 0, dados: { mensagem: 'Não foi possível conectar ao servidor.' } };
     }
 
     // 204 não tem corpo, e alguns erros (como o 403) também podem vir vazios
-    const dados = resp.status === 204 ? null : await resp.json().catch(() => ({}));
-
-    if (resp.status >= 500) {
-        return { ok: false, status: resp.status, dados: { mensagem: 'Erro interno no servidor. Tente novamente.' } };
+    let dados = null;
+    if (resposta.status !== 204) {
+        // Lemos o corpo como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+        try {
+            dados = await resposta.json();
+        } catch (erroDeLeitura) {
+            dados = {};
+        }
     }
-    if (resp.status === 403) {
+
+    if (resposta.status >= 500) {
+        return { ok: false, status: resposta.status, dados: { mensagem: 'Erro interno no servidor. Tente novamente.' } };
+    }
+    if (resposta.status === 403) {
         return { ok: false, status: 403, dados: { mensagem: 'Você não tem permissão para esta ação.' } };
     }
-    return { ok: resp.ok, status: resp.status, dados: dados };
+    return { ok: resposta.ok, status: resposta.status, dados: dados };
 }
 
 // Rola a página até o formulário, usado quando o coordenador clica em Editar numa linha da tabela
@@ -41,7 +49,7 @@ function rolarParaFormulario(elemento) {
     }
 }
 
-// Nomes dos enums pra mostrar na tela, nos selects e nas tabelas
+// Nomes dos enums para mostrar na tela, nos selects e nas tabelas
 const NOMES_PERIODO = { MATUTINO: 'Matutino', NOTURNO: 'Noturno', NAO_APLICAVEL: 'Não se aplica' };
 const NOMES_MODALIDADE = { PRESENCIAL: 'Presencial', EAD: 'EAD', HIBRIDO: 'Híbrido' };
 
@@ -50,6 +58,6 @@ const NOMES_MODALIDADE = { PRESENCIAL: 'Presencial', EAD: 'EAD', HIBRIDO: 'Híbr
    de turmas, tipos de estágio e trilhas. Devolve a lista, ou lista vazia se der erro
 */
 async function carregarCursosDoCoordenador() {
-    const r = await requisicaoJson('/api/v1/coordenador/cursos');
-    return r.ok ? r.dados : [];
+    const resposta = await requisicaoJson('/api/v1/coordenador/cursos');
+    return resposta.ok ? resposta.dados : [];
 }

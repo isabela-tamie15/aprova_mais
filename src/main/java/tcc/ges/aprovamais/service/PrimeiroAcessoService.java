@@ -55,7 +55,9 @@ public class PrimeiroAcessoService {
            gravados no envio do convite
         */
         Optional<PreCadastro> preCadastro = preCadastroService.buscarPorEmail(convite.getEmail());
-        preCadastro.ifPresent(dados -> aplicarPreCadastro(usuario, dados));
+        if (preCadastro.isPresent()) {
+            aplicarPreCadastro(usuario, preCadastro.get());
+        }
 
         usuarioRepository.save(usuario);
 
@@ -104,12 +106,12 @@ public class PrimeiroAcessoService {
     }
 
     // Copia do pré-cadastro os dados que identificam a pessoa na instituição
-    private void aplicarPreCadastro(Usuario usuario, PreCadastro dados) {
-        usuario.setNome(dados.getNome());
+    private void aplicarPreCadastro(Usuario usuario, PreCadastro preCadastro) {
+        usuario.setNome(preCadastro.getNome());
         if (usuario instanceof Aluno aluno) {
-            aluno.setRgm(dados.getIdentificadorInstitucional());
+            aluno.setRgm(preCadastro.getIdentificadorInstitucional());
         } else if (usuario instanceof Orientador orientador) {
-            orientador.setMatriculaInstitucional(dados.getIdentificadorInstitucional());
+            orientador.setMatriculaInstitucional(preCadastro.getIdentificadorInstitucional());
         }
     }
 

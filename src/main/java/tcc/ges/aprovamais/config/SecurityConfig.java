@@ -52,9 +52,10 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 /*
-                   Desliga as proteções que não usamos. Como a API é stateless
-                   e autentica por JWT no cookie, CSRF e form login padrão só
-                   atrapalhariam
+                   Desligamos a proteção CSRF padrão do Spring porque o cookie do login é SameSite=Strict
+                   (AuthController): o navegador não envia o cookie em requisições vindas de outros sites,
+                   e é isso que impede o ataque CSRF. O login por formulário e o login básico padrão
+                   também saem, porque a nossa tela de login é própria
                 */
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
@@ -101,7 +102,7 @@ public class SecurityConfig {
                         /*
                            Aqui começa a proteção por perfil, cada rota só aceita
                            quem tem o papel certo. O lgpd é o único que libera
-                           pra vários perfis ao mesmo tempo
+                           para vários perfis ao mesmo tempo
                         */
                         .requestMatchers("/admin/**", "/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/v1/coordenador/**").hasRole("COORDENADOR")
@@ -118,7 +119,7 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         /*
-           Só força HTTPS em produção. Em dev fica livre pra rodar em HTTP,
+           Só força HTTPS em produção. Em dev fica livre para rodar em HTTP,
            senão atrapalharia o desenvolvimento local
         */
         if (env.acceptsProfiles(Profiles.of("prod"))) {
@@ -156,14 +157,14 @@ public class SecurityConfig {
         return provider;
     }
 
-    // Esse bean é o que o AuthService usa pra disparar a autenticação no login
+    // Esse bean é o que o AuthService usa para disparar a autenticação no login
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // Usa BCrypt pra fazer o hash das senhas, que é o padrão recomendado hoje
+    // Usa BCrypt para fazer o hash das senhas, que é o padrão recomendado hoje
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -176,7 +177,7 @@ public class SecurityConfig {
 
         /*
            Só essas duas origens podem chamar a API. O allowCredentials é
-           necessário pra que o cookie JWT seja enviado nas requisições
+           necessário para que o cookie JWT seja enviado nas requisições
         */
         config.setAllowedOrigins(List.of(
                 "http://localhost:8080",

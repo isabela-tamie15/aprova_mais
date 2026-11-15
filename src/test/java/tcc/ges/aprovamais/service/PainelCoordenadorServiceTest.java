@@ -276,7 +276,7 @@ class PainelCoordenadorServiceTest {
     @Test
     @DisplayName("CA06: sem a data prevista gravada, ela é calculada como no EstagioService")
     void deveCalcularDataPrevistaQuandoNaoEstaGravada() {
-        // arrange: 270 h com 30 h por semana = 9 semanas desde o início, que passa do encerramento em 10 dias
+        // arrange: 270h com 30h semanais = 9 semanas desde o início, que passa do encerramento em 10 dias
         Turma t8a = turma(2L, "8A", engenharia, hoje.plusDays(10));
         Estagio estagio = estagio(t8a, StatusEstagio.ATIVO, luisa);
         estagio.setDataPrevistaConclusao(null);

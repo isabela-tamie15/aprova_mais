@@ -27,7 +27,7 @@ public class PrimeiroAcessoController {
         try {
             /*
                Valida o token do convite e, se estiver tudo certo, coloca o
-               token e o e-mail no Model pra página poder usar. Se o token
+               token e o e-mail no Model para a página poder usar. Se o token
                estiver inválido ou expirado, cai no catch e mostra a página
                de erro com a mensagem da exceção
             */
@@ -35,8 +35,8 @@ public class PrimeiroAcessoController {
             model.addAttribute("token", token);
             model.addAttribute("email", convite.getEmail());
             return "primeiro-acesso";
-        } catch (Exception e) {
-            model.addAttribute("erro", e.getMessage());
+        } catch (Exception excecao) {
+            model.addAttribute("erro", excecao.getMessage());
             return "primeiro-acesso-erro";
         }
     }
@@ -48,20 +48,20 @@ public class PrimeiroAcessoController {
                                         @Valid @RequestBody PrimeiroAcessoRequest request,
                                         HttpServletRequest httpRequest) {
         try {
-            // Passa o token, a senha escolhida e o IP pra concluir o cadastro
+            // Passa o token, a senha escolhida e o IP para concluir o cadastro
             primeiroAcessoService.concluirCadastro(
                     token,
                     request.getSenha(),
                     httpRequest.getRemoteAddr()
             );
             return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            // Se algo der errado, devolve 400 pro frontend sem expor o motivo
+        } catch (Exception excecao) {
+            // Se algo der errado, devolve 400 para o frontend sem expor o motivo
             return ResponseEntity.badRequest().build();
         }
     }
 
-    // Esse é o endpoint que o usuário usa pra recusar o convite e não criar a conta
+    // Esse é o endpoint que o usuário usa para recusar o convite e não criar a conta
     @PostMapping("/recusar")
     public String recusar(@RequestParam String token,
                           HttpServletRequest httpRequest,
@@ -69,12 +69,12 @@ public class PrimeiroAcessoController {
         try {
             primeiroAcessoService.recusarCadastro(token, httpRequest.getRemoteAddr());
             return "redirect:/login?convite=recusado";
-        } catch (Exception e) {
+        } catch (Exception excecao) {
             /*
-               Se falhar, volta pra página de primeiro acesso com a mensagem
-               de erro em vez de redirecionar pro login
+               Se falhar, volta para a página de primeiro acesso com a mensagem
+               de erro em vez de redirecionar para o login
             */
-            model.addAttribute("erro", e.getMessage());
+            model.addAttribute("erro", excecao.getMessage());
             model.addAttribute("token", token);
             return "primeiro-acesso";
         }

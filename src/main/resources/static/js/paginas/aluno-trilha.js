@@ -30,17 +30,18 @@ function trilhaAluno() {
             this.comentario = '';
             this.carregando = true;
             try {
-                const resp = await fetch(`/api/v1/aluno/tarefas/${id}/entrega`, { credentials: 'include' });
-                if (resp.ok) {
-                    this.detalhe = await resp.json();
+                const resposta = await fetch(`/api/v1/aluno/tarefas/${id}/entrega`, { credentials: 'include' });
+                if (resposta.ok) {
+                    this.detalhe = await resposta.json();
                 } else {
-                    this.erro = (await mensagemErroApi(resp, 'Não foi possível carregar a entrega.')).mensagem;
+                    this.erro = (await mensagemErroApi(resposta, 'Não foi possível carregar a entrega.')).mensagem;
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
             }
+            // O $nextTick espera a tela atualizar e só depois roda o que está dentro de () =>
             this.$nextTick(() => document.getElementById('painel-entrega').scrollIntoView({ behavior: 'smooth' }));
         },
 
@@ -51,7 +52,12 @@ function trilhaAluno() {
             if (!arquivo) {
                 erros.arquivo = 'Selecione um arquivo para enviar.';
             } else {
-                const extensao = arquivo.name.includes('.') ? arquivo.name.split('.').pop().toLowerCase() : '';
+                // A extensão é o que vem depois do último ponto do nome (relatorio.pdf vira "pdf")
+                let extensao = '';
+                if (arquivo.name.includes('.')) {
+                    const partesDoNome = arquivo.name.split('.');
+                    extensao = partesDoNome[partesDoNome.length - 1].toLowerCase();
+                }
                 if (!FORMATOS_ENTREGA.includes(extensao)) {
                     erros.arquivo = 'Formato não aceito. Envie um arquivo PDF, DOCX, XLSX, PPTX, JPG, JPEG ou PNG.';
                 } else if (arquivo.size > TAMANHO_MAXIMO_ENTREGA) {
@@ -80,27 +86,27 @@ function trilhaAluno() {
             }
             this.enviando = true;
             try {
-                const resp = await fetch(`/api/v1/aluno/tarefas/${this.tarefaId}/entregas`, {
+                const resposta = await fetch(`/api/v1/aluno/tarefas/${this.tarefaId}/entregas`, {
                     method: 'POST',
                     credentials: 'include',
                     body: dados
                 });
-                if (resp.ok) {
-                    this.detalhe = await resp.json();
+                if (resposta.ok) {
+                    this.detalhe = await resposta.json();
                     this.statusTarefas[this.tarefaId] = this.detalhe.status;
                     this.comentario = '';
                     this.$refs.arquivo.value = '';
                     this.sucesso = 'Versão ' + this.detalhe.versoes.length + ' enviada. O orientador já pode analisar.';
                 } else {
-                    const falha = await mensagemErroApi(resp, 'Não foi possível enviar o arquivo.');
+                    const falha = await mensagemErroApi(resposta, 'Não foi possível enviar o arquivo.');
                     this.erros = falha.campos;
-                    if (resp.status === 400) {
+                    if (resposta.status === 400) {
                         this.erros.arquivo = falha.mensagem;
                     } else {
                         this.erro = falha.mensagem;
                     }
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.enviando = false;

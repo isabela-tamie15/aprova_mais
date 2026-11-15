@@ -4,12 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.entity.Aluno;
+import tcc.ges.aprovamais.entity.Orientador;
+import tcc.ges.aprovamais.entity.Secretaria;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.OrientadorRepository;
 import tcc.ges.aprovamais.repository.SecretariaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+import java.util.Optional;
 import java.util.UUID;
 
 // Essa service é quem cuida da anonimização de dados quando o titular pede exclusão pela LGPD
@@ -27,7 +31,7 @@ public class AnonimizacaoService {
     /*
        Esse é o método que faz a anonimização em si. A ideia não é apagar
        o registro do banco, e sim trocar os dados pessoais por valores
-       genéricos, assim o histórico fica preservado pra fins estatísticos
+       genéricos, assim o histórico fica preservado para fins estatísticos
        mas ninguém consegue identificar quem era a pessoa
     */
     @Transactional
@@ -37,7 +41,7 @@ public class AnonimizacaoService {
 
         /*
            Gera um sufixo aleatório de 8 caracteres. Ele é usado no e-mail e
-           em outros campos pra garantir que, se dois usuários forem anonimizados,
+           em outros campos para garantir que, se dois usuários forem anonimizados,
            cada um fica com um valor único e não dá conflito de unicidade no banco
         */
         String sufixo = UUID.randomUUID().toString().substring(0, 8);
@@ -56,28 +60,38 @@ public class AnonimizacaoService {
         usuario.setDoisFatoresSegredo(null);
 
         /*
-           Agora trata os campos específicos de cada perfil. Cada tipo de
-           usuário tem dados próprios em tabelas separadas, então aqui a
-           gente limpa essas tabelas também, cada uma do seu jeito
+           Agora tratamos os campos específicos de cada perfil. Cada tipo de
+           usuário tem dados próprios em tabelas separadas, então limpamos
+           essas tabelas também, cada uma do seu jeito
         */
         switch (usuario.getPerfil()) {
-            case ALUNO -> alunoRepository.findById(usuario.getId())
-                    .ifPresent(aluno -> {
-                        aluno.setRgm("REMOVIDO_" + sufixo);
-                        alunoRepository.save(aluno);
-                    });
-            case ORIENTADOR -> orientadorRepository.findById(usuario.getId())
-                    .ifPresent(orientador -> {
-                        orientador.setMatriculaInstitucional("REMOVIDO_" + sufixo);
-                        orientador.setDepartamento("REMOVIDO");
-                        orientadorRepository.save(orientador);
-                    });
-            case SECRETARIA -> secretariaRepository.findById(usuario.getId())
-                    .ifPresent(secretaria -> {
-                        secretaria.setSetor("REMOVIDO");
-                        secretariaRepository.save(secretaria);
-                    });
+            case ALUNO -> {
+                Optional<Aluno> alunoEncontrado = alunoRepository.findById(usuario.getId());
+                if (alunoEncontrado.isPresent()) {
+                    Aluno aluno = alunoEncontrado.get();
+                    aluno.setRgm("REMOVIDO_" + sufixo);
+                    alunoRepository.save(aluno);
+                }
+            }
+            case ORIENTADOR -> {
+                Optional<Orientador> orientadorEncontrado = orientadorRepository.findById(usuario.getId());
+                if (orientadorEncontrado.isPresent()) {
+                    Orientador orientador = orientadorEncontrado.get();
+                    orientador.setMatriculaInstitucional("REMOVIDO_" + sufixo);
+                    orientador.setDepartamento("REMOVIDO");
+                    orientadorRepository.save(orientador);
+                }
+            }
+            case SECRETARIA -> {
+                Optional<Secretaria> secretariaEncontrada = secretariaRepository.findById(usuario.getId());
+                if (secretariaEncontrada.isPresent()) {
+                    Secretaria secretaria = secretariaEncontrada.get();
+                    secretaria.setSetor("REMOVIDO");
+                    secretariaRepository.save(secretaria);
+                }
+            }
             case COORDENADOR, ADMINISTRADOR -> {
+                // Coordenador e administrador não têm dados pessoais em tabela própria
             }
         }
 

@@ -18,7 +18,7 @@ public class TurmaRequest {
     @Positive(message = "Curso inválido")
     private Long cursoId;
 
-    // Ano e semestre, no mesmo formato que o seed e a RN22 usam (ex: 2026/2)
+    // Ano e semestre no formato AAAA/1 ou AAAA/2, por exemplo 2026/2 (RN22)
     @NotBlank(message = "Informe o semestre")
     @Pattern(regexp = "^\\d{4}/[12]$", message = "Informe o semestre no formato AAAA/1 ou AAAA/2")
     private String semestre;

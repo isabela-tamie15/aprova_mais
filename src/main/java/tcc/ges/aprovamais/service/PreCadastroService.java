@@ -22,6 +22,7 @@ import tcc.ges.aprovamais.repository.PreCadastroRepository;
 import tcc.ges.aprovamais.repository.TurmaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -49,10 +50,14 @@ public class PreCadastroService {
     // Esse é o método que lista os pré-cadastros do coordenador logado
     @Transactional(readOnly = true)
     public List<PreCadastroResponse> listarDoCoordenador(String emailCoordenador) {
-        return preCadastroRepository.findByCoordenadorEmailOrderByNomeAsc(emailCoordenador)
-                .stream()
-                .map(this::paraResponse)
-                .toList();
+        List<PreCadastro> preCadastros = preCadastroRepository.findByCoordenadorEmailOrderByNomeAsc(emailCoordenador);
+
+        // Transforma cada pré-cadastro do banco na resposta que vai para a tela
+        List<PreCadastroResponse> respostas = new ArrayList<>();
+        for (PreCadastro preCadastro : preCadastros) {
+            respostas.add(paraResponse(preCadastro));
+        }
+        return respostas;
     }
 
     /*

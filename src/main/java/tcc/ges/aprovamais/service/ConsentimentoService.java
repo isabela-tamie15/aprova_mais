@@ -9,6 +9,7 @@ import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Optional;
 
 
 // Essa service é quem cuida do aceite dos termos de uso e da política de privacidade
@@ -16,8 +17,13 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class ConsentimentoService {
 
-    // Ao publicar uma nova versão dos termos, atualizar apenas este valor.
-    public static final String VERSAO_TERMOS_ATUAL = "1.0";
+    /*
+       Ao publicar uma nova versão dos termos, nós atualizamos apenas este valor.
+       A 1.1 (novembro de 2026) incluiu o administrador, o Cloudflare R2, a BrasilAPI,
+       o jsDelivr e os e-mails de recuperação de senha e de resultado das entregas.
+       Quem aceitou a 1.0 passa de novo pela tela de consentimento (RN60)
+    */
+    public static final String VERSAO_TERMOS_ATUAL = "1.1";
 
     private final UsuarioRepository usuarioRepository;
     private final AuditoriaService auditoriaService;
@@ -47,16 +53,22 @@ public class ConsentimentoService {
     */
     @Transactional(readOnly = true)
     public boolean precisaConsentir(String email) {
-        return usuarioRepository.findByEmail(email)
-                .map(u -> !Boolean.TRUE.equals(u.getConsentimentoDado())
-                        || !VERSAO_TERMOS_ATUAL.equals(u.getVersaoConsentimento()))
-                .orElse(false);
+        Optional<Usuario> usuarioDoEmail = usuarioRepository.findByEmail(email);
+        if (usuarioDoEmail.isEmpty()) {
+            return false;
+        }
+
+        // Precisa aceitar quem nunca aceitou ou quem aceitou uma versão antiga dos documentos (RN60)
+        Usuario usuario = usuarioDoEmail.get();
+        boolean nuncaAceitou = !Boolean.TRUE.equals(usuario.getConsentimentoDado());
+        boolean aceitouVersaoAntiga = !VERSAO_TERMOS_ATUAL.equals(usuario.getVersaoConsentimento());
+        return nuncaAceitou || aceitouVersaoAntiga;
     }
 
     /*
        Método separado porque o aceite também acontece no fluxo de primeiro
        acesso, quando o usuário cria a conta, e lá não tem IP nem auditoria
-       pra registrar. Assim os dois fluxos reaproveitam a mesma lógica
+       para registrar. Assim os dois fluxos reaproveitam a mesma lógica
     */
     public void aplicarAceite(Usuario usuario) {
         usuario.setConsentimentoDado(true);

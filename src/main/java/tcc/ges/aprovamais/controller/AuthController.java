@@ -30,7 +30,7 @@ public class AuthController {
     private final AuthService authService;
     private final TokenRevogadoService tokenRevogadoService;
 
-    // Diz se a aplicação tá rodando com SSL, usado pra decidir se o cookie vai com Secure ou não
+    // Diz se a aplicação está rodando com SSL, usado para decidir se o cookie vai com Secure ou não
     @Value("${server.ssl.enabled:false}")
     private boolean sslEnabled;
 
@@ -39,7 +39,7 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest requisicao,
             HttpServletRequest request,
-            HttpServletResponse response) {
+            HttpServletResponse respostaHttp) {
 
         LoginResponse loginResponse = authService.login(requisicao, request);
 
@@ -50,11 +50,11 @@ public class AuthController {
            cookie de sessão
         */
         if (!loginResponse.isRequer2FA() && !loginResponse.isRequerConfiguracao2FA()) {
-            adicionarCookieJwt(response, loginResponse.getToken(), 28800);
+            adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
             return ResponseEntity.ok(loginResponse.semToken());
         }
 
-        // Falta etapa, então devolve o token de pré-autenticação no corpo pra próxima chamada
+        // Falta etapa, então devolve o token de pré-autenticação no corpo para a próxima chamada
         return ResponseEntity.ok(loginResponse);
     }
 
@@ -63,17 +63,17 @@ public class AuthController {
     public ResponseEntity<LoginResponse> verificarSegundoFator(
             @Valid @RequestBody VerificacaoDoisFatoresRequest requisicao,
             HttpServletRequest request,
-            HttpServletResponse response) {
+            HttpServletResponse respostaHttp) {
 
         LoginResponse loginResponse = authService.verificarSegundoFator(
                 requisicao.getToken(), requisicao.getCodigo(), request.getRemoteAddr());
 
         // Deu certo, então agora sim grava o cookie e devolve a resposta sem o token no corpo
-        adicionarCookieJwt(response, loginResponse.getToken(), 28800);
+        adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
-    // Esse é o endpoint que inicia a configuração obrigatória de 2fa pra quem ainda não tem
+    // Esse é o endpoint que inicia a configuração obrigatória de 2fa para quem ainda não tem
     @PostMapping("/2fa/configuracao/iniciar")
     public ResponseEntity<ConfiguracaoDoisFatoresResponse> iniciarConfiguracaoObrigatoria(
             @Valid @RequestBody PreAutenticacaoRequest requisicao) {
@@ -86,13 +86,13 @@ public class AuthController {
     public ResponseEntity<LoginResponse> confirmarConfiguracaoObrigatoria(
             @Valid @RequestBody VerificacaoDoisFatoresRequest requisicao,
             HttpServletRequest request,
-            HttpServletResponse response) {
+            HttpServletResponse respostaHttp) {
 
         LoginResponse loginResponse = authService.confirmarConfiguracaoObrigatoria(
                 requisicao.getToken(), requisicao.getCodigo(), request.getRemoteAddr());
 
         // Configurou certo, então já loga de vez e grava o cookie
-        adicionarCookieJwt(response, loginResponse.getToken(), 28800);
+        adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
@@ -100,7 +100,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             HttpServletRequest request,
-            HttpServletResponse response,
+            HttpServletResponse respostaHttp,
             Authentication authentication) {
 
         // Encerra o token no servidor, não só no navegador
@@ -111,9 +111,9 @@ public class AuthController {
 
         /*
            Grava um cookie com valor vazio e Max-Age 0, que é a forma padrão
-           de dizer pro navegador apagar o cookie
+           de dizer para o navegador apagar o cookie
         */
-        adicionarCookieJwt(response, "", 0);
+        adicionarCookieJwt(respostaHttp, "", 0);
 
         /*
            Só registra no log se tiver alguém autenticado, porque o logout
@@ -127,21 +127,21 @@ public class AuthController {
     }
 
     // Esse é o auxiliar que monta e adiciona o cookie do JWT na resposta
-    private void adicionarCookieJwt(HttpServletResponse response, String valor, int maxAge) {
+    private void adicionarCookieJwt(HttpServletResponse respostaHttp, String valorDoCookie, int segundosDeValidade) {
 
-        // Em produção com SSL, adiciona o Secure pro cookie só trafegar em HTTPS
+        // Em produção com SSL, adiciona o Secure para o cookie só trafegar em HTTPS
         String secure = sslEnabled ? "; Secure" : "";
 
         /*
            Monta na mão em vez de usar a classe Cookie do Java porque ela não
            expõe o atributo SameSite. O HttpOnly impede leitura por JavaScript,
-           o Path=/ faz valer pra toda aplicação e o SameSite=Strict evita
+           o Path=/ faz valer para toda aplicação e o SameSite=Strict evita
            envio em requisições de outros sites
         */
         String cookie = String.format(
                 "jwt=%s; HttpOnly; Path=/; Max-Age=%d; SameSite=Strict%s",
-                valor, maxAge, secure
+                valorDoCookie, segundosDeValidade, secure
         );
-        response.addHeader("Set-Cookie", cookie);
+        respostaHttp.addHeader("Set-Cookie", cookie);
     }
 }

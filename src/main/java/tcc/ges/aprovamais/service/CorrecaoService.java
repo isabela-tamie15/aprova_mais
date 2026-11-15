@@ -22,7 +22,6 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.function.Function;
 
 /*
    Painel de correção do orientador e avaliação das entregas
@@ -72,35 +71,64 @@ public class CorrecaoService {
     public PainelCorrecaoResponse listar(String emailOrientador, FiltroPainel filtro) {
         Set<StatusEntrega> status = filtro.status() == null ? AGUARDANDO_ANALISE : EnumSet.of(filtro.status());
 
-        List<Linha> todas = entregaRepository.findByEstagioOrientadorEmailAndStatusIn(emailOrientador, status).stream()
-                .map(e -> new Linha(e, entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(e.getId()).orElse(null)))
-                .filter(l -> l.ultimaVersao() != null)
-                .sorted(Comparator.comparing((Linha l) -> l.ultimaVersao().getEnviadaEm())
-                        .thenComparing(l -> l.entrega().getId()))
-                .toList();
+        // Cada entrega do orientador vira uma linha com a sua última versão. Entrega sem versão não tem o que corrigir
+        List<Entrega> entregasDoOrientador = entregaRepository.findByEstagioOrientadorEmailAndStatusIn(emailOrientador, status);
+        List<Linha> todas = new ArrayList<>();
+        for (Entrega entrega : entregasDoOrientador) {
+            Optional<EntregaVersao> ultimaVersao = entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId());
+            if (ultimaVersao.isPresent()) {
+                todas.add(new Linha(entrega, ultimaVersao.get()));
+            }
+        }
+        // Da entrega enviada há mais tempo para a mais recente (regra no método compararPorDataDeEnvio)
+        todas.sort((primeira, segunda) -> compararPorDataDeEnvio(primeira, segunda));
 
         // Opções dos filtros saem das entregas do próprio orientador, então nunca mostram aluno de outro
-        List<OpcaoFiltroResponse> alunos = opcoes(todas, l -> l.entrega().getEstagio().getMatricula().getAluno().getId(),
-                l -> l.entrega().getEstagio().getMatricula().getAluno().getNome());
-        List<OpcaoFiltroResponse> tarefas = opcoes(todas, l -> l.entrega().getTarefa().getId(),
-                l -> l.entrega().getTarefa().getNome());
+        List<OpcaoFiltroResponse> alunos = listarAlunosDasEntregas(todas);
+        List<OpcaoFiltroResponse> tarefas = listarTarefasDasEntregas(todas);
 
-        List<Linha> filtradas = todas.stream()
-                .filter(l -> filtro.alunoId() == null
-                        || filtro.alunoId().equals(l.entrega().getEstagio().getMatricula().getAluno().getId()))
-                .filter(l -> filtro.tarefaId() == null || filtro.tarefaId().equals(l.entrega().getTarefa().getId()))
-                .filter(l -> dentroDoPeriodo(l.ultimaVersao().getEnviadaEm(), filtro.de(), filtro.ate()))
-                .toList();
+        // Aplica os filtros da tela. Filtro vazio (null) deixa passar todas as entregas
+        List<Linha> filtradas = new ArrayList<>();
+        for (Linha linha : todas) {
+            Long idDoAluno = linha.entrega().getEstagio().getMatricula().getAluno().getId();
+            Long idDaTarefa = linha.entrega().getTarefa().getId();
 
-        int tamanho = Math.clamp(filtro.tamanho(), 1, TAMANHO_MAXIMO_PAGINA);
+            boolean passaNoFiltroDeAluno = filtro.alunoId() == null || filtro.alunoId().equals(idDoAluno);
+            boolean passaNoFiltroDeTarefa = filtro.tarefaId() == null || filtro.tarefaId().equals(idDaTarefa);
+            boolean passaNoFiltroDePeriodo = dentroDoPeriodo(linha.ultimaVersao().getEnviadaEm(), filtro.de(), filtro.ate());
+
+            if (passaNoFiltroDeAluno && passaNoFiltroDeTarefa && passaNoFiltroDePeriodo) {
+                filtradas.add(linha);
+            }
+        }
+
+        // O tamanho da página fica entre 1 e 50, mesmo que alguém mude o valor na URL
+        int tamanho = filtro.tamanho();
+        if (tamanho < 1) {
+            tamanho = 1;
+        }
+        if (tamanho > TAMANHO_MAXIMO_PAGINA) {
+            tamanho = TAMANHO_MAXIMO_PAGINA;
+        }
+
         int totalPaginas = Math.max(1, (int) Math.ceil(filtradas.size() / (double) tamanho));
-        int pagina = Math.clamp(filtro.pagina(), 0, totalPaginas - 1);
 
-        List<ItemPainelCorrecaoResponse> itens = filtradas.stream()
-                .skip((long) pagina * tamanho)
-                .limit(tamanho)
-                .map(this::paraItem)
-                .toList();
+        // A página pedida fica entre a primeira (0) e a última que existe
+        int pagina = filtro.pagina();
+        if (pagina < 0) {
+            pagina = 0;
+        }
+        if (pagina > totalPaginas - 1) {
+            pagina = totalPaginas - 1;
+        }
+
+        // Pega só as entregas da página pedida. Exemplo: página 1 com tamanho 20 vai da posição 20 até a 39
+        int primeiraPosicao = pagina * tamanho;
+        int posicaoDepoisDaUltima = Math.min(primeiraPosicao + tamanho, filtradas.size());
+        List<ItemPainelCorrecaoResponse> itens = new ArrayList<>();
+        for (int posicao = primeiraPosicao; posicao < posicaoDepoisDaUltima; posicao++) {
+            itens.add(paraItem(filtradas.get(posicao)));
+        }
 
         long totalAguardando = filtro.status() == null
                 ? todas.size()
@@ -124,24 +152,37 @@ public class CorrecaoService {
     */
     @Transactional(readOnly = true)
     public HistoricoCorrecoesResponse listarHistorico(String emailOrientador, int pagina, int tamanho) {
-        int tamanhoPagina = Math.clamp(tamanho, 1, TAMANHO_MAXIMO_PAGINA);
+        // O tamanho da página fica entre 1 e 50, mesmo que alguém mude o valor na URL
+        int tamanhoPagina = tamanho;
+        if (tamanhoPagina < 1) {
+            tamanhoPagina = 1;
+        }
+        if (tamanhoPagina > TAMANHO_MAXIMO_PAGINA) {
+            tamanhoPagina = TAMANHO_MAXIMO_PAGINA;
+        }
         Sort ordem = Sort.by(Sort.Direction.DESC, "avaliadaEm").and(Sort.by(Sort.Direction.DESC, "id"));
 
-        Page<EntregaVersao> resultado = entregaVersaoRepository.findByAvaliadorEmailAndResultadoIn(
+        Page<EntregaVersao> paginaDeVersoesCorrigidas = entregaVersaoRepository.findByAvaliadorEmailAndResultadoIn(
                 emailOrientador, CORRIGIDAS, PageRequest.of(Math.max(pagina, 0), tamanhoPagina, ordem));
 
         // Página além da última volta para a última, como no painel de correção
-        if (resultado.getTotalPages() > 0 && pagina >= resultado.getTotalPages()) {
-            resultado = entregaVersaoRepository.findByAvaliadorEmailAndResultadoIn(
-                    emailOrientador, CORRIGIDAS, PageRequest.of(resultado.getTotalPages() - 1, tamanhoPagina, ordem));
+        if (paginaDeVersoesCorrigidas.getTotalPages() > 0 && pagina >= paginaDeVersoesCorrigidas.getTotalPages()) {
+            paginaDeVersoesCorrigidas = entregaVersaoRepository.findByAvaliadorEmailAndResultadoIn(
+                    emailOrientador, CORRIGIDAS, PageRequest.of(paginaDeVersoesCorrigidas.getTotalPages() - 1, tamanhoPagina, ordem));
+        }
+
+        // Transforma cada versão corrigida na linha que vai para a tela do histórico
+        List<ItemHistoricoCorrecaoResponse> itens = new ArrayList<>();
+        for (EntregaVersao versao : paginaDeVersoesCorrigidas.getContent()) {
+            itens.add(paraItemHistorico(versao));
         }
 
         return HistoricoCorrecoesResponse.builder()
-                .totalCorrecoes(resultado.getTotalElements())
-                .pagina(resultado.getNumber())
+                .totalCorrecoes(paginaDeVersoesCorrigidas.getTotalElements())
+                .pagina(paginaDeVersoesCorrigidas.getNumber())
                 .tamanho(tamanhoPagina)
-                .totalPaginas(Math.max(1, resultado.getTotalPages()))
-                .itens(resultado.getContent().stream().map(this::paraItemHistorico).toList())
+                .totalPaginas(Math.max(1, paginaDeVersoesCorrigidas.getTotalPages()))
+                .itens(itens)
                 .build();
     }
 
@@ -231,13 +272,49 @@ public class CorrecaoService {
                 .build();
     }
 
-    private static List<OpcaoFiltroResponse> opcoes(List<Linha> linhas, Function<Linha, Long> id,
-                                                    Function<Linha, String> nome) {
-        Map<Long, String> mapa = new LinkedHashMap<>();
-        linhas.forEach(l -> mapa.putIfAbsent(id.apply(l), nome.apply(l)));
-        return mapa.entrySet().stream()
-                .map(e -> new OpcaoFiltroResponse(e.getKey(), e.getValue()))
-                .sorted(Comparator.comparing(OpcaoFiltroResponse::nome, String.CASE_INSENSITIVE_ORDER)).toList();
+    // Ordem do painel: a entrega enviada há mais tempo vem primeiro; se o horário empatar, a de menor id
+    private static int compararPorDataDeEnvio(Linha primeira, Linha segunda) {
+        int resultadoDaData = primeira.ultimaVersao().getEnviadaEm().compareTo(segunda.ultimaVersao().getEnviadaEm());
+        if (resultadoDaData != 0) {
+            return resultadoDaData;
+        }
+        return primeira.entrega().getId().compareTo(segunda.entrega().getId());
+    }
+
+    // Alunos que aparecem nas entregas, cada um uma vez só, para o filtro "Aluno" da tela
+    private static List<OpcaoFiltroResponse> listarAlunosDasEntregas(List<Linha> linhas) {
+        Map<Long, String> nomePorIdDoAluno = new LinkedHashMap<>();
+        for (Linha linha : linhas) {
+            Aluno aluno = linha.entrega().getEstagio().getMatricula().getAluno();
+            // Se o aluno ainda não está no mapa, guardamos; se já está, ignoramos a repetição
+            if (nomePorIdDoAluno.get(aluno.getId()) == null) {
+                nomePorIdDoAluno.put(aluno.getId(), aluno.getNome());
+            }
+        }
+        return paraOpcoesEmOrdemAlfabetica(nomePorIdDoAluno);
+    }
+
+    // Tarefas que aparecem nas entregas, cada uma uma vez só, para o filtro "Tarefa" da tela
+    private static List<OpcaoFiltroResponse> listarTarefasDasEntregas(List<Linha> linhas) {
+        Map<Long, String> nomePorIdDaTarefa = new LinkedHashMap<>();
+        for (Linha linha : linhas) {
+            Tarefa tarefa = linha.entrega().getTarefa();
+            // Se a tarefa ainda não está no mapa, guardamos; se já está, ignoramos a repetição
+            if (nomePorIdDaTarefa.get(tarefa.getId()) == null) {
+                nomePorIdDaTarefa.put(tarefa.getId(), tarefa.getNome());
+            }
+        }
+        return paraOpcoesEmOrdemAlfabetica(nomePorIdDaTarefa);
+    }
+
+    // Transforma o mapa (id e nome) na lista de opções do filtro, em ordem alfabética sem diferenciar maiúscula e minúscula
+    private static List<OpcaoFiltroResponse> paraOpcoesEmOrdemAlfabetica(Map<Long, String> nomePorId) {
+        List<OpcaoFiltroResponse> opcoes = new ArrayList<>();
+        for (Map.Entry<Long, String> idENome : nomePorId.entrySet()) {
+            opcoes.add(new OpcaoFiltroResponse(idENome.getKey(), idENome.getValue()));
+        }
+        opcoes.sort((primeira, segunda) -> String.CASE_INSENSITIVE_ORDER.compare(primeira.nome(), segunda.nome()));
+        return opcoes;
     }
 
     private static boolean dentroDoPeriodo(OffsetDateTime enviadaEm, LocalDate de, LocalDate ate) {

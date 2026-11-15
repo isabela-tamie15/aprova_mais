@@ -47,8 +47,8 @@ public class AuditoriaService {
             log.info("[AUDITORIA] {} | {} | {} | sucesso={}",
                     usuario.getEmail(), acao, detalhes, sucesso);
 
-        } catch (Exception e) {
-            log.error("[AUDITORIA] Erro ao registrar auditoria: {}", e.getMessage(), e);
+        } catch (Exception excecao) {
+            log.error("[AUDITORIA] Erro ao registrar auditoria: {}", excecao.getMessage(), excecao);
         }
     }
 
@@ -74,13 +74,13 @@ public class AuditoriaService {
 
             log.warn("[AUDITORIA] {} | {} | {} | sem usuário ativo vinculado", emailTentativa, acao, detalhes);
 
-        } catch (Exception e) {
-            log.error("[AUDITORIA] Erro ao registrar auditoria: {}", e.getMessage(), e);
+        } catch (Exception excecao) {
+            log.error("[AUDITORIA] Erro ao registrar auditoria: {}", excecao.getMessage(), excecao);
         }
     }
 
     /*
-       Converte do enum de perfil usado na entidade pro enum da auditoria.
+       Converte do enum de perfil usado na entidade para o enum da auditoria.
        São dois enums separados com os mesmos valores, mas cada um fica na
        sua camada, então precisa dessa conversão no meio
     */

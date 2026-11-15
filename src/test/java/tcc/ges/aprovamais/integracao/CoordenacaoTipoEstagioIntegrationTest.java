@@ -92,7 +92,7 @@ class CoordenacaoTipoEstagioIntegrationTest extends CoordenacaoTestBase {
     }
 
     @Test
-    @DisplayName("Jornada acima de 44 h ou carga zero voltam 400 (CA03 do RF14)")
+    @DisplayName("Jornada acima de 44h ou carga zero voltam 400 (CA03 do RF14)")
     void deveRecusarValoresForaDoLimite() throws Exception {
         mockMvc.perform(post("/api/v1/coordenador/tipos-estagio")
                         .with(user(EMAIL_COORDENADOR).roles("COORDENADOR"))

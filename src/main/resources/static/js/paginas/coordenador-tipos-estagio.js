@@ -28,11 +28,11 @@ function tiposEstagioPagina() {
 
         async carregarTipos() {
             this.cancelar();
-            const r = await requisicaoJson('/api/v1/coordenador/tipos-estagio?cursoId=' + this.cursoId);
-            if (r.ok) {
-                this.tipos = r.dados;
+            const resposta = await requisicaoJson('/api/v1/coordenador/tipos-estagio?cursoId=' + this.cursoId);
+            if (resposta.ok) {
+                this.tipos = resposta.dados;
             } else {
-                this.erro = r.dados.mensagem || 'Erro ao carregar os tipos de estágio.';
+                this.erro = resposta.dados.mensagem || 'Erro ao carregar os tipos de estágio.';
             }
         },
 
@@ -82,7 +82,7 @@ function tiposEstagioPagina() {
                 erros.cargaHorariaNecessaria = 'Informe uma carga entre 1 e 2000 horas.';
             }
             if (this.form.jornadaSemanal === '' || !(jornada >= 1 && jornada <= 44)) {
-                erros.jornadaSemanal = 'Informe uma jornada entre 1 e 44 horas por semana.';
+                erros.jornadaSemanal = 'Informe uma jornada entre 1 e 44 horas semanais.';
             }
 
             this.erros = erros;
@@ -101,7 +101,7 @@ function tiposEstagioPagina() {
             const url = editando
                 ? '/api/v1/coordenador/tipos-estagio/' + this.form.id
                 : '/api/v1/coordenador/tipos-estagio';
-            const r = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
+            const resposta = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
                 cursoId: Number(this.cursoId),
                 nome: this.form.nome.trim(),
                 descricao: this.form.descricao.trim(),
@@ -110,11 +110,11 @@ function tiposEstagioPagina() {
             });
             this.salvando = false;
 
-            if (!r.ok) {
-                if (r.dados.campos) {
-                    this.erros = r.dados.campos;
+            if (!resposta.ok) {
+                if (resposta.dados.campos) {
+                    this.erros = resposta.dados.campos;
                 }
-                this.erro = r.dados.mensagem || 'Erro ao salvar o tipo de estágio.';
+                this.erro = resposta.dados.mensagem || 'Erro ao salvar o tipo de estágio.';
                 return;
             }
 

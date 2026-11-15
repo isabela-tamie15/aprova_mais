@@ -31,7 +31,7 @@ public class EstagioResponse {
     private final Long diasParaEncerramentoEntregas;
     private final String avisoPrazo;
 
-    // RF22: semanas completas contadas desde o início, para o extrato da carga. Só vem preenchido no estágio ATIVO
+    // RF22: semanas completas contadas desde o início, para o cálculo da carga horária. Só vem preenchido no estágio ATIVO
     private final Long semanasContadas;
 
     /*

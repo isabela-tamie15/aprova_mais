@@ -42,7 +42,7 @@
         <div class="card p-4 mb-4" x-ref="formulario">
             <h5 class="card-title mb-3" x-text="form.id ? 'Alterar tipo de estágio' : 'Novo tipo de estágio'"></h5>
             <div class="alert alert-warning py-2 small" x-show="form.id" x-cloak>
-                Alterar a carga ou a jornada vale só para os estágios cadastrados daqui pra frente.
+                Alterar a carga ou a jornada vale só para os estágios cadastrados daqui em diante.
             </div>
             <form @submit.prevent="salvar()" novalidate>
                 <div class="row g-3">
@@ -72,7 +72,7 @@
                                maxlength="255" :class="{ 'is-invalid': erros.descricao }">
                         <div class="invalid-feedback" x-text="erros.descricao"></div>
                         <div class="form-text">
-                            O teto da jornada é de 44 h por semana. Para o estágio da Lei nº 11.788/2008, o teto é de 30 h.
+                            Jornada semanal máxima: 44h semanais. No estágio da Lei nº 11.788/2008, o máximo é de 30h semanais.
                         </div>
                     </div>
                 </div>
@@ -109,8 +109,8 @@
                                 <span x-text="tipo.nome"></span>
                                 <div class="small text-muted" x-show="tipo.descricao" x-text="tipo.descricao"></div>
                             </td>
-                            <td class="text-end" x-text="Number(tipo.cargaHorariaNecessaria) + ' h'"></td>
-                            <td class="text-end" x-text="Number(tipo.jornadaSemanal) + ' h/semana'"></td>
+                            <td class="text-end" x-text="Number(tipo.cargaHorariaNecessaria) + 'h'"></td>
+                            <td class="text-end" x-text="Number(tipo.jornadaSemanal) + 'h semanais'"></td>
                             <td class="text-end" x-text="semanas(tipo)"></td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-primary" @click="editar(tipo)">Editar</button>

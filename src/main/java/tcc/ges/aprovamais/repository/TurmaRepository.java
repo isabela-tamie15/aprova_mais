@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface TurmaRepository extends JpaRepository<Turma, Long> {
 
-    // Lista as turmas de um curso, das mais recentes pras mais antigas, pra tela de turmas
+    // Lista as turmas de um curso, das mais recentes para as mais antigas, para a tela de turmas
     List<Turma> findByCursoIdOrderBySemestreDescIdentificadorAsc(Long cursoId);
 
     // Busca a turma só se o curso dela for do coordenador informado (RN21), senão volta vazio e vira 404

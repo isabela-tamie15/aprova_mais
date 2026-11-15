@@ -36,11 +36,11 @@ function turmasPagina() {
                 this.turmas = [];
                 return;
             }
-            const r = await requisicaoJson('/api/v1/coordenador/turmas?cursoId=' + this.cursoId);
-            if (r.ok) {
-                this.turmas = r.dados;
+            const resposta = await requisicaoJson('/api/v1/coordenador/turmas?cursoId=' + this.cursoId);
+            if (resposta.ok) {
+                this.turmas = resposta.dados;
             } else {
-                this.erro = r.dados.mensagem || 'Erro ao carregar as turmas.';
+                this.erro = resposta.dados.mensagem || 'Erro ao carregar as turmas.';
             }
         },
 
@@ -103,7 +103,7 @@ function turmasPagina() {
             this.salvando = true;
             const editando = this.form.id !== null;
             const url = editando ? '/api/v1/coordenador/turmas/' + this.form.id : '/api/v1/coordenador/turmas';
-            const r = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
+            const resposta = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
                 cursoId: Number(this.cursoId),
                 semestre: this.form.semestre.trim(),
                 identificador: this.form.identificador.trim(),
@@ -113,11 +113,11 @@ function turmasPagina() {
             });
             this.salvando = false;
 
-            if (!r.ok) {
-                if (r.dados.campos) {
-                    this.erros = r.dados.campos;
+            if (!resposta.ok) {
+                if (resposta.dados.campos) {
+                    this.erros = resposta.dados.campos;
                 }
-                this.erro = r.dados.mensagem || 'Erro ao salvar a turma.';
+                this.erro = resposta.dados.mensagem || 'Erro ao salvar a turma.';
                 return;
             }
 

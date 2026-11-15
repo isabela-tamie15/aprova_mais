@@ -7,10 +7,10 @@ function validacao(id) {
 
         // Mesmo limite do backend para a data de início confirmada
         dataMaxima() {
-            const data = new Date();
-            data.setFullYear(data.getFullYear() + 1);
-            // ajusta o fuso pra pegar a data local, e não a UTC
-            return new Date(data.getTime() - data.getTimezoneOffset() * 60000)
+            const dataLimite = new Date();
+            dataLimite.setFullYear(dataLimite.getFullYear() + 1);
+            // ajusta o fuso para pegar a data local, e não a UTC
+            return new Date(dataLimite.getTime() - dataLimite.getTimezoneOffset() * 60000)
                     .toISOString().slice(0, 10);
         },
         processando: false,
@@ -24,19 +24,19 @@ function validacao(id) {
             this.mensagem = '';
             this.processando = true;
             try {
-                const resp = await fetch(`/api/v1/orientador/validacoes/${id}/aprovar`, {
+                const resposta = await fetch(`/api/v1/orientador/validacoes/${id}/aprovar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ dataInicio: this.$refs.dataInicio.value || null })
                 });
-                if (resp.ok) {
+                if (resposta.ok) {
                     window.location.reload();
                 } else {
-                    const dados = await resp.json();
+                    const dados = await resposta.json();
                     this.mensagem = dados.mensagem || 'Erro ao aprovar.';
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.mensagem = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.processando = false;
@@ -54,19 +54,19 @@ function validacao(id) {
             }
             this.processando = true;
             try {
-                const resp = await fetch(`/api/v1/orientador/validacoes/${id}/rejeitar`, {
+                const resposta = await fetch(`/api/v1/orientador/validacoes/${id}/rejeitar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ justificativa: this.justificativa })
                 });
-                if (resp.ok) {
+                if (resposta.ok) {
                     window.location.reload();
                 } else {
-                    const dados = await resp.json();
+                    const dados = await resposta.json();
                     this.mensagem = dados.mensagem || 'Erro ao rejeitar.';
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.mensagem = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.processando = false;

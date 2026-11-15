@@ -1,4 +1,4 @@
-// Script da página coordenador/dashboard.html: carrega os números do dashboard do coordenador (RF50)
+// Script da página coordenador/dashboard.html: carrega os números do dashboard do coordenador (Seção 6.11 da monografia)
 
 /*
    Painel vazio, usado antes da primeira resposta da API e quando dá erro.
@@ -45,13 +45,13 @@ function painelPagina() {
             const url = this.cursoId
                 ? '/api/v1/coordenador/painel?cursoId=' + encodeURIComponent(this.cursoId)
                 : '/api/v1/coordenador/painel';
-            const r = await requisicaoJson(url);
+            const resposta = await requisicaoJson(url);
             this.carregando = false;
-            if (r.ok) {
-                this.painel = r.dados;
+            if (resposta.ok) {
+                this.painel = resposta.dados;
             } else {
                 this.painel = painelVazio();
-                this.erro = (r.dados && r.dados.mensagem) || 'Erro ao carregar o painel.';
+                this.erro = (resposta.dados && resposta.dados.mensagem) || 'Erro ao carregar o painel.';
             }
         }
     };

@@ -34,15 +34,15 @@ public final class ValidadorArquivoEntrega {
             throw new DadoInvalidoException("O arquivo deve ter no máximo 10 MB.");
         }
 
-        TipoArquivo tipo = tipoPelaExtensao(nomeOriginal);
-        if (tipo == null) {
+        TipoArquivo tipoArquivo = tipoPelaExtensao(nomeOriginal);
+        if (tipoArquivo == null) {
             throw new DadoInvalidoException("Formato não aceito. Envie um arquivo " + FORMATOS_ACEITOS + ".");
         }
-        if (!comecaCom(conteudo, assinatura(tipo))) {
+        if (!comecaCom(conteudo, assinatura(tipoArquivo))) {
             throw new DadoInvalidoException("O conteúdo do arquivo não corresponde a um "
-                    + tipo.name() + ". Confira o arquivo e envie de novo.");
+                    + tipoArquivo.name() + ". Confira o arquivo e envie de novo.");
         }
-        return tipo;
+        return tipoArquivo;
     }
 
     /*
@@ -50,23 +50,23 @@ public final class ValidadorArquivoEntrega {
        caracteres de controle e com no máximo 200 caracteres
     */
     public static String limparNome(String nomeOriginal) {
-        String nome = nomeOriginal == null ? "" : nomeOriginal;
-        nome = nome.substring(Math.max(nome.lastIndexOf('/'), nome.lastIndexOf('\\')) + 1);
-        nome = nome.replaceAll("[\\p{Cntrl}\"]", "").trim();
-        if (nome.isEmpty()) {
-            nome = "arquivo";
+        String nomeDoArquivo = nomeOriginal == null ? "" : nomeOriginal;
+        nomeDoArquivo = nomeDoArquivo.substring(Math.max(nomeDoArquivo.lastIndexOf('/'), nomeDoArquivo.lastIndexOf('\\')) + 1);
+        nomeDoArquivo = nomeDoArquivo.replaceAll("[\\p{Cntrl}\"]", "").trim();
+        if (nomeDoArquivo.isEmpty()) {
+            nomeDoArquivo = "arquivo";
         }
-        if (nome.length() > 200) {
-            int ponto = nome.lastIndexOf('.');
-            String extensao = ponto > 0 ? nome.substring(ponto) : "";
-            nome = nome.substring(0, 200 - extensao.length()) + extensao;
+        if (nomeDoArquivo.length() > 200) {
+            int ponto = nomeDoArquivo.lastIndexOf('.');
+            String extensao = ponto > 0 ? nomeDoArquivo.substring(ponto) : "";
+            nomeDoArquivo = nomeDoArquivo.substring(0, 200 - extensao.length()) + extensao;
         }
-        return nome;
+        return nomeDoArquivo;
     }
 
     // Content-Type usado no armazenamento e no download
-    public static String tipoConteudo(TipoArquivo tipo) {
-        return switch (tipo) {
+    public static String tipoConteudo(TipoArquivo tipoArquivo) {
+        return switch (tipoArquivo) {
             case PDF -> "application/pdf";
             case DOCX -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
             case XLSX -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -76,25 +76,25 @@ public final class ValidadorArquivoEntrega {
         };
     }
 
-    private static TipoArquivo tipoPelaExtensao(String nome) {
-        if (nome == null) {
+    private static TipoArquivo tipoPelaExtensao(String nomeDoArquivo) {
+        if (nomeDoArquivo == null) {
             return null;
         }
-        int ponto = nome.lastIndexOf('.');
-        if (ponto < 0 || ponto == nome.length() - 1) {
+        int ponto = nomeDoArquivo.lastIndexOf('.');
+        if (ponto < 0 || ponto == nomeDoArquivo.length() - 1) {
             return null;
         }
-        String extensao = nome.substring(ponto + 1).toUpperCase(Locale.ROOT);
-        for (TipoArquivo tipo : TipoArquivo.values()) {
-            if (tipo.name().equals(extensao)) {
-                return tipo;
+        String extensao = nomeDoArquivo.substring(ponto + 1).toUpperCase(Locale.ROOT);
+        for (TipoArquivo tipoArquivo : TipoArquivo.values()) {
+            if (tipoArquivo.name().equals(extensao)) {
+                return tipoArquivo;
             }
         }
         return null;
     }
 
-    private static byte[] assinatura(TipoArquivo tipo) {
-        return switch (tipo) {
+    private static byte[] assinatura(TipoArquivo tipoArquivo) {
+        return switch (tipoArquivo) {
             case PDF -> ASSINATURA_PDF;
             case DOCX, XLSX, PPTX -> ASSINATURA_ZIP;
             case JPG, JPEG -> ASSINATURA_JPG;
@@ -106,8 +106,8 @@ public final class ValidadorArquivoEntrega {
         if (conteudo.length < assinatura.length) {
             return false;
         }
-        for (int i = 0; i < assinatura.length; i++) {
-            if (conteudo[i] != assinatura[i]) {
+        for (int posicao = 0; posicao < assinatura.length; posicao++) {
+            if (conteudo[posicao] != assinatura[posicao]) {
                 return false;
             }
         }

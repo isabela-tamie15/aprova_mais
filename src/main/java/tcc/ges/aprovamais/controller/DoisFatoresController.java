@@ -28,7 +28,7 @@ public class DoisFatoresController {
         return ResponseEntity.ok(doisFatoresService.consultarStatus(authentication.getName()));
     }
 
-    // Esse é o endpoint que gera um novo segredo e devolve o QR Code pra configurar o 2fa
+    // Esse é o endpoint que gera um novo segredo e devolve o QR Code para configurar o 2fa
     @PostMapping("/configurar")
     public ResponseEntity<ConfiguracaoDoisFatoresResponse> configurar(Authentication authentication) {
         return ResponseEntity.ok(doisFatoresService.configurar(authentication.getName()));
@@ -43,7 +43,7 @@ public class DoisFatoresController {
 
         /*
            E-mail do token e IP da requisição. O código vem no corpo,
-           é o que o app autenticador gerou pra confirmar que o usuário
+           é o que o app autenticador gerou para confirmar que o usuário
            conseguiu configurar direito
         */
         doisFatoresService.ativarPelaConta(
@@ -51,7 +51,7 @@ public class DoisFatoresController {
         return ResponseEntity.ok().build();
     }
 
-    // Esse é o endpoint que desativa o 2fa, exige o código atual pra confirmar
+    // Esse é o endpoint que desativa o 2fa, exige o código atual para confirmar
     @PostMapping("/desativar")
     public ResponseEntity<Void> desativar(
             @Valid @RequestBody CodigoDoisFatoresRequest requisicao,
@@ -59,7 +59,7 @@ public class DoisFatoresController {
             HttpServletRequest request) {
 
         /*
-           Mesma ideia do ativar, o código é exigido aqui também pra evitar
+           Mesma ideia do ativar, o código é exigido aqui também para evitar
            que alguém desative o 2fa só tendo acesso à sessão
         */
         doisFatoresService.desativar(

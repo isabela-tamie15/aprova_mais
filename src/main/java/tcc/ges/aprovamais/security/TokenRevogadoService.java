@@ -32,7 +32,7 @@ public class TokenRevogadoService {
         }
         try {
             revogados.put(HashToken.sha256(token), jwtService.extrairExpiracao(token));
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException excecao) {
             // Token inválido ou já vencido não precisa entrar na lista
         }
         limparVencidos();

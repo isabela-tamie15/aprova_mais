@@ -20,7 +20,11 @@ public class AnonimizacaoController {
 
     private final AnonimizacaoService anonimizacaoService;
 
-    // Esse é o endpoint que o usuário usa pra pedir a exclusão dos próprios dados
+    /*
+       DELETE /api/v1/lgpd/meus-dados: o método DELETE já diz a ação (excluir) e a URL diz o quê
+       (os meus dados). Como a Lei 11.788/2008 obriga a guardar os registros do estágio,
+       excluir aqui significa anonimizar: o AnonimizacaoService troca nome, e-mail e RGM por valores neutros
+    */
     @DeleteMapping("/meus-dados")
     public ResponseEntity<Void> solicitarExclusao(
             Authentication authentication,
@@ -44,8 +48,8 @@ public class AnonimizacaoController {
             HttpServletRequest request) {
 
         /*
-           Aqui a gente não devolve os dados ainda, só registra a solicitação
-           na auditoria pra ficar rastreável. Quem entrega os dados em si é
+           Aqui nós não devolvemos os dados ainda, só registra a solicitação
+           na auditoria para ficar rastreável. Quem entrega os dados em si é
            outro fluxo, mais controlado
         */
         anonimizacaoService.registrarSolicitacao(authentication.getName(),
@@ -61,7 +65,7 @@ public class AnonimizacaoController {
             Authentication authentication,
             HttpServletRequest request) {
 
-        // Mesma ideia do acesso, só registra a solicitação pra auditoria
+        // Mesma ideia do acesso, só registra a solicitação para a auditoria
         anonimizacaoService.registrarSolicitacao(authentication.getName(),
                 "SOLICITACAO_CORRECAO_DADOS",
                 "Titular solicitou correção dos seus dados pessoais",

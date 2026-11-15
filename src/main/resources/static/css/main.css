@@ -178,7 +178,7 @@ body.pagina-login {
     height: 16px;
 }
 
-/* Escopado pelo painel-direito pra não sobrescrever o Bootstrap nas outras páginas */
+/* Escopado pelo painel-direito para não sobrescrever o Bootstrap nas outras páginas */
 .painel-direito .form-control {
     padding-left: 2.4rem;
     height: 48px;
@@ -233,7 +233,7 @@ body.pagina-login {
     letter-spacing: -0.01em;
 }
 
-/* Escurece o botão no hover, mas só quando ele tá clicável */
+/* Escurece o botão no hover, mas só quando ele está clicável */
 .btn-entrar:hover:not(:disabled) {
     background: #2440B0;
     color: white;

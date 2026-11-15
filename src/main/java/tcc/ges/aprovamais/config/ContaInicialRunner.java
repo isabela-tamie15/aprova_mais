@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import tcc.ges.aprovamais.service.ContaInicialService;
 
 
-// Esse component roda uma vez quando a aplicação sobe, pra criar o administrador e a secretaria se ainda não existirem
+// Esse component roda uma vez quando a aplicação sobe, para criar o administrador e a secretaria se ainda não existirem
 @Component
 @RequiredArgsConstructor
 public class ContaInicialRunner implements ApplicationRunner {
@@ -52,18 +52,18 @@ public class ContaInicialRunner implements ApplicationRunner {
         try {
             contaInicialService.criarAdministradorInicialSeNecessario(emailAdministrador, senhaAdministrador,
                     nomeOuPadrao(nomeAdministrador, NOME_PADRAO_ADMINISTRADOR));
-        } catch (DataAccessException e) {
+        } catch (DataAccessException excecao) {
             log.error("[CONTA INICIAL] Não foi possível criar o administrador inicial. Num banco criado antes "
-                    + "do perfil ADMINISTRADOR, a restrição usuarios_perfil_check precisa ser atualizada. Erro: {}",
-                    e.getMostSpecificCause().getMessage());
+                            + "do perfil ADMINISTRADOR, a restrição usuarios_perfil_check precisa ser atualizada. Erro: {}",
+                    excecao.getMostSpecificCause().getMessage());
         }
 
         try {
             contaInicialService.criarSecretariaInicialSeNecessario(emailSecretaria, senhaSecretaria,
                     nomeOuPadrao(nomeSecretaria, NOME_PADRAO_SECRETARIA));
-        } catch (DataAccessException e) {
+        } catch (DataAccessException excecao) {
             log.error("[CONTA INICIAL] Não foi possível criar a secretaria inicial. Erro: {}",
-                    e.getMostSpecificCause().getMessage());
+                    excecao.getMostSpecificCause().getMessage());
         }
     }
 

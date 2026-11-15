@@ -16,7 +16,7 @@ import tcc.ges.aprovamais.service.EstagioService;
 import java.time.LocalDate;
 import java.util.List;
 
-// Esse controller é quem recebe as requisições do orientador pra validar os estágios dos alunos
+// Esse controller é quem recebe as requisições do orientador para validar os estágios dos alunos
 @Tag(name = "Validação do estágio", description = "Aprovação e rejeição dos estágios pelo orientador da turma.")
 @RestController
 @RequestMapping("/api/v1/orientador/validacoes")
@@ -36,13 +36,13 @@ public class OrientadorValidacaoController {
         return ResponseEntity.ok(estagioService.listarPendentes(authentication.getName()));
     }
 
-    // Esse é o endpoint que o orientador usa pra aprovar um estágio pendente
+    // Esse é o endpoint que o orientador usa para aprovar um estágio pendente
     @PostMapping("/{id}/aprovar")
     public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication, @Valid @RequestBody(required = false) AprovacaoRequest request, HttpServletRequest httpRequest) {
 
         /*
            O id do estágio vem pela URL e o e-mail vem do token. Os dois
-           juntos vão pro service, que confirma se aquele estágio realmente
+           juntos vão para o service, que confirma se aquele estágio realmente
            pertence a esse orientador antes de aprovar. O corpo é opcional
            e só traz a data de início conferida no termo de compromisso
         */
@@ -58,7 +58,7 @@ public class OrientadorValidacaoController {
         return ResponseEntity.ok(estagioService.listarHistoricoDoOrientador(id, authentication.getName()));
     }
 
-    // Esse é o endpoint que o orientador usa pra rejeitar um estágio, exige justificativa
+    // Esse é o endpoint que o orientador usa para rejeitar um estágio, exige justificativa
     @PostMapping("/{id}/rejeitar")
     public ResponseEntity<EstagioResponse> rejeitar(
             @PathVariable Long id,
@@ -68,7 +68,7 @@ public class OrientadorValidacaoController {
 
         /*
            Mesma ideia do aprovar, mas aqui vem uma justificativa obrigatória
-           no corpo. Ela fica registrada pro aluno entender por que o
+           no corpo. Ela fica registrada para o aluno entender por que o
            estágio foi recusado
         */
         String email = authentication.getName();

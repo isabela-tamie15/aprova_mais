@@ -16,8 +16,8 @@ import java.util.Optional;
 public class AsyncConfig {
 
     /*
-       O JPA Auditing por padrão usa LocalDateTime pra preencher os campos de
-       criação e atualização, mas a gente usa OffsetDateTime no projeto. Esse
+       O JPA Auditing por padrão usa LocalDateTime para preencher os campos de
+       criação e atualização, mas nós usamos OffsetDateTime no projeto. Esse
        bean substitui o provider padrão por um que devolve o formato certo,
        sem isso o Spring nem sobe a aplicação
     */

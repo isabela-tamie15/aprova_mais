@@ -14,7 +14,7 @@ import tcc.ges.aprovamais.service.ConviteService;
 
 import java.util.List;
 
-// Esse controller é quem recebe as requisições de convite, usado pela secretaria pra liberar acesso
+// Esse controller é quem recebe as requisições de convite, usado pela secretaria para liberar acesso
 @Tag(name = "Convites", description = "Envio de convites pela hierarquia de perfis (RF03)")
 @RestController
 @RequestMapping("/api/v1/convites")

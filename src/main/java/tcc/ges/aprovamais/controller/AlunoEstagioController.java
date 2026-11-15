@@ -50,7 +50,7 @@ public class AlunoEstagioController {
 
         /*
            Se achou, devolve com 200. Se não achou, devolve 204 No Content,
-           que é a forma padrão de dizer que não tem nada pra retornar
+           que é a forma padrão de dizer que não tem nada para retornar
         */
         if (estagioEncontrado.isPresent()) {
             EstagioResponse resposta = estagioEncontrado.get();
@@ -60,7 +60,7 @@ public class AlunoEstagioController {
         }
     }
 
-    // Esse é o endpoint que o aluno usa pra cadastrar um novo estágio ou atualizar o que já existe
+    // Esse é o endpoint que o aluno usa para cadastrar um novo estágio ou atualizar o que já existe
     @PostMapping
     public ResponseEntity<EstagioResponse> cadastrarOuAtualizar(
             Authentication authentication,
@@ -68,8 +68,8 @@ public class AlunoEstagioController {
             HttpServletRequest httpRequest) {
 
         /*
-           Mesma ideia do buscar, e-mail vem do token. O IP também vai pro
-           service pra ficar registrado na auditoria
+           Mesma ideia do buscar, e-mail vem do token. O IP também vai para o
+           service para ficar registrado na auditoria
         */
         String email = authentication.getName();
         EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(
@@ -77,7 +77,7 @@ public class AlunoEstagioController {
         return ResponseEntity.ok(resposta);
     }
 
-    // Esse endpoint que devolve as aprovações e rejeições do estágio do aluno logado, da mais antiga pra mais recente
+    // Esse endpoint que devolve as aprovações e rejeições do estágio do aluno logado, da mais antiga para mais recente
     @GetMapping("/historico")
     public ResponseEntity<List<ValidacaoEstagioResponse>> historico(Authentication authentication) {
         return ResponseEntity.ok(estagioService.listarHistoricoDoAluno(authentication.getName()));
@@ -90,7 +90,7 @@ public class AlunoEstagioController {
     }
 
 
-    //Esse é o endpoint que a tela de cadastro chama quando o aluno termina de digitar o CNPJ, pra já preencher o nome da empresa com a razão social.
+    //Esse é o endpoint que a tela de cadastro chama quando o aluno termina de digitar o CNPJ, para já preencher o nome da empresa com a razão social.
     @GetMapping("/cnpj/{cnpj}")
     public ResponseEntity<ConsultaCnpjResponse> consultarCnpj(@PathVariable String cnpj) {
         if (!ValidadorCnpj.valido(cnpj)) {

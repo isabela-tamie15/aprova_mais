@@ -44,7 +44,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         /*
            Monta o UserDetails. O ROLE_ no começo é convenção do Spring, ele
-           espera esse prefixo quando a gente usa hasRole em algum lugar. Já o
+           espera esse prefixo quando nós usamos hasRole em algum lugar. Já o
            disabled e o accountLocked vêm do banco, os outros dois ficam false
            porque não usamos expiração de conta nem de senha
         */

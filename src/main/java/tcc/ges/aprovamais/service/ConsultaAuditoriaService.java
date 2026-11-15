@@ -12,6 +12,7 @@ import tcc.ges.aprovamais.dto.FiltroAuditoriaRequest;
 import tcc.ges.aprovamais.dto.PaginaAuditoriaResponse;
 import tcc.ges.aprovamais.dto.RegistroAuditoriaResponse;
 import tcc.ges.aprovamais.entity.LogAuditoria;
+import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.repository.LogAuditoriaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
@@ -21,6 +22,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /*
    Essa service é quem faz a consulta da auditoria pelo Adm
@@ -50,11 +52,20 @@ public class ConsultaAuditoriaService {
 
         Page<LogAuditoria> pagina = logAuditoriaRepository.findAll(montarFiltro(filtro), paginacao);
 
-        usuarioRepository.findByEmail(emailAdministrador).ifPresent(administrador ->
-                auditoriaService.registrar(administrador, ACAO_CONSULTA, descreverFiltros(filtro), ip, true));
+        // A própria consulta também fica registrada na auditoria, com os filtros usados
+        Optional<Usuario> administrador = usuarioRepository.findByEmail(emailAdministrador);
+        if (administrador.isPresent()) {
+            auditoriaService.registrar(administrador.get(), ACAO_CONSULTA, descreverFiltros(filtro), ip, true);
+        }
+
+        // Transforma cada registro do banco na linha que vai para a tela da auditoria
+        List<RegistroAuditoriaResponse> registros = new ArrayList<>();
+        for (LogAuditoria registro : pagina.getContent()) {
+            registros.add(RegistroAuditoriaResponse.de(registro));
+        }
 
         return new PaginaAuditoriaResponse(
-                pagina.getContent().stream().map(RegistroAuditoriaResponse::de).toList(),
+                registros,
                 pagina.getNumber(),
                 pagina.getSize(),
                 pagina.getTotalElements(),
@@ -70,7 +81,7 @@ public class ConsultaAuditoriaService {
 
     // Monta o where só com os filtros preenchidos
     private Specification<LogAuditoria> montarFiltro(FiltroAuditoriaRequest filtro) {
-        return (raiz, consulta, cb) -> {
+        return (registroDaAuditoria, consulta, construtorDeCondicoes) -> {
             List<Predicate> condicoes = new ArrayList<>();
 
 
@@ -78,32 +89,32 @@ public class ConsultaAuditoriaService {
             if (temTexto(filtro.getEmail())) {
                 String email = filtro.getEmail().trim().toLowerCase(Locale.ROOT);
                 if (email.contains("@")) {
-                    condicoes.add(cb.equal(cb.lower(raiz.get("emailTentativa")), email));
+                    condicoes.add(construtorDeCondicoes.equal(construtorDeCondicoes.lower(registroDaAuditoria.get("emailTentativa")), email));
                 } else {
-                    condicoes.add(cb.like(cb.lower(raiz.get("emailTentativa")), "%" + email + "%"));
+                    condicoes.add(construtorDeCondicoes.like(construtorDeCondicoes.lower(registroDaAuditoria.get("emailTentativa")), "%" + email + "%"));
                 }
             }
             if (temTexto(filtro.getAcao())) {
-                condicoes.add(cb.equal(raiz.get("acao"), filtro.getAcao().trim()));
+                condicoes.add(construtorDeCondicoes.equal(registroDaAuditoria.get("acao"), filtro.getAcao().trim()));
             }
             if (filtro.getSucesso() != null) {
-                condicoes.add(cb.equal(raiz.get("sucesso"), filtro.getSucesso()));
+                condicoes.add(construtorDeCondicoes.equal(registroDaAuditoria.get("sucesso"), filtro.getSucesso()));
             }
             if (filtro.getInicio() != null) {
-                condicoes.add(cb.greaterThanOrEqualTo(raiz.get("criadoEm"), inicioDoDia(filtro.getInicio())));
+                condicoes.add(construtorDeCondicoes.greaterThanOrEqualTo(registroDaAuditoria.get("criadoEm"), inicioDoDia(filtro.getInicio())));
             }
             if (filtro.getFim() != null) {
 
 
                 // Menor que o começo do dia seguinte para incluir o dia final inteiro
-                condicoes.add(cb.lessThan(raiz.get("criadoEm"), inicioDoDia(filtro.getFim().plusDays(1))));
+                condicoes.add(construtorDeCondicoes.lessThan(registroDaAuditoria.get("criadoEm"), inicioDoDia(filtro.getFim().plusDays(1))));
             }
-            return cb.and(condicoes.toArray(new Predicate[0]));
+            return construtorDeCondicoes.and(condicoes.toArray(new Predicate[0]));
         };
     }
 
-    private OffsetDateTime inicioDoDia(LocalDate data) {
-        return data.atStartOfDay(ZONA).toOffsetDateTime();
+    private OffsetDateTime inicioDoDia(LocalDate dia) {
+        return dia.atStartOfDay(ZONA).toOffsetDateTime();
     }
 
     // Texto que vai para os detalhes do registro da consulta
@@ -119,7 +130,7 @@ public class ConsultaAuditoriaService {
                 : "Consulta da auditoria com filtros: " + String.join(", ", partes);
     }
 
-    private boolean temTexto(String valor) {
-        return valor != null && !valor.isBlank();
+    private boolean temTexto(String texto) {
+        return texto != null && !texto.isBlank();
     }
 }

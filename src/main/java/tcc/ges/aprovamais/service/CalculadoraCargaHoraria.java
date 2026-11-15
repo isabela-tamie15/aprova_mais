@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /*
-   Contas da carga horária do estágio, separadas do service pra dar pra testar sem banco. O aluno não lança horas, a carga sai do período,
+   Contas da carga horária do estágio, separadas do service para dar para testar sem banco. O aluno não lança horas, a carga sai do período,
    pelas semanas completas desde o início vezes a jornada semanal
 */
 public final class CalculadoraCargaHoraria {
@@ -15,7 +15,7 @@ public final class CalculadoraCargaHoraria {
     }
 
     /*
-       RN54 = semanas necessárias = carga total / jornada, arredondando pra
+       RN54 = semanas necessárias = carga total / jornada, arredondando para
        cima, porque uma semana pela metade ainda precisa ser cumprida
     */
     public static LocalDate calcularDataPrevista(LocalDate dataInicio, BigDecimal cargaTotal,
@@ -29,8 +29,8 @@ public final class CalculadoraCargaHoraria {
 
 
     /*
-       RF22: semanas completas desde o início, que é o número usado no extrato
-       ("3 semanas × 30 h = 90 h de 270 h"). Antes do início, ou sem a data, é zero
+       RF22: semanas completas desde o início, que é o número usado no cálculo da carga horária
+       ("3 semanas × 30h = 90h de 270h"). Antes do início, ou sem a data, é zero
     */
     public static long calcularSemanasContadas(LocalDate dataInicio, LocalDate hoje) {
         if (dataInicio == null || hoje == null || hoje.isBefore(dataInicio)) {
@@ -53,8 +53,8 @@ public final class CalculadoraCargaHoraria {
     /*
        F2: avisos de prazo. A partir de 30 dias antes da data de encerramento das
        entregas do semestre, o aviso aparece em amarelo, e a partir de 10 dias ele
-       passa para vermelho. No próprio dia e depois da data, o aviso continua
-       vermelho, mas com outro texto, por isso cada situação tem o seu nome
+       passa para vermelho. No próprio dia, fica vermelho com o texto "PRAZO VENCE HOJE",
+       e depois da data fica roxo com "PRAZO VENCEU" (RN59). Por isso cada situação tem o seu nome
     */
     public static final int DIAS_AVISO_AMARELO = 30;
     public static final int DIAS_AVISO_VERMELHO = 10;
@@ -91,7 +91,7 @@ public final class CalculadoraCargaHoraria {
        - de 30 a 11 dias: amarelo;
        - de 10 a 1 dia: vermelho;
        - no próprio dia: vermelho, avisando que é o último dia;
-       - depois da data: vermelho, avisando que as entregas foram encerradas
+       - depois da data: roxo, avisando que o prazo venceu
     */
     public static String definirAvisoPrazo(Long diasRestantes) {
         if (diasRestantes == null || diasRestantes > DIAS_AVISO_AMARELO) {

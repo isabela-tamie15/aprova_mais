@@ -46,10 +46,16 @@ function formatarTamanhoArquivo(bytes) {
 }
 
 // Lê a mensagem de erro da API; erro 500 vira uma mensagem genérica
-async function mensagemErroApi(resp, padrao) {
-    if (resp.status >= 500) {
+async function mensagemErroApi(resposta, padrao) {
+    if (resposta.status >= 500) {
         return { mensagem: 'Erro interno no servidor. Tente novamente.', campos: {} };
     }
-    const dados = await resp.json().catch(() => ({}));
+    // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+    let dados = {};
+    try {
+        dados = await resposta.json();
+    } catch (erroDeLeitura) {
+        dados = {};
+    }
     return { mensagem: dados.mensagem || padrao, campos: dados.campos || {} };
 }

@@ -17,7 +17,7 @@ class CalculadoraCargaHorariaTest {
     private static final LocalDate INICIO = LocalDate.of(2026, 3, 2);
 
     @Test
-    @DisplayName("Estagiário com 270 h e 30 h semanais termina em 9 semanas")
+    @DisplayName("Estagiário com 270h e 30h semanais termina em 9 semanas")
     void deveCalcularDataPrevistaDoEstagiario() {
 
         assertEquals(LocalDate.of(2026, 5, 4), CalculadoraCargaHoraria.calcularDataPrevista(INICIO, CARGA_TOTAL, JORNADA_ESTAGIARIO));
@@ -26,7 +26,7 @@ class CalculadoraCargaHorariaTest {
     }
 
     @Test
-    @DisplayName("Semana incompleta arredonda pra cima: CLT com 270 h precisa de 7 semanas")
+    @DisplayName("Semana incompleta arredonda para cima: CLT com 270h precisa de 7 semanas")
     void deveArredondarSemanasParaCima() {
 
         assertEquals(INICIO.plusWeeks(7), CalculadoraCargaHoraria.calcularDataPrevista(INICIO, CARGA_TOTAL, JORNADA_CLT));
@@ -78,7 +78,7 @@ class CalculadoraCargaHorariaTest {
     @DisplayName("Horas restantes são a carga total menos a cumprida, sem ficar negativas")
     void deveCalcularCargaRestante() {
 
-        // 270 h no total e 90 h cumpridas: faltam 180 h
+        // 270h no total e 90h cumpridas: faltam 180h
         assertEquals(new BigDecimal("180"), CalculadoraCargaHoraria.calcularCargaRestante(CARGA_TOTAL, new BigDecimal("90")));
 
         // Carga completa: não falta nada, e o resultado nunca fica negativo
@@ -145,7 +145,7 @@ class CalculadoraCargaHorariaTest {
 
     }
 
-    // RF22: semanas contadas, usadas no extrato da carga
+    // RF22: semanas contadas, usadas no cálculo da carga horária
 
     @Test
     @DisplayName("Três semanas completas desde o início contam 3 semanas, e a semana incompleta não conta")
@@ -167,8 +167,8 @@ class CalculadoraCargaHorariaTest {
     }
 
     @Test
-    @DisplayName("Extrato do CA01: 3 semanas de Estagiário dão 90 h de carga cumprida")
-    void deveFecharAContaDoExtrato() {
+    @DisplayName("Cálculo da carga horária do CA01: 3 semanas de Estagiário dão 90h de carga cumprida")
+    void deveFecharAContaDoCalculoDaCarga() {
 
         LocalDate hoje = LocalDate.of(2026, 3, 23);
         long semanas = CalculadoraCargaHoraria.calcularSemanasContadas(INICIO, hoje);

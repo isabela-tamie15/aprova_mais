@@ -20,13 +20,13 @@ function convitesAdmin() {
         async carregar() {
             this.carregando = true;
             try {
-                const resp = await fetch('/api/v1/convites', { credentials: 'include' });
-                if (resp.ok) {
-                    this.convites = await resp.json();
+                const resposta = await fetch('/api/v1/convites', { credentials: 'include' });
+                if (resposta.ok) {
+                    this.convites = await resposta.json();
                 } else {
                     this.erro = 'Não foi possível carregar os convites enviados.';
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
@@ -58,7 +58,7 @@ function convitesAdmin() {
             }
             this.enviando = true;
             try {
-                const resp = await fetch('/api/v1/convites', {
+                const resposta = await fetch('/api/v1/convites', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -68,9 +68,15 @@ function convitesAdmin() {
                         perfil: 'COORDENADOR'
                     })
                 });
-                if (!resp.ok) {
-                    const dados = await resp.json().catch(() => ({}));
-                    if (resp.status >= 500) {
+                if (!resposta.ok) {
+                    // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                    let dados = {};
+                    try {
+                        dados = await resposta.json();
+                    } catch (erroDeLeitura) {
+                        dados = {};
+                    }
+                    if (resposta.status >= 500) {
                         this.erro = 'Erro interno no servidor. Tente novamente.';
                     } else {
                         if (dados.campos) {
@@ -83,7 +89,7 @@ function convitesAdmin() {
                 this.sucesso = 'Convite enviado. O link vale por 24 horas.';
                 this.form = { nome: '', emailDestino: '' };
                 await this.carregar();
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.enviando = false;

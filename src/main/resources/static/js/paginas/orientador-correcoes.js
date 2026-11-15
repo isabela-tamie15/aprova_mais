@@ -25,13 +25,13 @@ function painelCorrecao() {
                 }
             }
             try {
-                const resp = await fetch('/api/v1/orientador/entregas?' + parametros, { credentials: 'include' });
-                if (resp.ok) {
-                    this.painel = await resp.json();
+                const resposta = await fetch('/api/v1/orientador/entregas?' + parametros, { credentials: 'include' });
+                if (resposta.ok) {
+                    this.painel = await resposta.json();
                 } else {
-                    this.erro = (await mensagemErroApi(resp, 'Não foi possível carregar o painel.')).mensagem;
+                    this.erro = (await mensagemErroApi(resposta, 'Não foi possível carregar o painel.')).mensagem;
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
