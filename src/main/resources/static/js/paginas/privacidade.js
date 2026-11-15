@@ -5,6 +5,11 @@ function direitosDoTitular() {
         // Direito escolhido no select: 'acesso', 'correcao' ou 'exclusao'
         direito: '',
 
+        // Confirmação da anonimização: a senha sempre, e o código para quem usa a verificação em duas etapas
+        senha: '',
+        codigo: '',
+        erro: '',
+
         // Acesso e correção: registramos o pedido na auditoria e abrimos o e-mail para a secretaria
         async enviarSolicitacao() {
             let endereco = '/api/v1/lgpd/solicitar-correcao';
@@ -30,14 +35,28 @@ function direitosDoTitular() {
                 return;
             }
 
+            this.erro = '';
             try {
-                const resposta = await fetch('/api/v1/lgpd/meus-dados', { method: 'DELETE', credentials: 'include' });
+                const resposta = await fetch('/api/v1/lgpd/meus-dados', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senha: this.senha, codigo: this.codigo })
+                });
                 if (!resposta.ok) {
-                    alert('Erro ao processar. Tente novamente.');
+                    // Senha ou código errado, conta bloqueada e casos não permitidos trazem a mensagem do servidor
+                    let dados = {};
+                    try {
+                        dados = await resposta.json();
+                    } catch (erroDeLeitura) {
+                        dados = {};
+                    }
+                    this.codigo = '';
+                    this.erro = dados.mensagem || 'Erro ao processar. Tente novamente.';
                     return;
                 }
             } catch (erro) {
-                alert('Erro ao processar. Tente novamente.');
+                this.erro = 'Não foi possível conectar ao servidor.';
                 return;
             }
 

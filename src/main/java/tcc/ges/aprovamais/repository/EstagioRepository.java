@@ -45,4 +45,10 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
 
     // Estágios das matrículas de uma turma em certos status, usado para passar os estágios em aberto ao novo orientador (RF13)
     List<Estagio> findByMatriculaTurmaIdAndStatusIn(Long turmaId, Collection<StatusEstagio> statuses);
+
+    // Estágios de um aluno nesses status, usado na anonimização
+    List<Estagio> findByMatriculaAlunoIdAndStatusIn(Long alunoId, Collection<StatusEstagio> statuses);
+
+    // Estágios de um orientador nesses status, usado na anonimização
+    List<Estagio> findByOrientadorIdAndStatusIn(Long orientadorId, Collection<StatusEstagio> statuses);
 }

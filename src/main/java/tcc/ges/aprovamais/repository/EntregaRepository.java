@@ -33,14 +33,15 @@ public interface EntregaRepository extends JpaRepository<Entrega, Long> {
     // Uma tarefa com entregas não pode ser removida da trilha, senão o histórico do aluno perde a referência
     boolean existsByTarefaId(Long tarefaId);
 
-    // Quantas entregas dos alunos do orientador estão em certos status, para o total "aguardando análise" do painel
-    long countByEstagioOrientadorEmailAndStatusIn(String emailOrientador, Collection<StatusEntrega> status);
+    // Quantas entregas dos alunos ativos do orientador estão nesses status, para o total aguardando análise
+    long countByEstagioOrientadorEmailAndEstagioMatriculaAlunoAtivoTrueAndStatusIn(String emailOrientador,
+                                                                                  Collection<StatusEntrega> status);
 
     // Alunos que têm entrega com o orientador nesses status, cada um uma vez, para o filtro "Aluno" do painel
     @Query("""
             SELECT DISTINCT new tcc.ges.aprovamais.dto.OpcaoFiltroResponse(a.id, a.nome)
             FROM Entrega e JOIN e.estagio es JOIN es.matricula m JOIN m.aluno a
-            WHERE es.orientador.email = :emailOrientador AND e.status IN :status
+            WHERE es.orientador.email = :emailOrientador AND e.status IN :status AND a.ativo = true
             """)
     List<OpcaoFiltroResponse> listarAlunosDoPainel(@Param("emailOrientador") String emailOrientador,
                                                     @Param("status") Collection<StatusEntrega> status);
@@ -49,7 +50,7 @@ public interface EntregaRepository extends JpaRepository<Entrega, Long> {
     @Query("""
             SELECT DISTINCT new tcc.ges.aprovamais.dto.OpcaoFiltroResponse(t.id, t.nome)
             FROM Entrega e JOIN e.estagio es JOIN e.tarefa t
-            WHERE es.orientador.email = :emailOrientador AND e.status IN :status
+            WHERE es.orientador.email = :emailOrientador AND e.status IN :status AND es.matricula.aluno.ativo = true
             """)
     List<OpcaoFiltroResponse> listarTarefasDoPainel(@Param("emailOrientador") String emailOrientador,
                                                      @Param("status") Collection<StatusEntrega> status);

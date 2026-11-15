@@ -15,4 +15,7 @@ public interface OrientadorTurmaRepository extends JpaRepository<OrientadorTurma
 
     // Vínculos de todas as turmas de um curso, para a lista de turmas mostrar o orientador de cada uma numa consulta só
     List<OrientadorTurma> findByTurmaCursoId(Long cursoId);
+
+    // Turmas de um orientador
+    List<OrientadorTurma> findByOrientadorId(Long orientadorId);
 }

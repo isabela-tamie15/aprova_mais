@@ -28,4 +28,7 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
     boolean existsByCodigoMec(String codigoMec);
 
     boolean existsByCodigoMecAndIdNot(String codigoMec, Long id);
+
+    // Coordenador com curso não pode se anonimizar
+    boolean existsByCoordenadorId(Long coordenadorId);
 }

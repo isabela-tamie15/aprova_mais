@@ -51,4 +51,9 @@ public interface ConviteRepository extends JpaRepository<Convite, Long> {
             + "WHERE c.email = :email AND c.status = tcc.ges.aprovamais.entity.enums.StatusConvite.PENDENTE "
             + "AND c.expiracaoToken < :agora")
     int expirarVencidosDoEmail(@Param("email") String email, @Param("agora") OffsetDateTime agora);
+
+    // Troca o e-mail nos convites da pessoa anonimizada
+    @Modifying
+    @Query("UPDATE Convite c SET c.email = :emailNovo WHERE c.email = :emailAntigo")
+    int trocarEmail(@Param("emailAntigo") String emailAntigo, @Param("emailNovo") String emailNovo);
 }

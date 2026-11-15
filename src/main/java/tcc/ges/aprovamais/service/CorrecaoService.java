@@ -107,7 +107,8 @@ public class CorrecaoService {
         List<OpcaoFiltroResponse> alunos = emOrdemAlfabetica(entregaRepository.listarAlunosDoPainel(emailOrientador, status));
         List<OpcaoFiltroResponse> tarefas = emOrdemAlfabetica(entregaRepository.listarTarefasDoPainel(emailOrientador, status));
 
-        long totalAguardando = entregaRepository.countByEstagioOrientadorEmailAndStatusIn(emailOrientador, AGUARDANDO_ANALISE);
+        long totalAguardando = entregaRepository.countByEstagioOrientadorEmailAndEstagioMatriculaAlunoAtivoTrueAndStatusIn(
+                emailOrientador, AGUARDANDO_ANALISE);
 
         return PainelCorrecaoResponse.builder()
                 .totalAguardando(totalAguardando)

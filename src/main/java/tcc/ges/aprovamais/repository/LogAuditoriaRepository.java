@@ -2,7 +2,9 @@ package tcc.ges.aprovamais.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.LogAuditoria;
 import tcc.ges.aprovamais.entity.enums.PerfilAuditoria;
@@ -35,4 +37,15 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
     // Lista as ações que já aparecem na auditoria, usado no filtro da tela do administrador
     @Query("select distinct l.acao from LogAuditoria l order by l.acao")
     List<String> listarAcoesRegistradas();
+
+    // Troca o e-mail nos registros de auditoria, usado na anonimização
+    @Modifying
+    @Query("UPDATE LogAuditoria l SET l.emailTentativa = :emailNovo WHERE l.emailTentativa = :emailAntigo")
+    int trocarEmail(@Param("emailAntigo") String emailAntigo, @Param("emailNovo") String emailNovo);
+
+    // Troca um texto (e-mail ou nome) nos detalhes dos registros, usado na anonimização
+    @Modifying
+    @Query(value = "UPDATE registros_auditoria SET detalhes = REPLACE(detalhes, :textoAntigo, :textoNovo) "
+            + "WHERE detalhes LIKE CONCAT('%', :textoAntigo, '%')", nativeQuery = true)
+    int trocarTextoNosDetalhes(@Param("textoAntigo") String textoAntigo, @Param("textoNovo") String textoNovo);
 }

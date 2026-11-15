@@ -36,12 +36,8 @@ public interface EntregaVersaoRepository extends JpaRepository<EntregaVersao, Lo
     Page<EntregaVersao> findByAvaliadorEmailAndResultadoIn(String emailAvaliador, Collection<StatusEntrega> resultados, Pageable pageable);
 
     /*
-       Painel de correção (RF35): a última versão de cada entrega dos alunos do orientador, já
-       filtrada e paginada no banco. Antes nós carregávamos todas as entregas e buscávamos a última
-       versão de uma em uma, para filtrar e paginar na memória (AUD-10). Filtro nulo deixa passar
-       tudo. O período compara o envio com o início do dia "de" e o início do dia seguinte ao "ate",
-       os dois já no fuso de São Paulo. A ordem é a do painel: o envio mais antigo primeiro e, no
-       empate, a entrega de menor id
+       Painel de correção (RF35): a última versão de cada entrega dos alunos ativos do orientador,
+       filtrada e paginada no banco. Filtro nulo deixa passar tudo, e o período já vem no fuso de São Paulo
     */
     @Query(value = """
             SELECT v FROM EntregaVersao v
@@ -52,6 +48,7 @@ public interface EntregaVersaoRepository extends JpaRepository<EntregaVersao, Lo
             JOIN FETCH m.aluno a
             WHERE es.orientador.email = :emailOrientador
               AND e.status IN :status
+              AND a.ativo = true
               AND v.numero = (SELECT MAX(v2.numero) FROM EntregaVersao v2 WHERE v2.entrega = e)
               AND (:alunoId IS NULL OR a.id = :alunoId)
               AND (:tarefaId IS NULL OR t.id = :tarefaId)
@@ -65,6 +62,7 @@ public interface EntregaVersaoRepository extends JpaRepository<EntregaVersao, Lo
             JOIN e.estagio es
             WHERE es.orientador.email = :emailOrientador
               AND e.status IN :status
+              AND es.matricula.aluno.ativo = true
               AND v.numero = (SELECT MAX(v2.numero) FROM EntregaVersao v2 WHERE v2.entrega = e)
               AND (:alunoId IS NULL OR es.matricula.aluno.id = :alunoId)
               AND (:tarefaId IS NULL OR e.tarefa.id = :tarefaId)

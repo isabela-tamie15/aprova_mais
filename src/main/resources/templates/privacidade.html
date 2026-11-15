@@ -156,7 +156,17 @@
             <div class="alert alert-warning mt-2">
                 <strong>Importante:</strong> pela Lei 11.788/2008, os registros acadêmicos do estágio não podem ser deletados. Por isso, aplicamos a <strong>anonimização</strong>: seus dados pessoais identificáveis (nome, e-mail e identificador institucional) são substituídos por valores neutros. Você deixa de ser identificável, mas os registros do estágio permanecem intactos para fins legais.
             </div>
-            <button class="btn btn-danger mt-2" @click="anonimizarMeusDados()">
+            <p class="mt-2">Ao anonimizar, você perde o acesso a esta conta e o vínculo com o seu estágio. Se voltar a usar o sistema, um novo cadastro começa do zero, a partir de um novo convite.</p>
+            <div class="mb-2">
+                <label class="form-label" for="senhaAnonimizacao">Sua senha</label>
+                <input class="form-control" id="senhaAnonimizacao" type="password" maxlength="72" autocomplete="current-password" x-model="senha">
+            </div>
+            <div class="mb-2">
+                <label class="form-label" for="codigoAnonimizacao">Código de verificação (só se você usa a verificação em duas etapas)</label>
+                <input class="form-control" id="codigoAnonimizacao" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" x-model="codigo">
+            </div>
+            <p class="text-danger" x-show="erro" x-text="erro"></p>
+            <button class="btn btn-danger mt-2" @click="anonimizarMeusDados()" :disabled="!senha">
                 Solicitar anonimização dos meus dados
             </button>
         </div>

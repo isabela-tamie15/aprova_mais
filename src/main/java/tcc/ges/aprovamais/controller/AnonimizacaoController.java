@@ -2,13 +2,16 @@ package tcc.ges.aprovamais.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tcc.ges.aprovamais.dto.AnonimizacaoRequest;
 import tcc.ges.aprovamais.service.AnonimizacaoService;
 
 // Esse controller é quem recebe as solicitações de LGPD do usuário logado
@@ -27,6 +30,7 @@ public class AnonimizacaoController {
     */
     @DeleteMapping("/meus-dados")
     public ResponseEntity<Void> solicitarExclusao(
+            @Valid @RequestBody AnonimizacaoRequest requisicao,
             Authentication authentication,
             HttpServletRequest request) {
 
@@ -36,6 +40,8 @@ public class AnonimizacaoController {
         */
         anonimizacaoService.anonimizar(
                 authentication.getName(),
+                requisicao.getSenha(),
+                requisicao.getCodigo(),
                 request.getRemoteAddr()
         );
         return ResponseEntity.ok().build();
