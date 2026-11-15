@@ -3,8 +3,8 @@ package tcc.ges.aprovamais.service;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.entity.LogAuditoria;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.PerfilAuditoria;
@@ -20,36 +20,26 @@ public class AuditoriaService {
 
     private final LogAuditoriaRepository logAuditoriaRepository;
 
-    /*
-       Registra um evento de auditoria vinculado a um usuário. O @Async faz
-       esse método rodar em outra thread, então quem chamou não fica esperando
-       ele terminar. Se a auditoria falhar, o fluxo principal não quebra,
-       por isso o try/catch engole a exceção e só loga o erro
-    */
-    @Async
+    // Registra um evento de auditoria na mesma transação da operação: os dois são gravados ou desfeitos juntos
+    @Transactional
     public void registrar(Usuario usuario,
                           String acao,
                           String detalhes,
                           String ipOrigem,
                           boolean sucesso) {
-        try {
-            LogAuditoria registro = new LogAuditoria();
-            registro.setUsuario(usuario);
-            registro.setEmailTentativa(usuario.getEmail());
-            registro.setPerfil(converterPerfil(usuario.getPerfil()));
-            registro.setAcao(acao);
-            registro.setDetalhes(detalhes);
-            registro.setIpOrigem(ipOrigem);
-            registro.setSucesso(sucesso);
+        LogAuditoria registro = new LogAuditoria();
+        registro.setUsuario(usuario);
+        registro.setEmailTentativa(usuario.getEmail());
+        registro.setPerfil(converterPerfil(usuario.getPerfil()));
+        registro.setAcao(acao);
+        registro.setDetalhes(detalhes);
+        registro.setIpOrigem(ipOrigem);
+        registro.setSucesso(sucesso);
 
-            logAuditoriaRepository.save(registro);
+        logAuditoriaRepository.save(registro);
 
-            log.info("[AUDITORIA] {} | {} | {} | sucesso={}",
-                    usuario.getEmail(), acao, detalhes, sucesso);
-
-        } catch (Exception excecao) {
-            log.error("[AUDITORIA] Erro ao registrar auditoria: {}", excecao.getMessage(), excecao);
-        }
+        log.info("[AUDITORIA] {} | {} | {} | sucesso={}",
+                usuario.getEmail(), acao, detalhes, sucesso);
     }
 
     /*
@@ -57,26 +47,21 @@ public class AuditoriaService {
        com e-mail que nem existe no banco. O sucesso fica fixo em false
        porque, por definição, esses são eventos de falha
     */
-    @Async
+    @Transactional
     public void registrarTentativa(String emailTentativa,
                                    String acao,
                                    String detalhes,
                                    String ipOrigem) {
-        try {
-            LogAuditoria registro = new LogAuditoria();
-            registro.setEmailTentativa(emailTentativa);
-            registro.setAcao(acao);
-            registro.setDetalhes(detalhes);
-            registro.setIpOrigem(ipOrigem);
-            registro.setSucesso(false);
+        LogAuditoria registro = new LogAuditoria();
+        registro.setEmailTentativa(emailTentativa);
+        registro.setAcao(acao);
+        registro.setDetalhes(detalhes);
+        registro.setIpOrigem(ipOrigem);
+        registro.setSucesso(false);
 
-            logAuditoriaRepository.save(registro);
+        logAuditoriaRepository.save(registro);
 
-            log.warn("[AUDITORIA] {} | {} | {} | sem usuário ativo vinculado", emailTentativa, acao, detalhes);
-
-        } catch (Exception excecao) {
-            log.error("[AUDITORIA] Erro ao registrar auditoria: {}", excecao.getMessage(), excecao);
-        }
+        log.warn("[AUDITORIA] {} | {} | {} | sem usuário ativo vinculado", emailTentativa, acao, detalhes);
     }
 
     /*

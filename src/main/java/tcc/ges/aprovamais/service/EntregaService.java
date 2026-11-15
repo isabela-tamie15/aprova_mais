@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.EntregaDetalheResponse;
 import tcc.ges.aprovamais.dto.EntregaVersaoResponse;
 import tcc.ges.aprovamais.entity.*;
+import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
@@ -134,20 +135,31 @@ public class EntregaService {
         return montarDetalhe(tarefa, entrega);
     }
 
-    // Download de uma versão pelo aluno, só das entregas dele
-    @Transactional(readOnly = true)
-    public ArquivoEntrega baixarDoAluno(String emailAluno, Long versaoId) {
+    // Download de uma versão pelo aluno, só das entregas dele, registrado na auditoria
+    @Transactional
+    public ArquivoEntrega baixarDoAluno(String emailAluno, Long versaoId, String ipOrigem) {
         EntregaVersao versao = entregaVersaoRepository.findByIdAndEntregaEstagioMatriculaAlunoEmail(versaoId, emailAluno)
                 .orElseThrow(() -> new ResourceNotFoundException("Arquivo não encontrado."));
-        return lerArquivo(versao);
+        ArquivoEntrega arquivo = lerArquivo(versao);
+        registrarDownload(versao.getEntrega().getEstagio().getMatricula().getAluno(), versao, ipOrigem);
+        return arquivo;
     }
 
-    // Download de uma versão pelo orientador, só das entregas dos alunos dele
-    @Transactional(readOnly = true)
-    public ArquivoEntrega baixarDoOrientador(String emailOrientador, Long versaoId) {
+    // Download de uma versão pelo orientador, só das entregas dos alunos dele, registrado na auditoria
+    @Transactional
+    public ArquivoEntrega baixarDoOrientador(String emailOrientador, Long versaoId, String ipOrigem) {
         EntregaVersao versao = entregaVersaoRepository.findByIdAndEntregaEstagioOrientadorEmail(versaoId, emailOrientador)
                 .orElseThrow(() -> new ResourceNotFoundException("Arquivo não encontrado."));
-        return lerArquivo(versao);
+        ArquivoEntrega arquivo = lerArquivo(versao);
+        registrarDownload(versao.getEntrega().getEstagio().getOrientador(), versao, ipOrigem);
+        return arquivo;
+    }
+
+    // Registra quem baixou, qual versão e de onde
+    private void registrarDownload(Usuario quemBaixou, EntregaVersao versao, String ipOrigem) {
+        auditoriaService.registrar(quemBaixou, "ARQUIVO_BAIXADO",
+                "Versão " + versao.getNumero() + " (id=" + versao.getId() + ") da entrega id="
+                        + versao.getEntrega().getId(), ipOrigem, true);
     }
 
     // Status da entrega de cada tarefa do estágio, para a trilha do aluno

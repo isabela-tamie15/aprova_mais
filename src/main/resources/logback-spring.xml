@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Configuração padrão do Spring Boot, com o %m trocado pelo MascaraEmailConverter -->
+<configuration>
+    <conversionRule conversionWord="m" class="tcc.ges.aprovamais.config.MascaraEmailConverter"/>
+    <conversionRule conversionWord="msg" class="tcc.ges.aprovamais.config.MascaraEmailConverter"/>
+    <conversionRule conversionWord="message" class="tcc.ges.aprovamais.config.MascaraEmailConverter"/>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+</configuration>

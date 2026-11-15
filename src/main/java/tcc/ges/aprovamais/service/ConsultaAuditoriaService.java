@@ -45,7 +45,8 @@ public class ConsultaAuditoriaService {
        Lista os registros que batem com os filtros, do mais recente para o
        mais antigo, e registra a própria consulta na auditoria
     */
-    @Transactional(readOnly = true)
+    // Não é só leitura: grava o registro de auditoria na mesma transação
+    @Transactional
     public PaginaAuditoriaResponse consultar(FiltroAuditoriaRequest filtro, String emailAdministrador, String ip) {
         PageRequest paginacao = PageRequest.of(filtro.getPagina(), filtro.getTamanho(),
                 Sort.by(Sort.Order.desc("criadoEm"), Sort.Order.desc("id")));

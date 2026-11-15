@@ -49,7 +49,9 @@ public class AlunoEntregaController {
 
     @Operation(summary = "Baixar o arquivo de uma versão da entrega")
     @GetMapping("/entregas/versoes/{versaoId}/arquivo")
-    public ResponseEntity<byte[]> baixar(@PathVariable Long versaoId, Authentication authentication) {
-        return ArquivoDownload.resposta(entregaService.baixarDoAluno(authentication.getName(), versaoId));
+    public ResponseEntity<byte[]> baixar(@PathVariable Long versaoId, Authentication authentication,
+                                         HttpServletRequest httpRequest) {
+        return ArquivoDownload.resposta(entregaService.baixarDoAluno(
+                authentication.getName(), versaoId, httpRequest.getRemoteAddr()));
     }
 }

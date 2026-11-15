@@ -180,7 +180,7 @@ public class AuthService {
     }
 
     // Esse é o método que registra na auditoria quando alguém faz logout
-    @Transactional(readOnly = true)
+    @Transactional
     public void registrarLogout(String email, String ip) {
 
         /*

@@ -74,7 +74,9 @@ public class OrientadorEntregaController {
 
     @Operation(summary = "Baixar o arquivo de uma versão da entrega")
     @GetMapping("/versoes/{versaoId}/arquivo")
-    public ResponseEntity<byte[]> baixar(@PathVariable Long versaoId, Authentication authentication) {
-        return ArquivoDownload.resposta(entregaService.baixarDoOrientador(authentication.getName(), versaoId));
+    public ResponseEntity<byte[]> baixar(@PathVariable Long versaoId, Authentication authentication,
+                                         HttpServletRequest httpRequest) {
+        return ArquivoDownload.resposta(entregaService.baixarDoOrientador(
+                authentication.getName(), versaoId, httpRequest.getRemoteAddr()));
     }
 }
