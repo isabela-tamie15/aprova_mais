@@ -30,9 +30,10 @@ public class AuthController {
     private final AuthService authService;
     private final TokenRevogadoService tokenRevogadoService;
 
-    // Diz se a aplicação está rodando com SSL, usado para decidir se o cookie vai com Secure ou não
-    @Value("${server.ssl.enabled:false}")
-    private boolean sslEnabled;
+
+    // Diz se o cookie vai com o atributo Secure (só trafega em HTTPS).
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSeguro;
 
     // Esse é o endpoint que recebe o login e decide se o usuário já pode entrar ou se falta a segunda etapa
     @PostMapping("/login")
@@ -129,8 +130,8 @@ public class AuthController {
     // Esse é o auxiliar que monta e adiciona o cookie do JWT na resposta
     private void adicionarCookieJwt(HttpServletResponse respostaHttp, String valorDoCookie, int segundosDeValidade) {
 
-        // Em produção com SSL, adiciona o Secure para o cookie só trafegar em HTTPS
-        String secure = sslEnabled ? "; Secure" : "";
+        // Em produção, adiciona o Secure para o cookie só trafegar em HTTPS
+        String secure = cookieSeguro ? "; Secure" : "";
 
         /*
            Monta na mão em vez de usar a classe Cookie do Java porque ela não
