@@ -50,37 +50,37 @@ public class ConsultaCnpjService {
         return factory;
     }
 
-    // Recebe o CNPJ já validado pelos dígitos. Só manda pra API o que passou nessa conta
+    // Recebe o CNPJ já validado pelos dígitos. Só manda para a API o que passou nessa conta
     public ConsultaCnpjResponse consultar(String cnpj) {
-        String valor = ValidadorCnpj.normalizar(cnpj);
-        if (!ValidadorCnpj.valido(valor)) {
+        String cnpjSemPontuacao = ValidadorCnpj.normalizar(cnpj);
+        if (!ValidadorCnpj.valido(cnpjSemPontuacao)) {
             return ConsultaCnpjResponse.naoEncontrado();
         }
 
         try {
             RespostaBrasilApi resposta = restClient.get()
-                    .uri("/{cnpj}", valor)
+                    .uri("/{cnpj}", cnpjSemPontuacao)
                     .retrieve()
                     .body(RespostaBrasilApi.class);
 
             if (resposta == null) {
-                log.warn("[CNPJ] BrasilAPI respondeu sem corpo para o CNPJ {}", mascarar(valor));
+                log.warn("[CNPJ] BrasilAPI respondeu sem corpo para o CNPJ {}", mascarar(cnpjSemPontuacao));
                 return ConsultaCnpjResponse.indisponivel();
             }
             return ConsultaCnpjResponse.encontrado(
                     resposta.razaoSocial(), resposta.nomeFantasia(), resposta.situacao());
 
-        } catch (HttpClientErrorException.NotFound e) {
-            log.info("[CNPJ] CNPJ {} não encontrado na Receita", mascarar(valor));
+        } catch (HttpClientErrorException.NotFound excecao) {
+            log.info("[CNPJ] CNPJ {} não encontrado na Receita", mascarar(cnpjSemPontuacao));
             return ConsultaCnpjResponse.naoEncontrado();
-        } catch (RestClientException e) {
+        } catch (RestClientException excecao) {
             // Tempo esgotado, API fora do ar, limite de requisições ou resposta inesperada
-            log.warn("[CNPJ] BrasilAPI indisponível ({}), segue sem verificação", e.getClass().getSimpleName());
+            log.warn("[CNPJ] BrasilAPI indisponível ({}), segue sem verificação", excecao.getClass().getSimpleName());
             return ConsultaCnpjResponse.indisponivel();
         }
     }
 
-    // Nos logs aparece só o começo do CNPJ, o suficiente pra investigar sem expor o número inteiro
+    // Nos logs aparece só o começo do CNPJ, o suficiente para investigar sem expor o número inteiro
     private static String mascarar(String cnpj) {
         return cnpj.substring(0, 8) + "******";
     }

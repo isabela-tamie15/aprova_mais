@@ -9,6 +9,6 @@ import java.util.List;
 @Repository
 public interface ValidacaoEstagioRepository extends JpaRepository<ValidacaoEstagio, Long> {
 
-    // Historico de decisões de um estágio, da mais antiga pra mais recente (o serve de id desempate)
+    // Historico de decisões de um estágio, da mais antiga para mais recente (o serve de id desempate)
     List<ValidacaoEstagio> findByEstagioIdOrderByDataDecisaoAscIdAsc(Long estagioId);
 }

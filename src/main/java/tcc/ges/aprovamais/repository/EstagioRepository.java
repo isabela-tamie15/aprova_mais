@@ -19,10 +19,10 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
     Optional<Estagio> findFirstByMatriculaIdAndStatusInOrderByIdDesc(Long matriculaId,
                                                                      Collection<StatusEstagio> statuses);
 
-    // Histórico completo de estágios da matrícula, do mais antigo pro mais recente
+    // Histórico completo de estágios da matrícula, do mais antigo para o mais recente
     List<Estagio> findByMatriculaIdOrderByIdAsc(Long matriculaId);
 
-    // Busca estágio por matrícula e status, útil pra pegar o ativo de um aluno
+    // Busca estágio por matrícula e status, útil para pegar o ativo de um aluno
     Optional<Estagio> findByMatriculaIdAndStatus(Long matriculaId, StatusEstagio status);
 
     // Lista estágios de um orientador filtrando por vários status, usado na tela de validações

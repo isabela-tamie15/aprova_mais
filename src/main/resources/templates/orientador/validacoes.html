@@ -30,18 +30,22 @@
                 <span th:if="${estagio.status == 'REJEITADO'}" class="badge bg-danger">Rejeitado</span>
             </div>
 
-            <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
-            <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
-            <p><strong>CNPJ:</strong>
+            <!-- Mesmos nomes e mesma ordem da F2 (estágio ativo, mais abaixo nesta página) -->
+            <p><strong>Tipo de estágio:</strong>
+                <span th:text="${estagio.nomeTipoEstagio + (estagio.jornadaSemanal != null
+                        ? ' (' + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
+            </p>
+            <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+            <p><strong>CNPJ da empresa:</strong>
                 <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
-                <!-- RN67: situação na Receita. Sem situação, a consulta não foi possível e o orientador confere no termo -->
+                <!-- Situação do CNPJ na Receita (Seção 6.9.2). Sem situação, a consulta não foi possível e o orientador confere no termo -->
                 <span th:if="${estagio.situacaoCnpj == 'ATIVA'}" class="badge bg-success ms-1">Ativa na Receita</span>
                 <span th:if="${estagio.situacaoCnpj != null and estagio.situacaoCnpj != 'ATIVA'}"
                       class="badge bg-danger ms-1" th:text="${'Situação na Receita: ' + estagio.situacaoCnpj}"></span>
                 <span th:if="${estagio.cnpjEmpresa != null and estagio.situacaoCnpj == null}"
                       class="badge bg-warning text-dark ms-1">Não verificado, conferir no termo</span>
             </p>
-            <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+            <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
 
             <!-- Decisões anteriores sobre esse estágio, inclusive as rejeições de envios passados -->
             <th:block th:with="historico=${historicos.get(estagio.id)}">
@@ -154,13 +158,13 @@
                         <p th:if="${ativo.semanasContadas != null and ativo.jornadaSemanal != null}"><strong>Cálculo da carga horária:</strong>
                             <span th:if="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
                                   th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
-                                          + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h = '
-                                          + #numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0) + ' h de '
-                                          + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h'}"></span>
+                                          + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + 'h = '
+                                          + #numbers.formatDecimal(ativo.cargaHorariaCumprida, 1, 0) + 'h de '
+                                          + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
                             <span th:unless="${ativo.cargaHorariaCumprida < ativo.cargaHorariaNecessaria}"
                                   th:text="${ativo.semanasContadas + (ativo.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
-                                          + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + ' h = carga total de '
-                                          + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + ' h atingida'}"></span>
+                                          + #numbers.formatDecimal(ativo.jornadaSemanal, 1, 0) + 'h = carga total de '
+                                          + #numbers.formatDecimal(ativo.cargaHorariaNecessaria, 1, 0) + 'h atingida'}"></span>
                         </p>
                     </div>
 
@@ -183,11 +187,11 @@
                        negativos do Java, por isso só tiramos o sinal para exibir
                     -->
                     <div th:if="${ativo.avisoPrazo == 'AMARELO'}" class="alert alert-warning mb-0" role="alert">
-                        <strong class="d-block">PRAZO SE ESGOTANDO</strong>
+                        <strong class="d-block">FINALIZAÇÃO DO PRAZO</strong>
                         <span th:text="${'Faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
                     </div>
                     <div th:if="${ativo.avisoPrazo == 'VERMELHO'}" class="alert alert-danger mb-0" role="alert">
-                        <strong class="d-block">PRAZO SE ESGOTANDO</strong>
+                        <strong class="d-block">FINALIZAÇÃO DO PRAZO</strong>
                         <span th:text="${ativo.diasParaEncerramentoEntregas == 1
                                 ? 'Falta 1 dia para a data de encerramento das entregas'
                                 : 'Faltam ' + ativo.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>

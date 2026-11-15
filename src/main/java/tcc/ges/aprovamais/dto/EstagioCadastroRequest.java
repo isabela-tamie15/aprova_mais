@@ -49,7 +49,7 @@ public class EstagioCadastroRequest {
         return cnpjEmpresa == null || cnpjEmpresa.isBlank() || ValidadorCnpj.valido(cnpjEmpresa);
     }
 
-    public static boolean dataInicioDentroDoLimite(LocalDate data) {
-        return data == null || !data.isAfter(LocalDate.now().plusYears(MAXIMO_ANOS_NO_FUTURO));
+    public static boolean dataInicioDentroDoLimite(LocalDate dataInicio) {
+        return dataInicio == null || !dataInicio.isAfter(LocalDate.now().plusYears(MAXIMO_ANOS_NO_FUTURO));
     }
 }

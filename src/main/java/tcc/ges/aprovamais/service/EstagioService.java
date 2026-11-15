@@ -21,11 +21,11 @@ import tcc.ges.aprovamais.repository.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 // Esse service é quem cuida de tudo relacionado ao estágio, desde o cadastro até a aprovação pelo orientador
 @Service
@@ -53,14 +53,14 @@ public class EstagioService {
     private final TarefaRepository tarefaRepository;
     private final EntregaRepository entregaRepository;
 
-    // Esse é o método que busca o estágio ativo de um aluno, usado quando a gente precisa garantir que existe
+    // Esse é o método que busca o estágio ativo de um aluno, usado quando nós precisamos garantir que existe
     @Transactional(readOnly = true)
     public EstagioResponse buscarEstagioAtivo(String emailAluno) {
 
         /*
            Primeiro acha a matrícula ativa do aluno, depois o estágio ativo
            vinculado a essa matrícula. Se faltar qualquer um dos dois, já
-           para aqui com 404, porque não dá pra continuar sem os dois
+           para aqui com 404, porque não dá para continuar sem os dois
         */
         Matricula matricula = matriculaRepository
                 .findFirstByAlunoEmailAndStatus(emailAluno, StatusMatricula.ATIVA)
@@ -91,16 +91,20 @@ public class EstagioService {
     public List<TipoEstagioResponse> listarTiposEstagioDisponiveis(String emailAluno) {
         Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
 
-        return tipoEstagioRepository.findByCursoIdOrderByNomeAsc(idDoCurso(matricula))
-                .stream()
-                .map(tipo -> TipoEstagioResponse.builder()
-                        .id(tipo.getId())
-                        .nome(tipo.getNome())
-                        .descricao(tipo.getDescricao())
-                        .cargaHorariaNecessaria(tipo.getCargaHorariaNecessaria())
-                        .jornadaSemanal(tipo.getJornadaSemanal())
-                        .build())
-                .collect(Collectors.toList());
+        List<TipoEstagio> tiposDoCurso = tipoEstagioRepository.findByCursoIdOrderByNomeAsc(idDoCurso(matricula));
+
+        // Transforma cada tipo de estágio do banco na resposta que vai para a tela de cadastro
+        List<TipoEstagioResponse> respostas = new ArrayList<>();
+        for (TipoEstagio tipoEstagio : tiposDoCurso) {
+            respostas.add(TipoEstagioResponse.builder()
+                    .id(tipoEstagio.getId())
+                    .nome(tipoEstagio.getNome())
+                    .descricao(tipoEstagio.getDescricao())
+                    .cargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria())
+                    .jornadaSemanal(tipoEstagio.getJornadaSemanal())
+                    .build());
+        }
+        return respostas;
     }
 
     // Esse é o método que busca o estágio do aluno, mas devolve Optional porque o aluno pode não ter nenhum ainda
@@ -109,7 +113,12 @@ public class EstagioService {
         Aluno aluno = buscarAlunoPorEmail(emailAluno);
         Matricula matricula = buscarMatriculaAtiva(aluno);
 
-        return buscarEstagioEmAberto(matricula).map(this::paraResponse);
+        // Sem estágio em aberto, devolvemos vazio, e a tela mostra o formulário de cadastro
+        Optional<Estagio> estagioEmAberto = buscarEstagioEmAberto(matricula);
+        if (estagioEmAberto.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(paraResponse(estagioEmAberto.get()));
     }
 
     // Esse é o método que lista todos os estágios da matrícula do aluno, inclusive os concluídos e encerrados
@@ -117,13 +126,17 @@ public class EstagioService {
     public List<EstagioResponse> listarEstagiosDoAluno(String emailAluno) {
         Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
 
-        return estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId())
-                .stream()
-                .map(this::paraResponse)
-                .collect(Collectors.toList());
+        List<Estagio> estagiosDaMatricula = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId());
+
+        // Transforma cada estágio do banco na resposta que vai para a tela
+        List<EstagioResponse> respostas = new ArrayList<>();
+        for (Estagio estagio : estagiosDaMatricula) {
+            respostas.add(paraResponse(estagio));
+        }
+        return respostas;
     }
 
-    // Esse é o método que o aluno usa pra cadastrar um estágio novo ou atualizar um que já existe
+    // Esse é o método que o aluno usa para cadastrar um estágio novo ou atualizar um que já existe
     @Transactional
     public EstagioResponse cadastrarOuAtualizarEstagio(String emailAluno,
                                                        EstagioCadastroRequest request,
@@ -134,7 +147,7 @@ public class EstagioService {
         /*
            Busca o tipo já filtrando pelo curso do aluno. Se o id for de um tipo
            de outro curso, responde igual a um id que não existe, assim não dá
-           pra cadastrar com tipo alheio mandando o id direto na API
+           para cadastrar com tipo alheio mandando o id direto na API
         */
         TipoEstagio tipoEstagio = tipoEstagioRepository
                 .findByIdAndCursoId(request.getTipoEstagioId(), idDoCurso(matricula))
@@ -144,10 +157,10 @@ public class EstagioService {
         Optional<Estagio> estagioExistente = buscarEstagioEmAberto(matricula);
 
         /*
-           Se já existe um estágio em aberto, só dá pra reenviar se ele foi
-           rejeitado e aí a gente reaproveita o registro. Em pendente já
-           tá com o orientador, ativo já foi aprovado e só muda pela solicitação
-           de troca de modalidade e SUSPENSO tá parado por trancamento.
+           Se já existe um estágio em aberto, só dá para reenviar se ele foi
+           rejeitado e aí nós reaproveitamos o registro. Em pendente já
+           está com o orientador, ativo já foi aprovado e só muda pela solicitação
+           de troca de modalidade e SUSPENSO está parado por trancamento.
            Se não tem nenhum em aberto (nunca teve, ou os anteriores foram
            concluídos ou encerrados), cria um novo e os antigos ficam no histórico
         */
@@ -160,20 +173,20 @@ public class EstagioService {
             estagio.setMatricula(matricula);
         }
 
-        // Sem jornada não dá pra calcular a carga nem a data prevista, então nem deixa cadastrar
+        // Sem jornada não dá para calcular a carga nem a data prevista, então nem deixa cadastrar
         if (tipoEstagio.getJornadaSemanal() == null || tipoEstagio.getJornadaSemanal().signum() <= 0) {
             throw new IllegalStateException(
                     "Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação");
         }
 
         /*
-           é a nossa RN67, consulta o CNPJ na Receita pela BrasilAPI. Se a Receita disser que
-           o CNPJ não existe, recusa. Se a consulta não for possível, segue sem a
+           Consulta o CNPJ na BrasilAPI (Seção 6.9.2 da monografia). Se a Receita disser que
+           o CNPJ não existe, recusamos. Se a consulta não for possível, o cadastro segue sem a
            situação, e o orientador confere o CNPJ no termo de compromisso
         */
         String cnpj = ValidadorCnpj.normalizar(request.getCnpjEmpresa());
-        ConsultaCnpjResponse consulta = consultaCnpjService.consultar(cnpj);
-        if (consulta.status() == ConsultaCnpjResponse.Status.NAO_ENCONTRADO) {
+        ConsultaCnpjResponse consultaNaReceita = consultaCnpjService.consultar(cnpj);
+        if (consultaNaReceita.status() == ConsultaCnpjResponse.Status.NAO_ENCONTRADO) {
             throw new IllegalStateException(
                     "CNPJ não encontrado na Receita Federal. Confira o número digitado");
         }
@@ -182,7 +195,7 @@ public class EstagioService {
         estagio.setDataInicio(request.getDataInicio());
         estagio.setNomeEmpresa(request.getNomeEmpresa().trim());
         estagio.setCnpjEmpresa(cnpj);
-        estagio.setSituacaoCnpj(consulta.situacao());
+        estagio.setSituacaoCnpj(consultaNaReceita.situacao());
 
         // RN31: copia a carga total e a jornada do tipo, o aluno não informa horas
         estagio.setCargaHorariaNecessaria(tipoEstagio.getCargaHorariaNecessaria());
@@ -193,7 +206,7 @@ public class EstagioService {
                 estagio.getDataInicio(), estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal()));
         estagio.setStatus(StatusEstagio.PENDENTE);
 
-        // Limpa qualquer justificativa de rejeição anterior, já que o aluno tá reenviando
+        // Limpa qualquer justificativa de rejeição anterior, já que o aluno está reenviando
         estagio.setJustificativaRejeicao(null);
 
         /*
@@ -201,17 +214,18 @@ public class EstagioService {
            tem orientador vinculado, deixa null mesmo, o estágio vai ficar
            pendente até alguém atribuir
         */
-        Orientador orientador = orientadorTurmaRepository
-                .findFirstByTurmaId(matricula.getTurma().getId())
-                .map(OrientadorTurma::getOrientador)
-                .orElse(null);
+        Optional<OrientadorTurma> vinculoDaTurma = orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId());
+        Orientador orientador = null;
+        if (vinculoDaTurma.isPresent()) {
+            orientador = vinculoDaTurma.get().getOrientador();
+        }
         estagio.setOrientador(orientador);
 
         estagioRepository.save(estagio);
 
         /*
            Recarrega o estágio depois de salvar. É meio estranho à primeira
-           vista, mas é porque na hora de montar a response a gente acessa
+           vista, mas é porque na hora de montar a response nós acessamos
            relações que só ficam disponíveis quando o Hibernate carrega de
            novo do banco
         */
@@ -235,14 +249,21 @@ public class EstagioService {
     // Esse é o método que lista os estágios pendentes de um orientador, incluindo os que ele já rejeitou
     @Transactional(readOnly = true)
     public List<EstagioResponse> listarPendentes(String emailOrientador) {
-        return estagioRepository
-                .findByOrientadorEmailAndStatusIn(
-                        emailOrientador,
-                        List.of(StatusEstagio.PENDENTE, StatusEstagio.REJEITADO)
-                )
-                .stream()
-                .map(this::paraResponse)
-                .collect(Collectors.toList());
+        List<Estagio> estagiosParaValidar = estagioRepository.findByOrientadorEmailAndStatusIn(
+                emailOrientador, List.of(StatusEstagio.PENDENTE, StatusEstagio.REJEITADO));
+
+        // Transforma cada estágio do banco na resposta que vai para a tela de validações
+        List<EstagioResponse> respostas = new ArrayList<>();
+        for (Estagio estagio : estagiosParaValidar) {
+            respostas.add(paraResponse(estagio));
+        }
+        return respostas;
+    }
+
+    // Progresso de um estágio que já foi buscado e conferido por quem chama (visão consolidada do aluno, RF37)
+    @Transactional(readOnly = true)
+    public EstagioResponse montarProgresso(Estagio estagio) {
+        return paraResponse(estagio);
     }
 
     /*
@@ -252,15 +273,19 @@ public class EstagioService {
     */
     @Transactional(readOnly = true)
     public List<EstagioResponse> listarAtivosDoOrientador(String emailOrientador) {
-        return estagioRepository
-                .findByOrientadorEmailAndStatusIn(emailOrientador, List.of(StatusEstagio.ATIVO))
-                .stream()
-                .map(this::paraResponse)
-                .collect(Collectors.toList());
+        List<Estagio> estagiosAtivos = estagioRepository.findByOrientadorEmailAndStatusIn(
+                emailOrientador, List.of(StatusEstagio.ATIVO));
+
+        // Transforma cada estágio do banco na resposta que vai para a tela de acompanhamento
+        List<EstagioResponse> respostas = new ArrayList<>();
+        for (Estagio estagio : estagiosAtivos) {
+            respostas.add(paraResponse(estagio));
+        }
+        return respostas;
     }
 
     /*
-       Esse é o método que o orientador usa pra aprovar um estágio pendente.
+       Esse é o método que o orientador usa para aprovar um estágio pendente.
        A dataInicioConfirmada é a data que ele conferiu no termo de compromisso (RF21).
        Se vier diferente da que o aluno informou, ela passa a valer e a data prevista é recalculada, porque a carga é contada a partir dela
     */
@@ -289,7 +314,7 @@ public class EstagioService {
         registrarDecisao(salvo, true, null);
 
         /*
-           Busca o usuário do orientador só pra registrar na auditoria.
+           Busca o usuário do orientador só para registrar na auditoria.
            Se não achar, não faz nada, porque a aprovação em si já foi feita e a auditoria não pode travar o fluxo
         */
         Usuario orientador = usuarioRepository.findByEmail(emailOrientador)
@@ -310,7 +335,7 @@ public class EstagioService {
         return paraResponse(salvo);
     }
 
-    // Esse é o método que o orientador usa pra rejeitar um estágio, exige uma justificativa
+    // Esse é o método que o orientador usa para rejeitar um estágio, exige uma justificativa
     @Transactional
     public EstagioResponse rejeitar(Long estagioId, String emailOrientador,
                                     String justificativa, String ipOrigem) {
@@ -349,13 +374,15 @@ public class EstagioService {
     public List<ValidacaoEstagioResponse> listarHistoricoDoAluno(String emailAluno) {
         Matricula matricula = buscarMatriculaAtiva(buscarAlunoPorEmail(emailAluno));
 
-        // Aluno sem estágio em aberto não tem histórico pra mostrar, devolve lista vazia em vez de erro
-        return buscarEstagioEmAberto(matricula)
-                .map(estagio -> listarHistorico(estagio.getId()))
-                .orElse(List.of());
+        // Aluno sem estágio em aberto não tem histórico para mostrar: devolvemos lista vazia em vez de erro
+        Optional<Estagio> estagioEmAberto = buscarEstagioEmAberto(matricula);
+        if (estagioEmAberto.isEmpty()) {
+            return List.of();
+        }
+        return listarHistorico(estagioEmAberto.get().getId());
     }
 
-    // Esse é o método que devolve o histórico de um estágio pro orientador, só se o estágio for dele
+    // Esse é o método que devolve o histórico de um estágio para o orientador, só se o estágio for dele
     @Transactional(readOnly = true)
     public List<ValidacaoEstagioResponse> listarHistoricoDoOrientador(Long estagioId, String emailOrientador) {
         Estagio estagio = buscarEstagioDoOrientador(estagioId, emailOrientador);
@@ -396,15 +423,19 @@ public class EstagioService {
     }
 
     private List<ValidacaoEstagioResponse> listarHistorico(Long estagioId) {
-        return validacaoEstagioRepository.findByEstagioIdOrderByDataDecisaoAscIdAsc(estagioId)
-                .stream()
-                .map(v -> ValidacaoEstagioResponse.builder()
-                        .aprovado(v.getAprovado())
-                        .justificativa(v.getJustificativa())
-                        .dataDecisao(v.getDataDecisao())
-                        .nomeOrientador(v.getOrientador().getNome())
-                        .build())
-                .collect(Collectors.toList());
+        List<ValidacaoEstagio> decisoes = validacaoEstagioRepository.findByEstagioIdOrderByDataDecisaoAscIdAsc(estagioId);
+
+        // Transforma cada decisão do orientador na resposta que vai para o histórico da tela
+        List<ValidacaoEstagioResponse> respostas = new ArrayList<>();
+        for (ValidacaoEstagio decisao : decisoes) {
+            respostas.add(ValidacaoEstagioResponse.builder()
+                    .aprovado(decisao.getAprovado())
+                    .justificativa(decisao.getJustificativa())
+                    .dataDecisao(decisao.getDataDecisao())
+                    .nomeOrientador(decisao.getOrientador().getNome())
+                    .build());
+        }
+        return respostas;
     }
 
     /*
@@ -433,7 +464,7 @@ public class EstagioService {
         return matricula.getTurma().getCurso().getId();
     }
 
-    // Busca a matrícula ativa do aluno, usada como base pra chegar no estágio
+    // Busca a matrícula ativa do aluno, usada como base para chegar no estágio
     private Matricula buscarMatriculaAtiva(Aluno aluno) {
         return matriculaRepository
                 .findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)
@@ -457,7 +488,7 @@ public class EstagioService {
         };
     }
 
-    // Converte a entidade Estagio pro DTO que vai ser devolvido pro frontend
+    // Converte a entidade Estagio para o DTO que vai ser devolvido para o frontend
     private EstagioResponse paraResponse(Estagio estagio) {
 
         // Estágios antigos podem não ter a data prevista gravada, então calcula na hora
@@ -491,13 +522,20 @@ public class EstagioService {
         Long atividadesAprovadas = null;
         Long atividadesRestantes = null;
         if (estagio.getStatus() == StatusEstagio.ATIVO) {
-            atividadesTotal = trilhaRepository.findByTipoEstagioId(estagio.getTipoEstagio().getId())
-                    .map(trilha -> (long) tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId()).size())
-                    .orElse(0L);
-            atividadesAprovadas = entregaRepository.findByEstagioId(estagio.getId())
-                    .stream()
-                    .filter(entrega -> entrega.getStatus() == StatusEntrega.APROVADA)
-                    .count();
+            // Total de tarefas da trilha do tipo de estágio. Sem trilha, o aluno ainda não tem tarefas
+            atividadesTotal = 0L;
+            Optional<Trilha> trilhaDoTipo = trilhaRepository.findByTipoEstagioId(estagio.getTipoEstagio().getId());
+            if (trilhaDoTipo.isPresent()) {
+                atividadesTotal = (long) tarefaRepository.findByTrilhaIdOrderByOrdem(trilhaDoTipo.get().getId()).size();
+            }
+
+            // Tarefas aprovadas: contamos as entregas do estágio com status APROVADA
+            atividadesAprovadas = 0L;
+            for (Entrega entrega : entregaRepository.findByEstagioId(estagio.getId())) {
+                if (entrega.getStatus() == StatusEntrega.APROVADA) {
+                    atividadesAprovadas++;
+                }
+            }
             atividadesRestantes = PendenciasEstagio.calcularAtividadesRestantes(atividadesTotal, atividadesAprovadas);
 
             if (!PendenciasEstagio.temPendencia(atividadesTotal, atividadesAprovadas)) {
@@ -505,7 +543,7 @@ public class EstagioService {
             }
         }
 
-        // RF22: semanas usadas no extrato da carga, só no estágio ATIVO, que é quando a carga é contada pelo período
+        // RF22: semanas usadas no cálculo da carga horária, só no estágio ATIVO, que é quando a carga é contada pelo período
         Long semanasContadas = estagio.getStatus() == StatusEstagio.ATIVO
                 ? CalculadoraCargaHoraria.calcularSemanasContadas(estagio.getDataInicio(), LocalDate.now())
                 : null;
@@ -513,7 +551,7 @@ public class EstagioService {
         /*
            F2: depois que a carga total é atingida, as semanas param de ser contadas. O limite são as
            semanas necessárias para cumprir a carga com a jornada do tipo, arredondando para cima
-           (270 h com 44 h por semana são 7 semanas). Assim o cálculo da carga não passa de 7 semanas
+           (270h com 44h semanais são 7 semanas). Assim o cálculo da carga não passa de 7 semanas
            mesmo que o estágio continue ATIVO, esperando as atividades serem aprovadas pelo orientador
         */
         if (semanasContadas != null && estagio.getCargaHorariaNecessaria() != null

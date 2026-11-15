@@ -23,9 +23,20 @@
     <div th:if="${estagio != null and estagio.status == 'PENDENTE'}" class="card p-4 mb-4">
         <h5 class="card-title mb-3">Situação Atual</h5>
         <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
-        <p><strong>Tipo:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
-        <p><strong>Empresa:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
-        <p><strong>Início:</strong> <span th:text="${estagio.dataInicio}"></span></p>
+        <!-- Mesmos nomes e mesma ordem da F2 (estágio ativo), para a tela não mudar de nome quando o estágio for aprovado -->
+        <p><strong>Prof. orientador:</strong>
+            <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+            <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
+        </p>
+        <p><strong>Tipo de estágio:</strong>
+            <span th:text="${estagio.nomeTipoEstagio + (estagio.jornadaSemanal != null
+                    ? ' (' + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
+        </p>
+        <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>CNPJ da empresa:</strong>
+            <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
+        </p>
+        <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
     </div>
 
     <div th:if="${estagio == null or estagio.status == 'REJEITADO'}" x-data="estagioForm()" x-init="init()" th:attr="data-nome-empresa=${estagio != null ? estagio.nomeEmpresa : ''},data-data-inicio=${estagio != null ? estagio.dataInicio : ''},data-cnpj-empresa=${estagio != null ? estagio.cnpjEmpresa : ''}, data-tipo-estagio-nome=${estagio != null ? estagio.nomeTipoEstagio : ''}">
@@ -47,13 +58,13 @@
 
             <form @submit.prevent="enviar()" novalidate>
                 <div class="mb-3">
-                    <label class="form-label" for="tipoEstagioId">Tipo de Estágio</label>
+                    <label class="form-label" for="tipoEstagioId">Tipo de estágio</label>
                     <select id="tipoEstagioId" class="form-select" x-model="form.tipoEstagioId" required
                             :class="{ 'is-invalid': erros.tipoEstagioId }">
                         <option value="">Selecione...</option>
-                        <template x-for="tipo in tipos" :key="tipo.id">
-                            <option :value="tipo.id"
-                                    x-text="tipo.nome + ' (' + Number(tipo.cargaHorariaNecessaria) + 'h, ' + Number(tipo.jornadaSemanal) + 'h por semana)'"></option>
+                        <template x-for="tipoEstagio in tipos" :key="tipoEstagio.id">
+                            <option :value="tipoEstagio.id"
+                                    x-text="tipoEstagio.nome + ' (' + Number(tipoEstagio.cargaHorariaNecessaria) + 'h, ' + Number(tipoEstagio.jornadaSemanal) + 'h semanais)'"></option>
                         </template>
                     </select>
                     <div class="invalid-feedback" x-text="erros.tipoEstagioId"></div>

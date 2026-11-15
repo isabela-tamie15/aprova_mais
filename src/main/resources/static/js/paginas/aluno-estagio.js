@@ -19,39 +19,44 @@ function estagioForm() {
         async init() {
             await this.carregarTipos();
 
-            const el = this.$el;
-            const nomeEmpresa = el.dataset.nomeEmpresa;
-            const dataInicio = el.dataset.dataInicio;
-            const tipoEstagioNome = el.dataset.tipoEstagioNome;
-            const cnpjEmpresa = el.dataset.cnpjEmpresa;
+            const elementoDaPagina = this.$el;
+            const nomeEmpresa = elementoDaPagina.dataset.nomeEmpresa;
+            const dataInicio = elementoDaPagina.dataset.dataInicio;
+            const tipoEstagioNome = elementoDaPagina.dataset.tipoEstagioNome;
+            const cnpjEmpresa = elementoDaPagina.dataset.cnpjEmpresa;
             if (cnpjEmpresa) this.form.cnpjEmpresa = cnpjEmpresa;
 
             if (nomeEmpresa) this.form.nomeEmpresa = nomeEmpresa;
             if (dataInicio) this.form.dataInicio = dataInicio;
 
             if (tipoEstagioNome) {
-                const tipo = this.tipos.find(t => t.nome === tipoEstagioNome);
-                if (tipo) this.form.tipoEstagioId = tipo.id;
+                // Procuramos na lista o tipo de estágio com o mesmo nome e marcamos ele no formulário
+                for (const tipoEstagio of this.tipos) {
+                    if (tipoEstagio.nome === tipoEstagioNome) {
+                        this.form.tipoEstagioId = tipoEstagio.id;
+                        break;
+                    }
+                }
             }
         },
 
         async carregarTipos() {
             try {
-                const resp = await fetch('/api/v1/aluno/estagio/tipos', {
+                const resposta = await fetch('/api/v1/aluno/estagio/tipos', {
                     credentials: 'include'
                 });
-                if (resp.ok) {
-                    this.tipos = await resp.json();
+                if (resposta.ok) {
+                    this.tipos = await resposta.json();
                 }
-            } catch (e) {
-                console.error('Erro ao carregar tipos', e);
+            } catch (erro) {
+                console.error('Erro ao carregar tipos', erro);
             }
         },
 
         // Vai colocando pontos, barra e traço enquanto o aluno digita (aceita letras, por causa do CNPJ alfanumérico)
         mascararCnpj(valor) {
-            const v = valor.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 14);
-            return v.replace(/^(.{2})(.{0,3})/, '$1.$2')
+            const cnpjSemPontuacao = valor.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 14);
+            return cnpjSemPontuacao.replace(/^(.{2})(.{0,3})/, '$1.$2')
                     .replace(/^(.{2})\.(.{3})(.{0,3})/, '$1.$2.$3')
                     .replace(/^(.{2})\.(.{3})\.(.{3})(.{0,4})/, '$1.$2.$3/$4')
                     .replace(/^(.{2})\.(.{3})\.(.{3})\/(.{4})(.{0,2})/, '$1.$2.$3/$4-$5')
@@ -60,19 +65,40 @@ function estagioForm() {
 
         // Mesma conta do ValidadorCnpj do backend: cada caractere vale o código ASCII menos 48
         cnpjValido(valor) {
-            const v = valor.toUpperCase().replace(/[.\-\/\s]/g, '');
-            if (!/^[0-9A-Z]{12}[0-9]{2}$/.test(v) || /^(.)\1+$/.test(v)) {
+            // Tira pontos, barra, traço e espaços e deixa as letras maiúsculas
+            const cnpjSemPontuacao = valor.toUpperCase().replace(/[.\-\/\s]/g, '');
+
+            // Formato: 12 letras ou números e 2 dígitos no final
+            const formatoValido = /^[0-9A-Z]{12}[0-9]{2}$/.test(cnpjSemPontuacao);
+            // Todos os caracteres iguais (ex.: 00000000000000) passam na conta dos dígitos, então recusamos antes
+            const todosIguais = /^(.)\1+$/.test(cnpjSemPontuacao);
+            if (!formatoValido || todosIguais) {
                 return false;
             }
-            const digito = (pesos) => {
+
+            /*
+               Calcula um dígito verificador (mesma conta do ValidadorCnpj do backend):
+               soma cada caractere vezes o seu peso e usa o resto da divisão por 11.
+               Cada caractere vale o código ASCII menos 48: '0' vale 0, '9' vale 9 e 'A' vale 17
+            */
+            function calcularDigito(pesos) {
                 let soma = 0;
-                pesos.forEach((peso, i) => { soma += (v.charCodeAt(i) - 48) * peso; });
+                for (let posicao = 0; posicao < pesos.length; posicao++) {
+                    const valorDoCaractere = cnpjSemPontuacao.charCodeAt(posicao) - 48;
+                    soma = soma + valorDoCaractere * pesos[posicao];
+                }
                 const resto = soma % 11;
-                return resto < 2 ? 0 : 11 - resto;
-            };
-            const primeiro = digito([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-            const segundo = digito([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
-            return Number(v[12]) === primeiro && Number(v[13]) === segundo;
+                if (resto < 2) {
+                    return 0;
+                }
+                return 11 - resto;
+            }
+
+            const primeiroDigitoEsperado = calcularDigito([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+            const segundoDigitoEsperado = calcularDigito([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+            const primeiroDigitoInformado = Number(cnpjSemPontuacao[12]);
+            const segundoDigitoInformado = Number(cnpjSemPontuacao[13]);
+            return primeiroDigitoInformado === primeiroDigitoEsperado && segundoDigitoInformado === segundoDigitoEsperado;
         },
 
         /*
@@ -94,8 +120,14 @@ function estagioForm() {
             this.consultandoCnpj = true;
             try {
                 const cnpj = this.form.cnpjEmpresa.replace(/[^0-9A-Za-z]/g, '');
-                const resp = await fetch('/api/v1/aluno/estagio/cnpj/' + cnpj, { credentials: 'include' });
-                const dados = await resp.json().catch(() => ({}));
+                const resposta = await fetch('/api/v1/aluno/estagio/cnpj/' + cnpj, { credentials: 'include' });
+                // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
 
                 if (dados.status === 'ENCONTRADO') {
                     if (!this.form.nomeEmpresa.trim() && dados.razaoSocial) {
@@ -109,7 +141,7 @@ function estagioForm() {
                     this.avisoCnpjOk = false;
                     this.avisoCnpj = 'Não foi possível consultar a Receita agora. Você pode continuar, o orientador vai conferir o CNPJ.';
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.avisoCnpjOk = false;
                 this.avisoCnpj = 'Não foi possível consultar a Receita agora. Você pode continuar, o orientador vai conferir o CNPJ.';
             } finally {
@@ -117,17 +149,17 @@ function estagioForm() {
             }
         },
 
-        // Mesmo limite do backend: a data de início pode ir no máximo 1 ano pra frente
+        // Mesmo limite do backend: a data de início pode ir no máximo 1 ano para frente
         dataMaxima() {
-            const data = new Date();
-            data.setFullYear(data.getFullYear() + 1);
-            // ajusta o fuso pra pegar a data local, e não a UTC
-            return new Date(data.getTime() - data.getTimezoneOffset() * 60000)
+            const dataLimite = new Date();
+            dataLimite.setFullYear(dataLimite.getFullYear() + 1);
+            // ajusta o fuso para pegar a data local, e não a UTC
+            return new Date(dataLimite.getTime() - dataLimite.getTimezoneOffset() * 60000)
                     .toISOString().slice(0, 10);
         },
 
         /*
-           Validação na tela, pra avisar antes de enviar. O backend valida
+           Validação na tela, para avisar antes de enviar. O backend valida
            tudo de novo, porque essa parte pode ser contornada chamando a API direto
         */
         validar() {
@@ -164,7 +196,7 @@ function estagioForm() {
             }
             this.enviando = true;
             try {
-                const resp = await fetch('/api/v1/aluno/estagio', {
+                const resposta = await fetch('/api/v1/aluno/estagio', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -176,8 +208,14 @@ function estagioForm() {
                     })
                 });
 
-                if (!resp.ok) {
-                    const dados = await resp.json().catch(() => ({}));
+                if (!resposta.ok) {
+                    // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                    let dados = {};
+                    try {
+                        dados = await resposta.json();
+                    } catch (erroDeLeitura) {
+                        dados = {};
+                    }
                     // Erro de validação do backend: marca cada campo com a mensagem dele
                     if (dados.campos) {
                         this.erros = dados.campos;
@@ -188,7 +226,7 @@ function estagioForm() {
 
                 window.location.href = '/aluno/dashboard';
 
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.enviando = false;
