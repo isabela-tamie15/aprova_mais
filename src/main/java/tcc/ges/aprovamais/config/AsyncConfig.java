@@ -5,13 +5,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
-// Essa config liga duas coisas, a execução assíncrona e auditoria automática do JPA
+// Essa config liga três coisas: a execução assíncrona, as rotinas agendadas (@Scheduled) e a auditoria automática do JPA
 @Configuration
 @EnableAsync
+@EnableScheduling
 @EnableJpaAuditing(dateTimeProviderRef = "offsetDateTimeProvider")
 public class AsyncConfig {
 

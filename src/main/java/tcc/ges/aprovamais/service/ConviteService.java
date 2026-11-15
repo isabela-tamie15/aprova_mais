@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,7 +89,12 @@ public class ConviteService {
             }
         }
 
-        // Um convite pendente por email
+        /*
+           Um convite pendente por email. Antes de conferir, o convite vencido desse e-mail vira
+           EXPIRADO, assim a secretaria consegue mandar um novo depois das 24 horas sem depender
+           de alguém ter aberto o link antigo
+        */
+        conviteRepository.expirarVencidosDoEmail(email, OffsetDateTime.now(ZoneOffset.UTC));
         if (conviteRepository.existsByEmailAndStatus(email, StatusConvite.PENDENTE)) {
             throw new RegraNegocioException("Já existe um convite pendente para o email: " + email);
         }
@@ -224,6 +230,19 @@ public class ConviteService {
             orientadorRepository.save(orientador);
         } else {
             usuarioRepository.save(usuario);
+        }
+    }
+
+    /*
+       Rotina diária que marca como EXPIRADO os convites vencidos, para a lista de convites da
+       secretaria e do coordenador mostrar a situação real. Roda às 3h, horário de pouco uso
+    */
+    @Scheduled(cron = "0 0 3 * * *", zone = "America/Sao_Paulo")
+    @Transactional
+    public void expirarConvitesVencidos() {
+        int expirados = conviteRepository.expirarVencidos(OffsetDateTime.now(ZoneOffset.UTC));
+        if (expirados > 0) {
+            log.info("[CONVITE] {} convite(s) vencido(s) marcado(s) como expirado(s)", expirados);
         }
     }
 

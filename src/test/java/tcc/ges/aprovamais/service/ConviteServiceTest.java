@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -144,6 +146,21 @@ class ConviteServiceTest {
         String token = linkCaptor.getValue().substring(prefixo.length());
         assertNotEquals(token, convite.getTokenConvite());
         assertEquals(HashToken.sha256(token), convite.getTokenConvite());
+    }
+
+    @Test
+    @DisplayName("Convite vencido do e-mail vira EXPIRADO antes da conferência do pendente, liberando um convite novo")
+    void deveExpirarConviteVencidoAntesDeConferirOPendente() {
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
+        when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.empty());
+
+        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP);
+
+        InOrder ordem = inOrder(conviteRepository);
+        ordem.verify(conviteRepository).expirarVencidosDoEmail(eq(EMAIL_DESTINO), any(OffsetDateTime.class));
+        ordem.verify(conviteRepository).existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE);
     }
 
     @Test
