@@ -1,3 +1,4 @@
+# Postgres, Redis, Prometheus e Grafana só aceitam conexão desta máquina (127.0.0.1)
 services:
 
   backend:
@@ -7,14 +8,18 @@ services:
       - "8080:8080"
     env_file:
       - .env
+    environment:
+      # No perfil prod, o Redis vem do REDIS_URL
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Volumes nomeados, porque o contêiner roda sem root
     volumes:
-      - ./logs:/app/logs
-      - ./uploads:/app/uploads
+      - logs_data:/app/logs
+      - uploads_data:/app/uploads
     restart: unless-stopped
 
   postgres:
@@ -25,7 +30,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
@@ -35,15 +40,19 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Redis com a senha do REDIS_PASSWORD
   redis:
     image: redis:7-alpine
     container_name: aprovamais-redis
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Defina REDIS_PASSWORD no .env}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -82,5 +91,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  logs_data:
+  uploads_data:
   prometheus_data:
   grafana_data:

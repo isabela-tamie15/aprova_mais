@@ -21,11 +21,13 @@ WORKDIR /app
 ### Faz copia apenas do JAR gerado no estágio anterior
 COPY --from=build /app/target/aprovamais-0.0.1-SNAPSHOT.jar app.jar
 
-###Cria a pasta de logs dentro do container
-RUN mkdir -p logs
+###Usuário sem privilégio de root
+RUN groupadd --system aprova && useradd --system --gid aprova --home-dir /app aprova \
+    && mkdir -p logs uploads && chown -R aprova:aprova /app
+USER aprova
 
-###Mostra a porta HTTPS
-EXPOSE 8443
+###Porta da aplicação. No Render, vem da variável PORT
+EXPOSE 8080
 
-###Roda a aplicação
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+###Roda a aplicação, com a memória da JVM limitada à do contêiner
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]
