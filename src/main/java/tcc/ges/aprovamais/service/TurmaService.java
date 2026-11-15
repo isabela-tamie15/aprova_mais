@@ -11,6 +11,7 @@ import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.Orientador;
 import tcc.ges.aprovamais.entity.OrientadorTurma;
 import tcc.ges.aprovamais.entity.Turma;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.TurmaRepository;
@@ -66,7 +67,7 @@ public class TurmaService {
 
         if (turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCase(
                 curso.getId(), request.getSemestre(), identificador)) {
-            throw new IllegalStateException("Já existe a turma " + identificador + " neste semestre do curso");
+            throw new RegraNegocioException("Já existe a turma " + identificador + " neste semestre do curso");
         }
 
         Turma turma = new Turma();
@@ -93,13 +94,13 @@ public class TurmaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Turma não encontrada"));
 
         if (!turma.getCurso().getId().equals(request.getCursoId())) {
-            throw new IllegalStateException("Uma turma não pode mudar de curso");
+            throw new RegraNegocioException("Uma turma não pode mudar de curso");
         }
 
         String identificador = normalizarIdentificador(request.getIdentificador());
         if (turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCaseAndIdNot(
                 turma.getCurso().getId(), request.getSemestre(), identificador, turmaId)) {
-            throw new IllegalStateException("Já existe a turma " + identificador + " neste semestre do curso");
+            throw new RegraNegocioException("Já existe a turma " + identificador + " neste semestre do curso");
         }
 
         preencher(turma, request, identificador);

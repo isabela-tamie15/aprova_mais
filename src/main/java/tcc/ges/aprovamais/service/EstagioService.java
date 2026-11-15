@@ -14,6 +14,7 @@ import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.*;
 
@@ -179,7 +180,7 @@ public class EstagioService {
 
         // Sem jornada não dá para calcular a carga nem a data prevista, então nem deixa cadastrar
         if (tipoEstagio.getJornadaSemanal() == null || tipoEstagio.getJornadaSemanal().signum() <= 0) {
-            throw new IllegalStateException(
+            throw new RegraNegocioException(
                     "Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação");
         }
 
@@ -190,7 +191,7 @@ public class EstagioService {
         */
         String cnpj = ValidadorCnpj.normalizar(request.getCnpjEmpresa());
         if (consultaNaReceita.status() == ConsultaCnpjResponse.Status.NAO_ENCONTRADO) {
-            throw new IllegalStateException(
+            throw new RegraNegocioException(
                     "CNPJ não encontrado na Receita Federal. Confira o número digitado");
         }
 
@@ -299,7 +300,7 @@ public class EstagioService {
 
         // Só faz sentido aprovar se estiver pendente, senão é sinal que alguém já mexeu
         if (estagio.getStatus() != StatusEstagio.PENDENTE) {
-            throw new IllegalStateException("Apenas estágios pendentes podem ser aprovados");
+            throw new RegraNegocioException("Apenas estágios pendentes podem ser aprovados");
         }
 
         if (dataInicioConfirmada != null && !dataInicioConfirmada.equals(estagio.getDataInicio())) {
@@ -345,7 +346,7 @@ public class EstagioService {
         Estagio estagio = buscarEstagioDoOrientador(estagioId, emailOrientador);
 
         if (estagio.getStatus() != StatusEstagio.PENDENTE) {
-            throw new IllegalStateException("Apenas estágios pendentes podem ser rejeitados");
+            throw new RegraNegocioException("Apenas estágios pendentes podem ser rejeitados");
         }
 
         estagio.setStatus(StatusEstagio.REJEITADO);
@@ -405,12 +406,12 @@ public class EstagioService {
             case REJEITADO -> {
                 // pode reenviar
             }
-            case PENDENTE -> throw new IllegalStateException(
+            case PENDENTE -> throw new RegraNegocioException(
                     "Já existe uma solicitação aguardando aprovação do orientador");
-            case ATIVO -> throw new IllegalStateException(
+            case ATIVO -> throw new RegraNegocioException(
                     "Seu estágio já foi aprovado e não pode ser reenviado. "
                             + "Para mudar o tipo, faça uma solicitação de troca de modalidade");
-            default -> throw new IllegalStateException(
+            default -> throw new RegraNegocioException(
                     "Seu estágio está suspenso e não pode ser reenviado");
         }
     }

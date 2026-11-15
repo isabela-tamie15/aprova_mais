@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.entity.enums.TipoArquivo;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.*;
 import tcc.ges.aprovamais.storage.ArmazenamentoArquivos;
@@ -71,7 +72,7 @@ public class EntregaService {
         }
         // CA03: com a entrega em análise ou já aprovada, não dá para mandar outra versão
         if (entrega.getStatus() != null && !podeEnviar(entrega.getStatus())) {
-            throw new IllegalStateException(entrega.getStatus() == StatusEntrega.APROVADA
+            throw new RegraNegocioException(entrega.getStatus() == StatusEntrega.APROVADA
                     ? "Esta tarefa já foi aprovada pelo orientador."
                     : "Esta tarefa já tem uma entrega aguardando a análise do orientador.");
         }
@@ -92,10 +93,9 @@ public class EntregaService {
         // A chave é gerada aqui, sem nada do nome que o aluno mandou. O UUID faz com que dois envios nunca caiam no mesmo arquivo
         String chave = "entregas/estagio-" + estagio.getId() + "/tarefa-" + tarefa.getId()
                 + "/v" + numero + "-" + UUID.randomUUID() + "." + tipoArquivo.name().toLowerCase(Locale.ROOT);
-        armazenamentoArquivos.salvar(chave, conteudo, ValidadorArquivoEntrega.tipoConteudo(tipoArquivo));
 
         entrega.setStatus(StatusEntrega.ENVIADA);
-        Entrega salva = entregaRepository.save(entrega);
+        Entrega salva = entregaRepository.saveAndFlush(entrega);
 
         EntregaVersao versao = new EntregaVersao();
         versao.setEntrega(salva);
@@ -105,7 +105,16 @@ public class EntregaService {
         versao.setTipoArquivo(tipoArquivo);
         versao.setTamanhoBytes((long) conteudo.length);
         versao.setComentarioAluno(comentarioLimpo);
-        entregaVersaoRepository.save(versao);
+
+        /*
+           O saveAndFlush manda as linhas para o banco na hora. Se outro envio da mesma tarefa
+           chegou ao mesmo tempo, a restrição única (uk_entrega_estagio_tarefa ou
+           uk_versao_entrega_numero) falha aqui e a resposta é 409, antes de o arquivo ser
+           gravado. Assim não sobra arquivo sem registro no armazenamento (AUD-22). Se a
+           gravação do arquivo falhar, a exceção desfaz a transação e as linhas somem junto
+        */
+        entregaVersaoRepository.saveAndFlush(versao);
+        armazenamentoArquivos.salvar(chave, conteudo, ValidadorArquivoEntrega.tipoConteudo(tipoArquivo));
 
         auditoriaService.registrar(estagio.getMatricula().getAluno(), "ENTREGA_ENVIADA",
                 "Entrega id=" + salva.getId() + " da tarefa id=" + tarefa.getId() + ", versão " + numero,

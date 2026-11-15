@@ -27,6 +27,7 @@ import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.ConsultaCnpjService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
@@ -225,7 +226,7 @@ class EstagioServiceTest {
         prepararCadastro(criarEstagio(StatusEstagio.PENDENTE));
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class, () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class, () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("Já existe uma solicitação aguardando aprovação do orientador", excecao.getMessage());verify(estagioRepository, never()).save(any());
@@ -311,7 +312,7 @@ class EstagioServiceTest {
         prepararCadastro(null);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
@@ -408,7 +409,7 @@ class EstagioServiceTest {
         prepararCadastro(ativo);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
@@ -450,7 +451,7 @@ class EstagioServiceTest {
         when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.naoEncontrado());
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert

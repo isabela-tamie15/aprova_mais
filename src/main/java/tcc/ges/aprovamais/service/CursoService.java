@@ -9,6 +9,7 @@ import tcc.ges.aprovamais.dto.CursoRequest;
 import tcc.ges.aprovamais.dto.CursoResponse;
 import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.Curso;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.CoordenadorRepository;
 import tcc.ges.aprovamais.repository.CursoRepository;
@@ -50,7 +51,7 @@ public class CursoService {
         String codigoMec = request.getCodigoMec().trim();
 
         if (cursoRepository.existsByCodigoMec(codigoMec)) {
-            throw new IllegalStateException("Já existe um curso com esse código e-MEC");
+            throw new RegraNegocioException("Já existe um curso com esse código e-MEC");
         }
 
         Curso curso = new Curso();
@@ -74,7 +75,7 @@ public class CursoService {
 
         // Na edição, o próprio curso pode manter o código, por isso o IdNot
         if (cursoRepository.existsByCodigoMecAndIdNot(codigoMec, cursoId)) {
-            throw new IllegalStateException("Já existe um curso com esse código e-MEC");
+            throw new RegraNegocioException("Já existe um curso com esse código e-MEC");
         }
 
         curso.setNome(request.getNome().trim());

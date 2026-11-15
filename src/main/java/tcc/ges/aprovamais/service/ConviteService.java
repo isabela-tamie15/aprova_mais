@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
@@ -89,7 +90,7 @@ public class ConviteService {
 
         // Um convite pendente por email
         if (conviteRepository.existsByEmailAndStatus(email, StatusConvite.PENDENTE)) {
-            throw new IllegalStateException("Já existe um convite pendente para o email: " + email);
+            throw new RegraNegocioException("Já existe um convite pendente para o email: " + email);
         }
 
         /*
@@ -103,10 +104,10 @@ public class ConviteService {
         if (existente.isPresent()) {
             Usuario usuario = existente.get();
             if (!Boolean.TRUE.equals(usuario.getPrimeiroAcesso())) {
-                throw new IllegalStateException("Já existe uma conta ativa com este e-mail");
+                throw new RegraNegocioException("Já existe uma conta ativa com este e-mail");
             }
             if (!usuario.getPerfil().name().equals(perfil.name())) {
-                throw new IllegalStateException("Já existe um cadastro pendente com outro perfil para este e-mail");
+                throw new RegraNegocioException("Já existe um cadastro pendente com outro perfil para este e-mail");
             }
         } else {
             String nomeConvidado = preCadastro != null
@@ -237,7 +238,7 @@ public class ConviteService {
 
         // Se já foi usado ou cancelado, não vale mais
         if (convite.getStatus() != StatusConvite.PENDENTE) {
-            throw new IllegalStateException("Este convite já foi utilizado ou cancelado");
+            throw new RegraNegocioException("Este convite já foi utilizado ou cancelado");
         }
 
         /*
@@ -249,7 +250,7 @@ public class ConviteService {
         if (OffsetDateTime.now(ZoneOffset.UTC).isAfter(convite.getExpiracaoToken())) {
             convite.setStatus(StatusConvite.EXPIRADO);
             conviteRepository.atualizarStatus(convite.getId(), StatusConvite.EXPIRADO);
-            throw new IllegalStateException("Este convite expirou. Solicite um novo convite a quem enviou");
+            throw new RegraNegocioException("Este convite expirou. Solicite um novo convite a quem enviou");
         }
 
         return convite;

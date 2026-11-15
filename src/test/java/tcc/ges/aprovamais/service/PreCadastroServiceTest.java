@@ -16,6 +16,7 @@ import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.PreCadastro;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.PerfilDestino;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.ConviteRepository;
@@ -127,7 +128,7 @@ class PreCadastroServiceTest {
         when(coordenadorRepository.findByEmail(EMAIL_COORDENADOR)).thenReturn(Optional.of(coordenador));
         when(preCadastroRepository.existsByEmailIgnoreCase(EMAIL)).thenReturn(true);
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(RegraNegocioException.class,
                 () -> preCadastroService.cadastrar(EMAIL_COORDENADOR, request(PerfilDestino.ALUNO, 5L), IP));
 
         verify(preCadastroRepository, never()).save(any());
@@ -178,7 +179,7 @@ class PreCadastroServiceTest {
         when(preCadastroRepository.existsByIdentificadorInstitucionalIgnoreCase(RGM)).thenReturn(false);
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(ativo));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(RegraNegocioException.class,
                 () -> preCadastroService.cadastrar(EMAIL_COORDENADOR, request(PerfilDestino.ALUNO, 5L), IP));
 
         verify(preCadastroRepository, never()).save(any());
@@ -198,7 +199,7 @@ class PreCadastroServiceTest {
         when(preCadastroRepository.findByIdAndCoordenadorEmail(1L, EMAIL_COORDENADOR)).thenReturn(Optional.of(existente));
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(ativo));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(RegraNegocioException.class,
                 () -> preCadastroService.atualizar(1L, EMAIL_COORDENADOR, request(PerfilDestino.ALUNO, 5L), IP));
 
         verify(preCadastroRepository, never()).save(any());

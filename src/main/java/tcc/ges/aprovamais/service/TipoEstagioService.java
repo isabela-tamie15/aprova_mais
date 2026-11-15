@@ -9,6 +9,7 @@ import tcc.ges.aprovamais.dto.TipoEstagioRequest;
 import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.TipoEstagio;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
 
@@ -51,7 +52,7 @@ public class TipoEstagioService {
         String nomeDoTipoEstagio = request.getNome().trim();
 
         if (tipoEstagioRepository.existsByCursoIdAndNomeIgnoreCase(curso.getId(), nomeDoTipoEstagio)) {
-            throw new IllegalStateException("Já existe o tipo de estágio " + nomeDoTipoEstagio + " neste curso");
+            throw new RegraNegocioException("Já existe o tipo de estágio " + nomeDoTipoEstagio + " neste curso");
         }
 
         TipoEstagio tipoEstagio = new TipoEstagio();
@@ -79,12 +80,12 @@ public class TipoEstagioService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tipo de estágio não encontrado"));
 
         if (!tipoEstagio.getCurso().getId().equals(request.getCursoId())) {
-            throw new IllegalStateException("Um tipo de estágio não pode mudar de curso");
+            throw new RegraNegocioException("Um tipo de estágio não pode mudar de curso");
         }
 
         String nomeDoTipoEstagio = request.getNome().trim();
         if (tipoEstagioRepository.existsByCursoIdAndNomeIgnoreCaseAndIdNot(tipoEstagio.getCurso().getId(), nomeDoTipoEstagio, tipoId)) {
-            throw new IllegalStateException("Já existe o tipo de estágio " + nomeDoTipoEstagio + " neste curso");
+            throw new RegraNegocioException("Já existe o tipo de estágio " + nomeDoTipoEstagio + " neste curso");
         }
 
         preencher(tipoEstagio, request, nomeDoTipoEstagio);

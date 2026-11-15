@@ -15,6 +15,7 @@ import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.Modalidade;
 import tcc.ges.aprovamais.entity.enums.Periodo;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.TurmaRepository;
@@ -118,7 +119,7 @@ class TurmaServiceTest {
         when(turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCase(3L, "2026/2", "8B")).thenReturn(true);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> turmaService.cadastrar(EMAIL_COORDENADOR, request(3L, "8B"), IP));
 
         // assert
@@ -136,7 +137,7 @@ class TurmaServiceTest {
         when(turmaRepository.findByIdAndCursoCoordenadorEmail(20L, EMAIL_COORDENADOR)).thenReturn(Optional.of(turma));
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> turmaService.atualizar(20L, EMAIL_COORDENADOR, request(4L, "8B"), IP));
 
         // assert

@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.Tarefa;
 import tcc.ges.aprovamais.entity.TipoEstagio;
 import tcc.ges.aprovamais.entity.Trilha;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.EntregaRepository;
 import tcc.ges.aprovamais.repository.TarefaRepository;
@@ -58,7 +59,7 @@ public class TrilhaCoordenadorService {
         TipoEstagio tipoEstagio = buscarTipoDoCoordenador(request.getTipoEstagioId(), emailCoordenador);
 
         if (trilhaRepository.existsByTipoEstagioId(tipoEstagio.getId())) {
-            throw new IllegalStateException("Este tipo de estágio já tem uma trilha");
+            throw new RegraNegocioException("Este tipo de estágio já tem uma trilha");
         }
 
         Trilha trilha = new Trilha();
@@ -80,7 +81,7 @@ public class TrilhaCoordenadorService {
         Trilha trilha = buscarTrilhaDoCoordenador(trilhaId, emailCoordenador);
 
         if (!trilha.getTipoEstagio().getId().equals(request.getTipoEstagioId())) {
-            throw new IllegalStateException("Uma trilha não pode mudar de tipo de estágio");
+            throw new RegraNegocioException("Uma trilha não pode mudar de tipo de estágio");
         }
 
         trilha.setNome(request.getNome().trim());
@@ -98,7 +99,7 @@ public class TrilhaCoordenadorService {
         Trilha trilha = buscarTrilhaDoCoordenador(trilhaId, emailCoordenador);
 
         if (tarefaRepository.existsByTrilhaIdAndOrdem(trilhaId, request.getOrdem())) {
-            throw new IllegalStateException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
+            throw new RegraNegocioException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
         }
 
         Tarefa tarefa = new Tarefa();
@@ -119,7 +120,7 @@ public class TrilhaCoordenadorService {
         Trilha trilha = tarefa.getTrilha();
 
         if (tarefaRepository.existsByTrilhaIdAndOrdemAndIdNot(trilha.getId(), request.getOrdem(), tarefaId)) {
-            throw new IllegalStateException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
+            throw new RegraNegocioException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
         }
 
         preencher(tarefa, request);
@@ -139,7 +140,7 @@ public class TrilhaCoordenadorService {
         TipoEstagio tipoEstagio = tarefa.getTrilha().getTipoEstagio();
 
         if (entregaRepository.existsByTarefaId(tarefa.getId())) {
-            throw new IllegalStateException("Esta tarefa já tem entregas de alunos e não pode ser removida.");
+            throw new RegraNegocioException("Esta tarefa já tem entregas de alunos e não pode ser removida.");
         }
         tarefaRepository.delete(tarefa);
 

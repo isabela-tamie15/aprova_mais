@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.dto.CursoResponse;
 import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.CoordenadorRepository;
 import tcc.ges.aprovamais.repository.CursoRepository;
@@ -93,7 +94,7 @@ class CursoServiceTest {
         when(cursoRepository.existsByCodigoMec("1105")).thenReturn(true);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> cursoService.cadastrar(EMAIL_COORDENADOR, request("Outro curso", "1105"), IP));
 
         // assert

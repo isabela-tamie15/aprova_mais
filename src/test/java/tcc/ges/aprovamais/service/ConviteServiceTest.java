@@ -23,6 +23,7 @@ import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
@@ -230,7 +231,7 @@ class ConviteServiceTest {
         when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
         when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(true);
 
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
 
         assertEquals("Já existe um convite pendente para o email: " + EMAIL_DESTINO, excecao.getMessage());
@@ -250,7 +251,7 @@ class ConviteServiceTest {
         when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
         when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.of(ativo));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(RegraNegocioException.class,
                 () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
 
         verify(conviteRepository, never()).save(any());
@@ -286,7 +287,7 @@ class ConviteServiceTest {
         convite.setExpiracaoToken(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
         when(conviteRepository.findByTokenConvite(HashToken.sha256("token-vencido"))).thenReturn(Optional.of(convite));
 
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> conviteService.validarToken("token-vencido"));
 
         assertEquals("Este convite expirou. Solicite um novo convite a quem enviou", excecao.getMessage());

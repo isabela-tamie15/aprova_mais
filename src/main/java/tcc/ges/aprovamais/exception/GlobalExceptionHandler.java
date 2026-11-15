@@ -2,6 +2,7 @@ package tcc.ges.aprovamais.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -167,12 +168,26 @@ public class GlobalExceptionHandler {
     }
 
     // 409 regra de negócio violada (exemplo, estágio já pendente, já analisado etc)
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErroResposta> handleIllegalState(IllegalStateException excecao) {
+    @ExceptionHandler(RegraNegocioException.class)
+    public ResponseEntity<ErroResposta> handleRegraNegocio(RegraNegocioException excecao) {
         log.warn("[EXCEPTION] Regra de negócio violada: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(construirErro(HttpStatus.CONFLICT, excecao.getMessage()));
+    }
+
+    /*
+       409 restrição única do banco, por exemplo dois envios da mesma entrega ao mesmo
+       tempo (AUD-22). A mensagem do banco fica só no log, porque traz nomes de tabela e
+       de coluna, e a tela recebe um texto para atualizar a página e conferir
+    */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErroResposta> handleIntegridade(DataIntegrityViolationException excecao) {
+        log.warn("[EXCEPTION] Restrição do banco violada: {}", excecao.getMostSpecificCause().getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(construirErro(HttpStatus.CONFLICT,
+                        "Esta operação conflita com outra feita ao mesmo tempo. Atualize a página e confira."));
     }
 
     /*

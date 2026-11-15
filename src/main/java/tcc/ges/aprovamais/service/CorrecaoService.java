@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.dto.*;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.EntregaRepository;
@@ -195,7 +196,7 @@ public class CorrecaoService {
                                           AvaliacaoEntregaRequest request, String ipOrigem) {
         Entrega entrega = buscarEntregaDoOrientador(entregaId, emailOrientador);
         if (!AGUARDANDO_ANALISE.contains(entrega.getStatus())) {
-            throw new IllegalStateException("Esta entrega já foi avaliada.");
+            throw new RegraNegocioException("Esta entrega já foi avaliada.");
         }
         EntregaVersao versao = entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Entrega não encontrada."));

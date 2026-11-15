@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.dto.TipoEstagioResponse;
 import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.TipoEstagio;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
 
@@ -100,7 +101,7 @@ class TipoEstagioServiceTest {
         when(tipoEstagioRepository.existsByCursoIdAndNomeIgnoreCase(3L, "CLT")).thenReturn(true);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> tipoEstagioService.cadastrar(EMAIL_COORDENADOR, request("CLT", "270", "44"), IP));
 
         // assert

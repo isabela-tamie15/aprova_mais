@@ -9,13 +9,14 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tcc.ges.aprovamais.security.HashToken;
 import tcc.ges.aprovamais.dto.ConfiguracaoDoisFatoresResponse;
 import tcc.ges.aprovamais.dto.StatusDoisFatoresResponse;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.exception.CodigoDoisFatoresInvalidoException;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
+import tcc.ges.aprovamais.security.HashToken;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -151,7 +152,7 @@ public class DoisFatoresService {
         Usuario usuario = buscarPorEmail(email);
 
         if (Boolean.TRUE.equals(usuario.getDoisFatoresAtivo())) {
-            throw new IllegalStateException("A autenticação de dois fatores já está ativa.");
+            throw new RegraNegocioException("A autenticação de dois fatores já está ativa.");
         }
 
         return gerarNovoSegredo(usuario);
@@ -168,10 +169,10 @@ public class DoisFatoresService {
         Usuario usuario = buscarPorEmail(email);
 
         if (Boolean.TRUE.equals(usuario.getDoisFatoresAtivo())) {
-            throw new IllegalStateException("A autenticação de dois fatores já está ativa.");
+            throw new RegraNegocioException("A autenticação de dois fatores já está ativa.");
         }
         if (usuario.getDoisFatoresSegredo() == null) {
-            throw new IllegalStateException("Gere o QR Code antes de ativar a autenticação de dois fatores.");
+            throw new RegraNegocioException("Gere o QR Code antes de ativar a autenticação de dois fatores.");
         }
 
         validarCodigoDaConta(usuario, codigo, ipOrigem);
@@ -184,10 +185,10 @@ public class DoisFatoresService {
         Usuario usuario = buscarPorEmail(email);
 
         if (usuario.getPerfil().exigeDoisFatores()) {
-            throw new IllegalStateException("A autenticação de dois fatores é obrigatória para o seu perfil.");
+            throw new RegraNegocioException("A autenticação de dois fatores é obrigatória para o seu perfil.");
         }
         if (!Boolean.TRUE.equals(usuario.getDoisFatoresAtivo())) {
-            throw new IllegalStateException("A autenticação de dois fatores não está ativa.");
+            throw new RegraNegocioException("A autenticação de dois fatores não está ativa.");
         }
 
         /*
