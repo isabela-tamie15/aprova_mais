@@ -23,7 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-// Esse service é quem cuida do cadastro de turmas pelo coordenador (RF12, RN22)
+// Cadastro de turmas pelo coordenador
 @Service
 @RequiredArgsConstructor
 public class TurmaService {
@@ -35,13 +35,13 @@ public class TurmaService {
     private final AuditoriaService auditoriaService;
     private final OrientadorTurmaRepository orientadorTurmaRepository;
 
-    // Esse é o método que lista as turmas de um curso, desde que o curso seja do coordenador logado
+    // Lista as turmas de um curso do coordenador logado
     @Transactional(readOnly = true)
     public List<TurmaResponse> listar(Long cursoId, String emailCoordenador) {
         Curso curso = cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
         List<Turma> turmasDoCurso = turmaRepository.findByCursoIdOrderBySemestreDescIdentificadorAsc(curso.getId());
 
-        // Orientador de cada turma do curso (RF13), buscado numa consulta só e guardado pelo id da turma
+        // Orientador de cada turma do curso, buscado numa consulta só e guardado pelo id da turma
         Map<Long, Orientador> orientadorPorIdDaTurma = new HashMap<>();
         for (OrientadorTurma vinculo : orientadorTurmaRepository.findByTurmaCursoId(curso.getId())) {
             orientadorPorIdDaTurma.put(vinculo.getTurma().getId(), vinculo.getOrientador());
@@ -55,11 +55,7 @@ public class TurmaService {
         return respostas;
     }
 
-    /*
-       Esse é o método que cadastra uma turma num curso do coordenador. Curso de
-       outro coordenador cai no 404 do CursoService (RN21), e não pode haver duas
-       turmas com o mesmo identificador no mesmo semestre do curso
-    */
+    // Cadastra uma turma num curso do coordenador. Não pode haver duas turmas com o mesmo identificador no mesmo semestre
     @Transactional
     public TurmaResponse cadastrar(String emailCoordenador, TurmaRequest request, String ipOrigem) {
         Curso curso = cursoService.buscarCursoDoCoordenador(request.getCursoId(), emailCoordenador);
@@ -84,10 +80,7 @@ public class TurmaService {
         return paraResponse(salva, null);
     }
 
-    /*
-       Esse é o método que altera uma turma. A turma não muda de curso: isso
-       levaria junto as matrículas e o orientador, então é recusado
-    */
+    // Altera uma turma. A turma não muda de curso, porque isso levaria junto as matrículas e o orientador
     @Transactional
     public TurmaResponse atualizar(Long turmaId, String emailCoordenador, TurmaRequest request, String ipOrigem) {
         Turma turma = turmaRepository.findByIdAndCursoCoordenadorEmail(turmaId, emailCoordenador)
@@ -124,7 +117,7 @@ public class TurmaService {
         turma.setPeriodo(request.getPeriodo());
         turma.setModalidade(request.getModalidade());
 
-        // Data em que as entregas do semestre fecham, usada no aviso de prazo da F2
+        // Data em que as entregas do semestre fecham, usada no aviso de prazo
         turma.setDataEncerramentoEntregas(request.getDataEncerramentoEntregas());
     }
 

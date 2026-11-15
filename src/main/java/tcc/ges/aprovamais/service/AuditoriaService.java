@@ -16,7 +16,7 @@ import tcc.ges.aprovamais.repository.LogAuditoriaRepository;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-// Essa service é quem registra os logs de auditoria do sistema, tipo login, logout, anonimização etc
+// Registro dos eventos de auditoria, como login, logout e anonimização
 @Service
 @RequiredArgsConstructor
 public class AuditoriaService {
@@ -25,11 +25,11 @@ public class AuditoriaService {
 
     private final LogAuditoriaRepository logAuditoriaRepository;
 
-    // Prazo de guarda dos registros, em meses (RF45)
+    // Prazo de guarda dos registros, em meses
     @Value("${app.auditoria.retencao-meses:6}")
     private int mesesDeRetencao;
 
-    // Registra um evento de auditoria na mesma transação da operação: os dois são gravados ou desfeitos juntos
+    // Registra um evento na mesma transação da operação, então os dois são gravados ou desfeitos juntos
     @Transactional
     public void registrar(Usuario usuario,
                           String acao,
@@ -51,11 +51,7 @@ public class AuditoriaService {
                 usuario.getEmail(), acao, detalhes, sucesso);
     }
 
-    /*
-       Versão usada quando não tem usuário vinculado, tipo tentativa de login
-       com e-mail que nem existe no banco. O sucesso fica fixo em false
-       porque, por definição, esses são eventos de falha
-    */
+    // Registra um evento sem usuário vinculado, como o login com um e-mail que não existe. Sempre com sucesso false
     @Transactional
     public void registrarTentativa(String emailTentativa,
                                    String acao,
@@ -73,7 +69,7 @@ public class AuditoriaService {
         log.warn("[AUDITORIA] {} | {} | {} | sem usuário ativo vinculado", emailTentativa, acao, detalhes);
     }
 
-    // Elimina todo dia, às 3h30, os registros mais antigos que o prazo de guarda (RF45)
+    // Elimina todo dia, às 3h30, os registros mais antigos que o prazo de guarda
     @Scheduled(cron = "0 30 3 * * *", zone = "America/Sao_Paulo")
     @Transactional
     public void eliminarRegistrosAntigos() {
@@ -84,11 +80,7 @@ public class AuditoriaService {
         }
     }
 
-    /*
-       Converte do enum de perfil usado na entidade para o enum da auditoria.
-       São dois enums separados com os mesmos valores, mas cada um fica na
-       sua camada, então precisa dessa conversão no meio
-    */
+    // Converte o perfil do usuário para o perfil da auditoria, que é um enum separado com os mesmos valores
     private PerfilAuditoria converterPerfil(PerfilUsuario perfil) {
         if (perfil == null) return null;
         return switch (perfil) {

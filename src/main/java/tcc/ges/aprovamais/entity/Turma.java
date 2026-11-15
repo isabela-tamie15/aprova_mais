@@ -42,10 +42,9 @@ public class Turma {
     private Modalidade modalidade;
 
     /*
-       Data em que as entregas do semestre fecham, informada pelo coordenador.
-       A F2 usa essa data para mostrar ao aluno e ao orientador quantos dias faltam
-       e o aviso de prazo. A coluna aceita vazio porque as turmas cadastradas antes
-       deste campo existir não têm essa data, e o banco não conseguiria criar a coluna
+       Data em que as entregas do semestre fecham, informada pelo coordenador. Mostra ao aluno e ao
+       orientador quantos dias faltam e o aviso de prazo. Aceita vazio porque as turmas antigas não
+       têm essa data
     */
     @Column(name = "data_encerramento_entregas")
     private LocalDate dataEncerramentoEntregas;

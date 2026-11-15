@@ -46,7 +46,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// Testa o envio de convites pela hierarquia de perfis e pelo pré-cadastro (RF03, RN01, RN05, RN06, RN07)
+// Testa o envio de convites pela hierarquia de perfis e pelo pré-cadastro
 @ExtendWith(MockitoExtension.class)
 class ConviteServiceTest {
 

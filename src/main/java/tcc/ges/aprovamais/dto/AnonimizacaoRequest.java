@@ -8,7 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import tcc.ges.aprovamais.security.LimiteSenha;
 
-// Confirmação da anonimização: a senha sempre, e o código quando a verificação em duas etapas está ativa
+// Confirmação da anonimização. A senha é sempre pedida, e o código quando a verificação em duas etapas está ativa
 @Getter
 @Setter
 public class AnonimizacaoRequest {

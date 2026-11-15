@@ -1,4 +1,4 @@
-// Script da página coordenador/trilhas.html: monta a trilha de cada tipo de estágio e as tarefas dela
+// Página coordenador/trilhas.html, que monta a trilha de cada tipo de estágio e as tarefas dela
 
 function trilhasPagina() {
     return {
@@ -57,7 +57,7 @@ function trilhasPagina() {
             await this.carregarTrilha();
         },
 
-        // 204 quer dizer que o tipo ainda não tem trilha: a tela mostra o formulário de criação
+        // O 204 quer dizer que o tipo ainda não tem trilha, e a tela mostra o formulário de criação
         async carregarTrilha() {
             this.editandoTrilha = false;
             this.cancelarTarefa();

@@ -1,4 +1,4 @@
-// Script da página coordenador/cursos.html: lista, cadastra e altera os cursos do coordenador
+// Página coordenador/cursos.html, que lista, cadastra e altera os cursos do coordenador
 
 function cursosPagina() {
     return {
@@ -40,10 +40,7 @@ function cursosPagina() {
             this.erro = '';
         },
 
-        /*
-           Validação na tela, com as mesmas regras do CursoRequest. O backend
-           valida de novo, porque essa parte pode ser contornada chamando a API direto
-        */
+        // Mesmas regras do CursoRequest, para avisar antes de enviar. O backend valida de novo
         validar() {
             const erros = {};
             const nome = this.form.nome.trim();

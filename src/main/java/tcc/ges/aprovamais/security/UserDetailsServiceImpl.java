@@ -23,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
 
-    // Esse é o método que busca o usuário e monta os dados de autenticação que o Spring Security entende
+    // Busca o usuário e monta os dados de autenticação do Spring Security
     @Override
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
@@ -48,10 +48,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     // Monta o UserDetails a partir do usuário, usado no login e no JwtFilter
     public static UserDetails paraUserDetails(Usuario usuario) {
         /*
-           Monta o UserDetails. O ROLE_ no começo é convenção do Spring, ele
-           espera esse prefixo quando nós usamos hasRole em algum lugar. Já o
-           disabled e o accountLocked vêm do banco, os outros dois ficam false
-           porque não usamos expiração de conta nem de senha
+           O prefixo ROLE_ é a convenção do Spring para o hasRole. O disabled e o accountLocked vêm do banco,
+           e os outros dois ficam false porque não há expiração de conta nem de senha
         */
         return User.builder()
                 .username(usuario.getEmail())

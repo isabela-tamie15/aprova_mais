@@ -28,7 +28,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
-// Esse filtro roda em toda requisição, é ele quem lê o JWT e autentica o usuário antes do controller
+// Lê o JWT de cada requisição e autentica o usuário antes do controller
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -43,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final UsuarioRepository usuarioRepository;
     private final TokenRevogadoService tokenRevogadoService;
 
-    // Esse é o método principal do filtro, chamado uma vez por requisição
+    // Chamado uma vez por requisição
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest requisicao,
@@ -53,7 +53,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = extrairToken(requisicao);
 
-        // Sem token, segue o fluxo como anônimo e deixa o Security decidir o que fazer
         // Sem token, ou com um token encerrado pelo logout, a requisição segue sem autenticação
         if (token == null || tokenRevogadoService.estaRevogado(token)) {
             cadeiaFiltros.doFilter(requisicao, resposta);
@@ -62,11 +61,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String email;
         try {
-            /*
-               Extrai o e-mail de dentro do token, o que também já valida a
-               assinatura dele. Se o token tiver adulterado ou inválido, cai
-               no catch e a requisição segue sem autenticação
-            */
+            // Extrair o e-mail também valida a assinatura. Token adulterado ou inválido segue sem autenticação
             email = jwtService.extrairEmail(token);
         } catch (JwtException | IllegalArgumentException excecao) {
             cadeiaFiltros.doFilter(requisicao, resposta);
@@ -76,7 +71,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (SecurityContextHolder.getContext().getAuthentication() == null
                 && jwtService.tokenValido(token, email)) {
 
-            // E-mail do token não existe mais (tipo conta anonimizada), segue sem autenticar
+            // E-mail do token que não existe mais segue sem autenticar
             Optional<Usuario> usuarioDoToken = usuarioRepository.findByEmail(email);
             if (usuarioDoToken.isEmpty()) {
                 cadeiaFiltros.doFilter(requisicao, resposta);
@@ -100,11 +95,8 @@ public class JwtFilter extends OncePerRequestFilter {
             UserDetails usuarioDetalhes = UserDetailsServiceImpl.paraUserDetails(usuario);
 
             /*
-               Conta desativada (anonimizada ou desativada pelo admin) perde
-               o acesso na hora, mesmo que o token ainda esteja dentro do prazo.
-               Já as contas bloqueadas por tentativa de login continuam com a
-               sessão atual, porque o bloqueio protege o login contra força
-               bruta, não tem a ver com encerrar sessões que já estão abertas
+               Conta desativada perde o acesso na hora, mesmo com o token no prazo. A conta bloqueada por
+               tentativas de login mantém a sessão atual, porque o bloqueio protege só o login
             */
             if (!usuarioDetalhes.isEnabled()) {
                 log.warn("[AUTH] Token recusado para conta inativa: {}", email);
@@ -120,7 +112,7 @@ public class JwtFilter extends OncePerRequestFilter {
                             usuarioDetalhes.getAuthorities()
                     );
 
-            // Anexa os detalhes da requisição, tipo IP e sessão, na autenticação
+            // Anexa os detalhes da requisição, como o IP, na autenticação
             autenticacao.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(requisicao)
             );
@@ -128,11 +120,11 @@ public class JwtFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(autenticacao);
         }
 
-        // Segue para o próximo filtro ou para o controller, agora com ou sem autenticação
+        // Segue para o próximo filtro ou para o controller
         cadeiaFiltros.doFilter(requisicao, resposta);
     }
 
-    // Só a API exige o aceite aqui; login, aceite e LGPD ficam livres
+    // Só a API exige o aceite aqui. Login, aceite e LGPD ficam livres
     private boolean exigeConsentimento(HttpServletRequest requisicao) {
         String caminho = requisicao.getRequestURI();
         if (!caminho.startsWith("/api/")) {
@@ -156,14 +148,10 @@ public class JwtFilter extends OncePerRequestFilter {
                 OffsetDateTime.now(ZoneOffset.UTC)));
     }
 
-    // Esse é o auxiliar que procura o token primeiro no header, depois nos cookies
+    // Procura o token primeiro no cabeçalho e depois nos cookies
     private String extrairToken(HttpServletRequest requisicao) {
 
-        /*
-           O header Authorization com Bearer é o padrão para APIs. Mas como nós
-           usamos cookie HttpOnly nas páginas, também aceitamos o token vindo
-           por cookie, senão o navegador não conseguiria autenticar
-        */
+        // O cabeçalho Authorization com Bearer serve para as ferramentas de API, e o cookie HttpOnly para as páginas
         String cabecalho = requisicao.getHeader("Authorization");
         if (cabecalho != null && cabecalho.startsWith("Bearer ")) {
             return cabecalho.substring(7);

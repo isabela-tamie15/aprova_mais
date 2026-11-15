@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /*
-   Limite de requisições por IP nas rotas de login, 2FA, recuperação de senha, primeiro acesso
-   e consulta de CNPJ. O valor é alto porque os alunos do laboratório saem pelo mesmo IP
+   Limite de requisições por IP nas rotas de login, 2FA, recuperação de senha, primeiro acesso e
+   consulta de CNPJ. O valor é alto porque os alunos do laboratório saem pelo mesmo IP
 */
 // Roda antes dos filtros do Spring Security
 @Order(Ordered.HIGHEST_PRECEDENCE)

@@ -21,17 +21,12 @@ public enum PerfilUsuario {
         return rotaInicial;
     }
 
-    /**
-     * Converte a authority do Spring Security (ex.: "ROLE_ALUNO") no perfil correspondente.
-     */
+    // Converte a authority do Spring Security, como "ROLE_ALUNO", no perfil correspondente
     public static PerfilUsuario deAuthority(String authority) {
         return valueOf(authority.replaceFirst("^ROLE_", ""));
     }
 
-    /**
-     * Perfis administrativos (acesso a convites e dados de vários usuários)
-     * são obrigados a usar autenticação de dois fatores. Para os demais, o 2FA é opcional.
-     */
+    // Perfis administrativos, com acesso a convites e aos dados de vários usuários, são obrigados a usar o 2FA. Para os outros ele é opcional
     public boolean exigeDoisFatores() {
         return this == ADMINISTRADOR || this == COORDENADOR || this == SECRETARIA;
     }

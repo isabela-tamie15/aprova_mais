@@ -22,10 +22,8 @@ import java.util.List;
 import java.util.Optional;
 
 /*
-   RF13: o coordenador atribui o orientador de cada turma dos cursos dele. A turma
-   tem um orientador só (restrição única no turma_id), e o mesmo orientador pode
-   ficar com várias turmas. Antes, o orientador do estágio era o primeiro vínculo
-   que o banco devolvesse, sem regra nenhuma (AUD-23)
+   Atribuição do orientador de cada turma pelo coordenador. A turma tem um orientador só, e o
+   mesmo orientador pode ficar com várias turmas
 */
 @Service
 @RequiredArgsConstructor
@@ -51,23 +49,21 @@ public class OrientadorTurmaService {
     }
 
     /*
-       Atribui ou troca o orientador da turma. Os estágios em aberto da turma
-       (pendente, ativo, rejeitado ou suspenso) passam para o novo orientador,
-       para nenhum aluno ficar sem quem valide e corrija. Os estágios concluídos
-       e encerrados ficam com quem acompanhou, e o histórico de decisões e de
-       correções guarda o orientador de cada momento
+       Atribui ou troca o orientador da turma. Os estágios em aberto passam para o novo orientador,
+       para nenhum aluno ficar sem quem valide e corrija. Os concluídos e encerrados ficam com quem
+       acompanhou, e o histórico guarda o orientador de cada momento
     */
     @Transactional
     public TurmaResponse atribuirOrientador(Long turmaId, Long orientadorId, String emailCoordenador, String ipOrigem) {
-        // Turma de curso de outro coordenador volta 404, como no resto da coordenação (RN21)
+        // Turma de curso de outro coordenador volta 404
         Turma turma = turmaRepository.findByIdAndCursoCoordenadorEmail(turmaId, emailCoordenador)
                 .orElseThrow(() -> new ResourceNotFoundException("Turma não encontrada"));
 
-        // Só orientador com conta ativa: conta pendente, desativada ou anonimizada não recebe turma
+        // Só orientador com conta ativa recebe turma
         Orientador orientador = orientadorRepository.findByIdAndAtivoTrue(orientadorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Orientador não encontrado"));
 
-        // Se a turma já tem vínculo, nós alteramos o mesmo registro; se não tem, criamos um
+        // Altera o vínculo que já existe ou cria um novo
         Optional<OrientadorTurma> vinculoExistente = orientadorTurmaRepository.findByTurmaId(turmaId);
         OrientadorTurma vinculo;
         Long idDoOrientadorAnterior = null;

@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 
-// Esse service é quem cuida do bloqueio temporário de conta depois de várias tentativas de login erradas
+// Bloqueio temporário da conta depois de várias tentativas erradas de login
 @Service
 @RequiredArgsConstructor
 public class BloqueioContaService {
@@ -26,10 +26,8 @@ public class BloqueioContaService {
     private final AuditoriaService auditoriaService;
 
     /*
-       Chamado antes de cada tentativa de login ou de validação de 2fa. Se a
-       conta não está bloqueada, sai fora na hora. Se está bloqueada e o tempo
-       ainda não passou, registra na auditoria e recusa. Se já passou, libera
-       a conta automaticamente e deixa o fluxo seguir
+       Chamado antes de cada tentativa de login ou de código do 2FA. A conta bloqueada dentro do
+       prazo é recusada e registrada na auditoria. Passado o prazo, a conta é liberada
     */
     public void verificarBloqueio(Usuario usuario, String acaoAuditoria, String ipOrigem) {
         if (!Boolean.TRUE.equals(usuario.getContaBloqueada())) {
@@ -51,10 +49,8 @@ public class BloqueioContaService {
     }
 
     /*
-       Soma mais uma falha no contador do usuário. Quando atinge o limite
-       definido em MAX_TENTATIVAS, bloqueia a conta e marca o momento exato
-       para depois poder calcular quando liberar. Devolve o número de
-       tentativas atualizado para quem chamou poder usar na mensagem de log
+       Soma uma falha no contador. Ao chegar em MAX_TENTATIVAS, bloqueia a conta e guarda o momento
+       do bloqueio. Devolve o número de tentativas para a mensagem da auditoria
     */
     public int registrarFalha(Usuario usuario) {
         int tentativas = usuario.getTentativasFalhas() + 1;

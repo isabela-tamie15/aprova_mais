@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Testa a montagem de trilhas e tarefas pela API (RF15, RN32, RN33)
+// Testa a montagem de trilhas e tarefas pela API
 class CoordenacaoTrilhaIntegrationTest extends CoordenacaoTestBase {
 
     private TipoEstagio tipo;

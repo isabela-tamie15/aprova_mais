@@ -34,13 +34,13 @@ public class PreCadastroRequest {
     // Obrigatória para aluno e ignorada para orientador
     private Long turmaId;
 
-    // O pré-cadastro é só para aluno e orientador; os outros perfis são convidados direto (RN01)
+    // O pré-cadastro é só para aluno e orientador. Os outros perfis são convidados direto
     @AssertTrue(message = "O pré-cadastro é só para aluno ou orientador")
     public boolean isPerfilDePreCadastro() {
         return perfil == null || perfil == PerfilDestino.ALUNO || perfil == PerfilDestino.ORIENTADOR;
     }
 
-    // CA01 do RF02: aluno sem turma é recusado
+    // Aluno sem turma é recusado
     @AssertTrue(message = "Escolha a turma do aluno")
     public boolean isTurmaInformadaParaAluno() {
         return perfil != PerfilDestino.ALUNO || turmaId != null;

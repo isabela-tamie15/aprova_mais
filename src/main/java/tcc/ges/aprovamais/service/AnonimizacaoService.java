@@ -37,7 +37,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
-// Essa service é quem cuida da anonimização de dados quando o titular pede exclusão pela LGPD
+// Anonimização dos dados quando o titular pede a exclusão pela LGPD
 @Service
 @RequiredArgsConstructor
 public class AnonimizacaoService {
@@ -62,11 +62,9 @@ public class AnonimizacaoService {
     private final BloqueioContaService bloqueioContaService;
 
     /*
-       Esse é o método que faz a anonimização em si. A ideia não é apagar
-       o registro do banco, e sim trocar os dados pessoais por valores
-       genéricos, assim o histórico fica preservado para fins estatísticos
-       mas ninguém consegue identificar quem era a pessoa. O noRollbackFor
-       mantém gravada a tentativa errada, que conta para o bloqueio da conta
+       Anonimiza a conta. Os dados pessoais são trocados por valores genéricos, e o histórico fica
+       preservado sem identificar a pessoa. O noRollbackFor mantém gravada a tentativa errada, que
+       conta para o bloqueio da conta
     */
     @Transactional(noRollbackFor = {DadoInvalidoException.class, LockedException.class})
     public void anonimizar(String email, String senha, String codigo, String ipOrigem) {
@@ -84,18 +82,13 @@ public class AnonimizacaoService {
         String emailOriginal = usuario.getEmail();
         String nomeOriginal = usuario.getNome();
 
-        /*
-           Gera um sufixo aleatório de 8 caracteres. Ele é usado no e-mail e
-           em outros campos para garantir que, se dois usuários forem anonimizados,
-           cada um fica com um valor único e não dá conflito de unicidade no banco
-        */
+        // Sufixo aleatório que deixa único o e-mail e os outros campos anonimizados
         String sufixo = UUID.randomUUID().toString().substring(0, 8);
         String emailAnonimizado = "removido_" + sufixo + "@anonimizado.br";
 
         /*
-           Troca os dados principais do usuário. A senha vira um hash de um
-           UUID aleatório, ou seja, ninguém mais consegue logar nessa conta
-           nem que saiba a senha original. Os tokens, o 2FA e as sessões são encerrados
+           A senha vira o hash de um UUID aleatório, então ninguém mais entra nesta conta.
+           Os tokens, o 2FA e as sessões são encerrados
         */
         usuario.setNome(NOME_ANONIMIZADO);
         usuario.setEmail(emailAnonimizado);
@@ -110,11 +103,7 @@ public class AnonimizacaoService {
         usuario.setDoisFatoresSegredo(null);
         usuario.encerrarSessoes();
 
-        /*
-           Agora tratamos os campos específicos de cada perfil. Cada tipo de
-           usuário tem dados próprios em tabelas separadas, então limpamos
-           essas tabelas também, cada uma do seu jeito
-        */
+        // Cada perfil tem os próprios dados numa tabela separada, que também é limpa
         switch (usuario.getPerfil()) {
             case ALUNO -> anonimizarAluno(usuario.getId(), sufixo);
             case ORIENTADOR -> anonimizarOrientador(usuario.getId(), sufixo);
@@ -186,7 +175,7 @@ public class AnonimizacaoService {
         }
     }
 
-    // Aluno: o RGM sai e os estágios em aberto são encerrados por desligamento
+    // Aluno. O RGM sai e os estágios em aberto são encerrados por desligamento
     private void anonimizarAluno(Long alunoId, String sufixo) {
         Optional<Aluno> alunoEncontrado = alunoRepository.findById(alunoId);
         if (alunoEncontrado.isPresent()) {
@@ -202,7 +191,7 @@ public class AnonimizacaoService {
         }
     }
 
-    // Orientador: os dados institucionais saem, ele deixa as turmas e os estágios em aberto ficam sem orientador
+    // Orientador. Os dados institucionais saem, ele deixa as turmas e os estágios em aberto ficam sem orientador
     private void anonimizarOrientador(Long orientadorId, String sufixo) {
         Optional<Orientador> orientadorEncontrado = orientadorRepository.findById(orientadorId);
         if (orientadorEncontrado.isPresent()) {
@@ -219,10 +208,10 @@ public class AnonimizacaoService {
         }
     }
 
-    // Prazo da resposta ao titular nos pedidos de acesso e de correção (art. 19 da LGPD)
+    // Prazo de resposta ao titular nos pedidos de acesso e de correção, que é de 15 dias pela LGPD
     public static final int DIAS_PARA_RESPOSTA = 15;
 
-    // Registra o pedido de acesso ou de correção dos dados (RF43), com protocolo e data limite da resposta
+    // Registra o pedido de acesso ou de correção dos dados, com protocolo e data limite da resposta
     @Transactional
     public SolicitacaoTitularResponse registrarSolicitacao(String email, String acao, String detalhes, String ipOrigem) {
         Usuario usuario = usuarioRepository.findByEmail(email)

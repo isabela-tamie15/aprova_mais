@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Esse controller é quem serve as páginas HTML, devolvendo o nome do template que o Thymeleaf renderiza
+// Páginas HTML renderizadas pelo Thymeleaf
 @Controller
 @RequiredArgsConstructor
 public class PaginaController {
@@ -29,25 +29,25 @@ public class PaginaController {
 
     // rotas públicas/gerais
 
-    // Esse é o endpoint que serve a página de login
+    // Página de login
     @GetMapping("/login")
     public String login() {
         return "login";
     }
 
-    // Esse é o endpoint que serve a página de consentimento dos termos
+    // Página de consentimento dos termos
     @GetMapping("/consentimento")
     public String consentimento() {
         return "consentimento";
     }
 
-    // Esse é o endpoint que serve a página de termos de uso
+    // Página dos termos de uso
     @GetMapping("/termos")
     public String termos() {
         return "termos";
     }
 
-    // Esse é o endpoint que serve a página de política de privacidade
+    // Página da política de privacidade
     @GetMapping("/privacidade")
     public String privacidade() {
         return "privacidade";
@@ -55,7 +55,7 @@ public class PaginaController {
 
     // rotas de qualquer usuário autenticado (anyRequest().authenticated() no SecurityConfig)
 
-    // Esse é o endpoint que serve a página de segurança da conta, onde o usuário mexe com 2fa
+    // Página de segurança da conta, com o 2FA
     @GetMapping("/conta/seguranca")
     public String segurancaConta() {
         return "conta/seguranca";
@@ -66,10 +66,8 @@ public class PaginaController {
     public String inicio(Authentication authentication) {
 
         /*
-           Pega a primeira authority do usuário, que vem no formato ROLE_ALGO.
-           O PerfilUsuario.deAuthority tira esse prefixo e devolve o enum, e
-           daí nós usamos a rotaInicial que cada perfil já tem configurada.
-           Assim evita ter um if gigante aqui decidindo para onde redirecionar
+           A primeira authority vem no formato ROLE_ALGO. O PerfilUsuario.deAuthority devolve o perfil,
+           e a rotaInicial dele diz para onde redirecionar
         */
         String authority = authentication.getAuthorities().iterator().next().getAuthority();
         return "redirect:" + PerfilUsuario.deAuthority(authority).getRotaInicial();
@@ -77,7 +75,7 @@ public class PaginaController {
 
     // rotas do coordenador
 
-    // Esse é o endpoint que serve o dashboard do coordenador
+    // Dashboard do coordenador
     @GetMapping("/coordenador/dashboard")
     @PreAuthorize("hasRole('COORDENADOR')")
     public String dashboardCoordenador() {
@@ -86,16 +84,12 @@ public class PaginaController {
 
     // rotas do aluno
 
-    // Esse é o endpoint que serve o dashboard do aluno
+    // Dashboard do aluno
     @GetMapping("/aluno/dashboard")
     @PreAuthorize("hasRole('ALUNO')")
     public String dashboardAluno(Model model, Authentication authentication) {
 
-        /*
-           Pega o e-mail do token, busca o estágio e joga no Model. O orElse(null)
-           serve para quando o aluno ainda não tem estágio, aí a página mostra o
-           estado vazio em vez de dar erro
-        */
+        // Aluno sem estágio recebe nulo, e a página mostra o estado vazio
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         model.addAttribute("historico", estagioService.listarHistoricoDoAluno(email));
@@ -113,7 +107,7 @@ public class PaginaController {
         return "aluno/dashboard";
     }
 
-    // Esse é o endpoint que serve a página da trilha do aluno
+    // Página da trilha do aluno
     @GetMapping("/aluno/trilha")
     @PreAuthorize("hasRole('ALUNO')")
     public String trilhaAluno(Model model, Authentication authentication) {
@@ -124,15 +118,12 @@ public class PaginaController {
         return "aluno/trilha";
     }
 
-    // Esse é o endpoint que serve a página onde o aluno cadastra ou atualiza o estágio
+    // Página em que o aluno cadastra ou atualiza o estágio
     @GetMapping("/estagio")
     @PreAuthorize("hasRole('ALUNO')")
     public String paginaEstagio(Model model, Authentication authentication) {
 
-        /*
-           Essa página precisa de duas coisas no Model, o estágio atual do
-           aluno (se já tiver um) e a lista de tipos disponíveis para ele escolher
-        */
+        // A página recebe o estágio atual do aluno, quando existe, e os tipos que ele pode escolher
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis(email));
@@ -141,7 +132,7 @@ public class PaginaController {
 
     // rotas do orientador
 
-    // Esse é o endpoint que serve a página de validações do orientador
+    // Página de validações do orientador
     @GetMapping("/orientador/validacoes")
     @PreAuthorize("hasRole('ORIENTADOR')")
     public String paginaValidacoes(Model model, Authentication authentication) {
@@ -158,28 +149,28 @@ public class PaginaController {
         }
         model.addAttribute("historicos", historicos);
 
-        // F2: estágios ATIVO desse orientador, para a página mostrar as horas e o aviso de prazo de cada aluno
+        // Estágios ATIVO do orientador, com as horas e o aviso de prazo de cada aluno
         model.addAttribute("estagiosAtivos", estagioService.listarAtivosDoOrientador(email));
         return "orientador/validacoes";
     }
 
     // rotas da secretaria
 
-    // Esse é o endpoint que serve o dashboard da secretaria
+    // Dashboard da secretaria
     @GetMapping("/secretaria/dashboard")
     @PreAuthorize("hasRole('SECRETARIA')")
     public String dashboardSecretaria() {
         return "secretaria/dashboard";
     }
 
-    // Esse é o endpoint que serve a página de envio de convite
+    // Página de envio de convite
     @GetMapping("/secretaria/enviar-convite")
     @PreAuthorize("hasRole('SECRETARIA')")
     public String enviarConvite() {
         return "secretaria/enviar-convite";
     }
 
-    // Esse é o endpoint que serve a página com os convites enviados pela secretaria logada
+    // Página com os convites enviados pela secretaria logada
     @GetMapping("/secretaria/convites")
     @PreAuthorize("hasRole('SECRETARIA')")
     public String listarConvites(Model model, Authentication authentication) {

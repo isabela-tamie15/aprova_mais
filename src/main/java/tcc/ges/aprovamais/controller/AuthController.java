@@ -32,7 +32,7 @@ public class AuthController {
 
     private final CookieSessao cookieSessao;
 
-    // Esse é o endpoint que recebe o login e decide se o usuário já pode entrar ou se falta a segunda etapa
+    // Recebe o login e decide se o usuário já entra ou se falta a segunda etapa
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest requisicao,
@@ -42,10 +42,8 @@ public class AuthController {
         LoginResponse loginResponse = authService.login(requisicao, request);
 
         /*
-           Só grava o cookie se o login terminou de verdade, ou seja, sem 2fa
-           pendente e sem configuração obrigatória pendente. Quando falta etapa,
-           o token que vem no corpo é o de pré-autenticação, que nunca pode virar
-           cookie de sessão
+           O cookie só é gravado quando o login terminou. Com etapa pendente, o token do corpo é o de
+           pré-autenticação, que nunca vira cookie de sessão
         */
         if (!loginResponse.isRequer2FA() && !loginResponse.isRequerConfiguracao2FA()) {
             cookieSessao.gravar(respostaHttp, loginResponse.getToken());
@@ -56,7 +54,7 @@ public class AuthController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    // Esse é o endpoint que confirma o código do 2fa e finaliza o login
+    // Confirma o código do 2FA e conclui o login
     @PostMapping("/2fa/verificar")
     public ResponseEntity<LoginResponse> verificarSegundoFator(
             @Valid @RequestBody VerificacaoDoisFatoresRequest requisicao,
@@ -66,12 +64,12 @@ public class AuthController {
         LoginResponse loginResponse = authService.verificarSegundoFator(
                 requisicao.getToken(), requisicao.getCodigo(), request.getRemoteAddr());
 
-        // Deu certo, então agora sim grava o cookie e devolve a resposta sem o token no corpo
+        // Grava o cookie e devolve a resposta sem o token no corpo
         cookieSessao.gravar(respostaHttp, loginResponse.getToken());
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
-    // Esse é o endpoint que inicia a configuração obrigatória de 2fa para quem ainda não tem
+    // Inicia a configuração obrigatória do 2FA para quem ainda não tem
     @PostMapping("/2fa/configuracao/iniciar")
     public ResponseEntity<ConfiguracaoDoisFatoresResponse> iniciarConfiguracaoObrigatoria(
             @Valid @RequestBody PreAutenticacaoRequest requisicao) {
@@ -79,7 +77,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.iniciarConfiguracaoObrigatoria(requisicao.getToken()));
     }
 
-    // Esse é o endpoint que confirma o código e finaliza a configuração obrigatória de 2fa
+    // Confirma o código e conclui a configuração obrigatória do 2FA
     @PostMapping("/2fa/configuracao/confirmar")
     public ResponseEntity<LoginResponse> confirmarConfiguracaoObrigatoria(
             @Valid @RequestBody VerificacaoDoisFatoresRequest requisicao,
@@ -94,7 +92,7 @@ public class AuthController {
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
-    // Esse é o endpoint de logout, ele apaga o cookie e registra a saída do usuário
+    // Logout, que apaga o cookie e registra a saída
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             HttpServletRequest request,
@@ -110,10 +108,7 @@ public class AuthController {
         // Pede ao navegador para apagar o cookie
         cookieSessao.apagar(respostaHttp);
 
-        /*
-           Só registra no log se tiver alguém autenticado, porque o logout
-           pode ser chamado também por quem já tava deslogado
-        */
+        // Registra só quando há alguém autenticado, porque o logout também pode vir de quem já saiu
         if (authentication != null) {
             authService.registrarLogout(authentication.getName(), request.getRemoteAddr());
         }

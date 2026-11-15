@@ -1,4 +1,4 @@
-// Script da página primeiro-acesso.html, que antes ficava num <script> dentro dela
+// Página primeiro-acesso.html
 
 function primeiroAcessoForm() {
     return {
@@ -42,8 +42,7 @@ function primeiroAcessoForm() {
                 if (resposta.ok) {
                     window.location.href = '/login?cadastro=concluido';
                 } else {
-                    // Erro de validação vem com a mensagem do campo, os demais ficam com a genérica
-                    // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                    // O erro de validação traz a mensagem do campo, e os outros ficam com a genérica
                     let dados = {};
                     try {
                         dados = await resposta.json();

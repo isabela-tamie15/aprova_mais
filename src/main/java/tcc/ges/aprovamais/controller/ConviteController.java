@@ -14,7 +14,7 @@ import tcc.ges.aprovamais.service.ConviteService;
 
 import java.util.List;
 
-// Esse controller é quem recebe as requisições de convite, usado pela secretaria para liberar acesso
+// Envio e consulta dos convites de acesso
 @Tag(name = "Convites", description = "Envio de convites pela hierarquia de perfis (RF03)")
 @RestController
 @RequestMapping("/api/v1/convites")
@@ -24,7 +24,7 @@ public class ConviteController {
 
     private final ConviteService conviteService;
 
-    // Esse é o endpoint que envia o convite por e-mail para o perfil de destino
+    // Envia o convite por e-mail para o perfil de destino
     @PostMapping
     public ResponseEntity<Void> enviarConvite(
             @Valid @RequestBody ConviteRequest request,
@@ -32,9 +32,8 @@ public class ConviteController {
             HttpServletRequest httpRequest) {
 
         /*
-           O e-mail de quem envia vem do JWT, nunca do corpo. O e-mail é enviado
-           de forma assíncrona pelo Resend, então o 200 indica que o convite foi
-           gravado, não que o e-mail foi entregue
+           O e-mail de quem envia vem do JWT, nunca do corpo. O envio do e-mail pelo Resend é assíncrono,
+           então o 200 diz que o convite foi gravado, e não que o e-mail foi entregue
         */
         conviteService.enviarConvite(
                 request.getEmailDestino(),
@@ -47,7 +46,7 @@ public class ConviteController {
         return ResponseEntity.ok().build();
     }
 
-    // Esse é o endpoint que lista os convites enviados pelo usuário logado
+    // Lista os convites enviados pelo usuário logado
     @GetMapping
     public ResponseEntity<List<ConviteResponse>> listarEnviados(Authentication authentication) {
         return ResponseEntity.ok(conviteService.listarEnviados(authentication.getName()));

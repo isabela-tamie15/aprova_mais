@@ -3,10 +3,8 @@
    ============================================= */
 
 /*
-   Faz a chamada à API e devolve sempre o mesmo formato: { ok, status, dados }.
-   Assim cada tela só olha o ok e mostra dados.mensagem (ou dados.campos, no
-   erro de validação), sem repetir o tratamento de rede e de erro 500.
-   O corpo é opcional; quando vem, é enviado como JSON
+   Chama a API e devolve sempre { ok, status, dados }, para cada tela só olhar o ok e mostrar
+   dados.mensagem ou dados.campos. O corpo é opcional e vai como JSON
 */
 async function requisicaoJson(url, metodo = 'GET', corpo = null) {
     const opcoes = { method: metodo, credentials: 'include', headers: {} };
@@ -49,14 +47,11 @@ function rolarParaFormulario(elemento) {
     }
 }
 
-// Nomes dos enums para mostrar na tela, nos selects e nas tabelas
+// Nomes dos enums mostrados na tela
 const NOMES_PERIODO = { MATUTINO: 'Matutino', NOTURNO: 'Noturno', NAO_APLICAVEL: 'Não se aplica' };
 const NOMES_MODALIDADE = { PRESENCIAL: 'Presencial', EAD: 'EAD', HIBRIDO: 'Híbrido' };
 
-/*
-   Carrega os cursos do coordenador logado, usado no select de curso das telas
-   de turmas, tipos de estágio e trilhas. Devolve a lista, ou lista vazia se der erro
-*/
+// Carrega os cursos do coordenador logado para o select das telas de turmas, tipos e trilhas. Em caso de erro devolve lista vazia
 async function carregarCursosDoCoordenador() {
     const resposta = await requisicaoJson('/api/v1/coordenador/cursos');
     return resposta.ok ? resposta.dados : [];

@@ -16,7 +16,7 @@ import tcc.ges.aprovamais.service.EstagioService;
 import java.time.LocalDate;
 import java.util.List;
 
-// Esse controller é quem recebe as requisições do orientador para validar os estágios dos alunos
+// Validação dos estágios dos alunos pelo orientador
 @Tag(name = "Validação do estágio", description = "Aprovação e rejeição dos estágios pelo orientador da turma.")
 @RestController
 @RequestMapping("/api/v1/orientador/validacoes")
@@ -25,7 +25,7 @@ public class OrientadorValidacaoController {
 
     private final EstagioService estagioService;
 
-    // Esse é o endpoint que lista os estágios pendentes de validação do orientador logado
+    // Lista os estágios do orientador logado esperando validação
     @GetMapping
     public ResponseEntity<List<EstagioResponse>> listarPendentes(Authentication authentication) {
 
@@ -36,15 +36,13 @@ public class OrientadorValidacaoController {
         return ResponseEntity.ok(estagioService.listarPendentes(authentication.getName()));
     }
 
-    // Esse é o endpoint que o orientador usa para aprovar um estágio pendente
+    // Aprova um estágio pendente
     @PostMapping("/{id}/aprovar")
     public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication, @Valid @RequestBody(required = false) AprovacaoRequest request, HttpServletRequest httpRequest) {
 
         /*
-           O id do estágio vem pela URL e o e-mail vem do token. Os dois
-           juntos vão para o service, que confirma se aquele estágio realmente
-           pertence a esse orientador antes de aprovar. O corpo é opcional
-           e só traz a data de início conferida no termo de compromisso
+           O service confere se o estágio é mesmo do orientador do token antes de aprovar. O corpo é
+           opcional e traz a data de início conferida no termo de compromisso
         */
         String email = authentication.getName();
         LocalDate dataInicio = request != null ? request.getDataInicio() : null;
@@ -58,7 +56,7 @@ public class OrientadorValidacaoController {
         return ResponseEntity.ok(estagioService.listarHistoricoDoOrientador(id, authentication.getName()));
     }
 
-    // Esse é o endpoint que o orientador usa para rejeitar um estágio, exige justificativa
+    // Rejeita um estágio, com justificativa obrigatória
     @PostMapping("/{id}/rejeitar")
     public ResponseEntity<EstagioResponse> rejeitar(
             @PathVariable Long id,
@@ -66,11 +64,7 @@ public class OrientadorValidacaoController {
             @Valid @RequestBody RejeicaoRequest request,
             HttpServletRequest httpRequest) {
 
-        /*
-           Mesma ideia do aprovar, mas aqui vem uma justificativa obrigatória
-           no corpo. Ela fica registrada para o aluno entender por que o
-           estágio foi recusado
-        */
+        // A justificativa fica registrada para o aluno entender por que o estágio foi recusado
         String email = authentication.getName();
         return ResponseEntity.ok(estagioService.rejeitar(
                 id, email, request.getJustificativa(), httpRequest.getRemoteAddr()));

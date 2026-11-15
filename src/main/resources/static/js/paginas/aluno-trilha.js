@@ -1,4 +1,4 @@
-// Script da página aluno/trilha.html: envio das entregas e histórico de versões
+// Página aluno/trilha.html, com o envio das entregas e o histórico de versões
 
 function trilhaAluno() {
     return {
@@ -10,7 +10,7 @@ function trilhaAluno() {
         erro: '',
         sucesso: '',
         erros: {},
-        // Status atualizado depois de um envio; as linhas sem envio nesta visita usam o status do servidor
+        // Status atualizado depois de um envio. As linhas sem envio nesta visita usam o status do servidor
         statusTarefas: {},
 
         statusDe(id, statusServidor) {
@@ -41,11 +41,11 @@ function trilhaAluno() {
             } finally {
                 this.carregando = false;
             }
-            // O $nextTick espera a tela atualizar e só depois roda o que está dentro de () =>
+            // Espera a tela atualizar antes de rolar até o painel da entrega
             this.$nextTick(() => document.getElementById('painel-entrega').scrollIntoView({ behavior: 'smooth' }));
         },
 
-        // Mesmas regras do backend (ValidadorArquivoEntrega); o servidor confere de novo, inclusive o conteúdo
+        // Mesmas regras do ValidadorArquivoEntrega. O servidor confere de novo, inclusive o conteúdo
         validar() {
             const erros = {};
             const arquivo = this.$refs.arquivo.files[0];

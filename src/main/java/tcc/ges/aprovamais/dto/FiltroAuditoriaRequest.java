@@ -9,10 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
-/*
-   Filtros da consulta da auditoria, eles vêm na query string, e todos são
-   opcionais, se n tiver nenhum, a consulta lista tudo, do mais recente para o mais antigo
-*/
+// Filtros da consulta da auditoria, todos opcionais. Sem nenhum filtro, a consulta lista tudo, do mais recente para o mais antigo
 @Data
 public class FiltroAuditoriaRequest {
 

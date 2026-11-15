@@ -17,7 +17,7 @@ import tcc.ges.aprovamais.service.TurmaService;
 
 import java.util.List;
 
-// Esse controller recebe as requisições do coordenador para cadastrar e alterar as turmas dos cursos dele
+// Cadastro e alteração das turmas dos cursos do coordenador
 @Tag(name = "Cadastros da coordenação", description = "Cursos, turmas, tipos de estágio e trilhas do coordenador")
 @RestController
 @RequestMapping("/api/v1/coordenador/turmas")
@@ -27,13 +27,13 @@ public class TurmaController {
     private final TurmaService turmaService;
     private final OrientadorTurmaService orientadorTurmaService;
 
-    // Esse é o endpoint que lista as turmas de um curso do coordenador logado
+    // Lista as turmas de um curso do coordenador logado
     @GetMapping
     public ResponseEntity<List<TurmaResponse>> listar(@RequestParam Long cursoId, Authentication authentication) {
         return ResponseEntity.ok(turmaService.listar(cursoId, authentication.getName()));
     }
 
-    // Esse é o endpoint que cadastra uma turma num curso do coordenador logado
+    // Cadastra uma turma num curso do coordenador logado
     @PostMapping
     public ResponseEntity<TurmaResponse> cadastrar(@Valid @RequestBody TurmaRequest request,
                                                    Authentication authentication,
@@ -43,7 +43,7 @@ public class TurmaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(criada);
     }
 
-    // Esse é o endpoint que altera uma turma (turma de curso de outro coordenador volta 404)
+    // Altera uma turma. A turma de curso de outro coordenador volta 404
     @PutMapping("/{id}")
     public ResponseEntity<TurmaResponse> atualizar(@PathVariable Long id,
                                                    @Valid @RequestBody TurmaRequest request,
@@ -53,13 +53,13 @@ public class TurmaController {
                 id, authentication.getName(), request, httpRequest.getRemoteAddr()));
     }
 
-    // Esse é o endpoint que lista os orientadores com conta ativa, para o coordenador escolher o da turma (RF13)
+    // Lista os orientadores com conta ativa, para o coordenador escolher o da turma
     @GetMapping("/orientadores")
     public ResponseEntity<List<OpcaoFiltroResponse>> listarOrientadores() {
         return ResponseEntity.ok(orientadorTurmaService.listarOrientadoresDisponiveis());
     }
 
-    // Esse é o endpoint que atribui ou troca o orientador da turma, levando junto os estágios em aberto (RF13)
+    // Atribui ou troca o orientador da turma, levando junto os estágios em aberto
     @PutMapping("/{id}/orientador")
     public ResponseEntity<TurmaResponse> atribuirOrientador(@PathVariable Long id,
                                                             @Valid @RequestBody AtribuicaoOrientadorRequest request,

@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// LGPD - quem não aceitou a versão atual dos termos vai para o consentimento antes de abrir as telas
+// Quem não aceitou a versão atual dos termos vai para a tela de consentimento antes de abrir as outras telas
 class ConsentimentoIntegrationTest extends IntegracaoTestBase {
 
     @Autowired

@@ -34,23 +34,15 @@ public class AuthService {
     private final DoisFatoresService doisFatoresService;
     private final PasswordEncoder passwordEncoder;
 
-    // Hash de uma senha aleatória: conferido quando o e-mail não existe, para o tempo de resposta ser o mesmo de uma conta real
+    // Hash de uma senha aleatória, conferido quando o e-mail não existe para o tempo de resposta ser o mesmo de uma conta real
     private static final String HASH_FICTICIO = "$2a$10$go3.2kJnPr9K04ToKTI2M.6pDFe8o/AmB7zWJoEXGCpHwF4vuF4ku";
 
-    /*
-       O noRollbackFor é essencial aqui. Quando o login falha, nós lançamos
-       BadCredentialsException, mas antes disso registra a falha no banco.
-       Sem esse ajuste, o Spring reverteria a transação e a tentativa falha
-       nunca seria gravada, o que quebraria todo o sistema de bloqueio
-    */
+    // O noRollbackFor mantém gravada a falha de login, que conta para o bloqueio da conta
     @Transactional(noRollbackFor = AuthenticationException.class)
     public LoginResponse login(LoginRequest requisicao, HttpServletRequest request) {
         String ip = request.getRemoteAddr();
 
-        /*
-           Busca o usuário pelo e-mail. Se não achar, já registra na auditoria
-           e lança a mesma exceção genérica, sem entregar se o e-mail existe
-        */
+        // E-mail sem cadastro fica na auditoria e recebe a mesma resposta de senha errada
         Usuario usuario = usuarioRepository.findByEmail(requisicao.getEmail())
                 .orElseThrow(() -> {
                     passwordEncoder.matches(requisicao.getSenha(), HASH_FICTICIO);
@@ -72,11 +64,7 @@ public class AuthService {
         }
 
         try {
-            /*
-               Aqui o Spring Security confere as credenciais de verdade.
-               Se a senha tiver errada, cai no BadCredentials, se a conta
-               tiver desativada, cai no Disabled
-            */
+            // Confere as credenciais. Senha errada cai no BadCredentials e conta desativada no Disabled
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             requisicao.getEmail(),
@@ -111,10 +99,7 @@ public class AuthService {
             throw new BadCredentialsException("Credenciais inválidas");
         }
 
-        /*
-           Senha ok. Agora verifica se o usuário já usa 2fa. Se usa, ainda
-           não entrega o JWT, devolve um token temporário para a próxima etapa
-        */
+        // Com o 2FA ativo, o JWT ainda não é entregue, e sim um token temporário para a próxima etapa
         if (Boolean.TRUE.equals(usuario.getDoisFatoresAtivo())) {
             String preAuthToken = doisFatoresService.gerarTokenPreAutenticacao(usuario);
             auditoriaService.registrar(usuario, "LOGIN_2FA_REQUERIDO",
@@ -122,11 +107,7 @@ public class AuthService {
             return LoginResponse.requer2FA(preAuthToken);
         }
 
-        /*
-           Caso diferente, o perfil exige 2fa mas a conta ainda não configurou.
-           Nesse caso também não entrega o JWT, devolve um token temporário
-           para ele fazer a configuração antes de entrar
-        */
+        // Perfil que exige 2FA e ainda não configurou recebe um token temporário para fazer a configuração
         if (usuario.getPerfil().exigeDoisFatores()) {
             String preAuthToken = doisFatoresService.gerarTokenPreAutenticacao(usuario);
             auditoriaService.registrar(usuario, "LOGIN_CONFIGURACAO_2FA_REQUERIDA",
@@ -138,7 +119,7 @@ public class AuthService {
         return concluirLogin(usuario, ip);
     }
 
-    // Esse é o método que valida o código do 2fa e finaliza o login de quem já usa
+    // Valida o código do 2FA e conclui o login de quem já usa
     @Transactional(noRollbackFor = AuthenticationException.class)
     public LoginResponse verificarSegundoFator(String preAuthToken, String codigo, String ip) {
 
@@ -151,12 +132,12 @@ public class AuthService {
 
         validarCodigoDoLogin(usuario, codigo, ip);
 
-        // Código ok, então invalida o token temporário para não poder ser reusado
+        // Invalida o token temporário para ele não ser reusado
         doisFatoresService.invalidarPreAutenticacao(usuario);
         return concluirLogin(usuario, ip);
     }
 
-    // Esse é o método que inicia a configuração obrigatória de 2fa, gerando o QR Code
+    // Inicia a configuração obrigatória do 2FA, gerando o QR Code
     @Transactional(noRollbackFor = AuthenticationException.class)
     public ConfiguracaoDoisFatoresResponse iniciarConfiguracaoObrigatoria(String preAuthToken) {
         Usuario usuario = buscarUsuarioEmConfiguracaoObrigatoria(preAuthToken);
@@ -166,7 +147,7 @@ public class AuthService {
         return doisFatoresService.gerarNovoSegredo(usuario);
     }
 
-    // Esse é o método que confirma o código da configuração obrigatória e já loga o usuário
+    // Confirma o código da configuração obrigatória e já conclui o login
     @Transactional(noRollbackFor = AuthenticationException.class)
     public LoginResponse confirmarConfiguracaoObrigatoria(String preAuthToken, String codigo, String ip) {
         Usuario usuario = buscarUsuarioEmConfiguracaoObrigatoria(preAuthToken);
@@ -179,19 +160,16 @@ public class AuthService {
         return concluirLogin(usuario, ip);
     }
 
-    // Esse é o método que registra na auditoria quando alguém faz logout
+    // Registra o logout na auditoria
     @Transactional
     public void registrarLogout(String email, String ip) {
 
-        /*
-           Só registra se o usuário existir. Se não existir, não faz nada,
-           porque o logout pode ser chamado com um e-mail que já foi removido
-        */
+        // O logout pode chegar com um e-mail que já não existe, e aí não há o que registrar
         usuarioRepository.findByEmail(email).ifPresent(usuario ->
                 auditoriaService.registrar(usuario, "LOGOUT", "Logout realizado com sucesso", ip, true));
     }
 
-    // Esse é o auxiliar que busca o usuário e confirma que ele está no fluxo de configuração obrigatória
+    // Busca o usuário e confirma que ele está no fluxo de configuração obrigatória
     private Usuario buscarUsuarioEmConfiguracaoObrigatoria(String preAuthToken) {
         Usuario usuario = doisFatoresService.buscarPorTokenPreAutenticacao(preAuthToken);
 
@@ -202,7 +180,7 @@ public class AuthService {
         return usuario;
     }
 
-    // Esse é o auxiliar que valida o código do 2fa, usado tanto no login normal quanto na configuração
+    // Valida o código do 2FA no login e na configuração obrigatória
     private void validarCodigoDoLogin(Usuario usuario, String codigo, String ip) {
         bloqueioContaService.verificarBloqueio(usuario, "LOGIN_2FA_FALHA", ip);
 
@@ -222,7 +200,7 @@ public class AuthService {
         }
     }
 
-    // Esse é o auxiliar que fecha o login em si, gera o JWT e devolve a resposta final
+    // Conclui o login, gerando o JWT e a resposta final
     private LoginResponse concluirLogin(Usuario usuario, String ip) {
 
         // Login deu certo, então limpa qualquer falha anterior e desbloqueia a conta

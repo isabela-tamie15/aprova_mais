@@ -128,7 +128,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
     @Test
     @DisplayName("GET /tipos devolve só os tipos do curso do aluno e barra cadastro com tipo de outro curso")
     void deveFiltrarTiposPeloCursoDoAluno() throws Exception {
-        // um segundo curso com um tipo próprio, que o aluno não pode ver nem usar
+        // Um segundo curso com um tipo próprio, que o aluno não pode ver nem usar
         Curso outroCurso = new Curso();
         outroCurso.setNome("Administração");
         outroCurso.setCodigoMec("MEC-TESTE-002");
@@ -367,7 +367,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
         verify(consultaCnpjService, never()).consultar(anyString());
     }
 
-    // F2: data de encerramento das entregas e aviso de prazo, pela API e nas páginas
+    // Data de encerramento das entregas e aviso de prazo, pela API e nas páginas
 
     @Test
     @DisplayName("GET do estágio ativo devolve a data de encerramento das entregas, os dias que faltam e o aviso amarelo")
@@ -426,10 +426,9 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
     }
 
     /*
-       F1 com os mesmos nomes da F2: o estágio pendente mostra os campos com os mesmos rótulos
-       e a mesma data (dd/MM/yyyy) do estágio ativo, para a tela não mudar de nome quando o
-       orientador aprovar. O estágio de teste é do tipo Estagiario, com 30h semanais,
-       começa em 01/08/2026 e não tem CNPJ gravado
+       O estágio pendente mostra os campos com os mesmos rótulos e a mesma data (dd/MM/yyyy) do
+       estágio ativo, para a tela não mudar quando o orientador aprovar. O estágio de teste é do
+       tipo Estagiário, com 30h semanais, começa em 01/08/2026 e não tem CNPJ gravado
     */
     @Test
     @DisplayName("Página Meu Estágio mostra o estágio pendente com os mesmos nomes da F2")
@@ -496,8 +495,8 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
     }
 
     /*
-       F2 parte 2: as telas com a linha das atividades e os avisos novos. O aviso de prazo só aparece
-       enquanto houver atividade sem aprovação, por isso os testes do aviso criam uma trilha com tarefas
+       Telas com a linha das atividades e os avisos. O aviso de prazo só aparece enquanto houver
+       atividade sem aprovação, por isso os testes do aviso criam uma trilha com tarefas
     */
 
     // Cria a trilha do tipo de estágio do aluno com a quantidade de tarefas informada, sem nenhuma entrega
@@ -560,7 +559,7 @@ class EstagioControllerIntegrationTest extends IntegracaoTestBase {
                 .andExpect(content().string(not(containsString("FINALIZAÇÃO DO PRAZO"))));
     }
 
-    // RF22: cálculo da carga horária, com a conta das semanas
+    // Cálculo da carga horária com a conta das semanas
 
     @Test
     @DisplayName("Cálculo da carga horária: 3 semanas de Estagiário aparecem como 3 semanas × 30h = 90h de 270h (CA01)")

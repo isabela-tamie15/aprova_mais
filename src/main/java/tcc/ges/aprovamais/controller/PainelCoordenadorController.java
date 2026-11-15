@@ -14,9 +14,8 @@ import tcc.ges.aprovamais.dto.PainelCoordenadorResponse;
 import tcc.ges.aprovamais.service.PainelCoordenadorService;
 
 /*
-   Dashboard do coordenador: devolve os números dos cartões e dos gráficos já prontos.
-   A rota já é protegida pelo SecurityConfig (/api/v1/coordenador/**), e o @PreAuthorize
-   repete a verificação aqui, para termos as duas camadas de segurança
+   Dashboard do coordenador, com os números dos cartões e dos gráficos já prontos.
+   O @PreAuthorize repete a proteção da rota que já está no SecurityConfig
 */
 @Tag(name = "Painel da coordenação", description = "Indicadores e gráficos do dashboard do coordenador")
 @RestController
@@ -27,7 +26,7 @@ public class PainelCoordenadorController {
 
     private final PainelCoordenadorService painelCoordenadorService;
 
-    // O cursoId é opcional: sem ele, o painel mostra todos os cursos do coordenador logado
+    // O cursoId é opcional, e sem ele o painel mostra todos os cursos do coordenador logado
     @Operation(summary = "Consultar os números do dashboard do coordenador (Seção 6.11)")
     @GetMapping
     public ResponseEntity<PainelCoordenadorResponse> consultar(@RequestParam(required = false) Long cursoId,

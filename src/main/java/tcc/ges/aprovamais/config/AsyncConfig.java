@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
-// Essa config liga três coisas: a execução assíncrona, as rotinas agendadas (@Scheduled) e a auditoria automática do JPA
+// Liga a execução assíncrona, as rotinas agendadas (@Scheduled) e a auditoria automática do JPA
 @Configuration
 @EnableAsync
 @EnableScheduling
@@ -18,10 +18,8 @@ import java.util.Optional;
 public class AsyncConfig {
 
     /*
-       O JPA Auditing por padrão usa LocalDateTime para preencher os campos de
-       criação e atualização, mas nós usamos OffsetDateTime no projeto. Esse
-       bean substitui o provider padrão por um que devolve o formato certo,
-       sem isso o Spring nem sobe a aplicação
+       O JPA Auditing usa LocalDateTime por padrão, e o projeto usa OffsetDateTime.
+       Este bean devolve o formato certo, e sem ele a aplicação não sobe
     */
     @Bean
     public DateTimeProvider offsetDateTimeProvider() {

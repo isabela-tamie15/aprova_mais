@@ -1,4 +1,4 @@
-// Script da página orientador/acompanhamento.html: visão consolidada de um aluno
+// Página orientador/acompanhamento.html, com a visão consolidada de um aluno
 
 function acompanhamentoAluno(estagioId) {
     return {
@@ -25,7 +25,7 @@ function acompanhamentoAluno(estagioId) {
             }
         },
 
-        // As horas vêm prontas do Java; aqui só tiramos as casas decimais para exibir
+        // As horas vêm prontas do backend, e aqui só saem as casas decimais
         horas(valor) {
             return valor == null ? '-' : Math.round(Number(valor)) + 'h';
         },

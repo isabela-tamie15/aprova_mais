@@ -34,9 +34,8 @@ public class EstagioCadastroRequest {
     private String nomeEmpresa;
 
     /*
-       A data pode estar no passado (o aluno às vezes cadastra depois de já ter
-       começado) ou um pouco no futuro, mas não mais de 1 ano à frente, que aí
-       já é erro de digitação. Valor nulo fica com o @NotNull
+       A data pode estar no passado, porque o aluno às vezes cadastra depois de começar, ou um pouco no
+       futuro, mas não mais de 1 ano à frente. Valor nulo fica com o @NotNull
     */
     @AssertTrue(message = "A data de início não pode ser mais de 1 ano no futuro")
     public boolean isDataInicioDentroDoLimite() {

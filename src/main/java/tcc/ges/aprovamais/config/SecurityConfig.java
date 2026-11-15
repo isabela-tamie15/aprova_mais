@@ -36,7 +36,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-// Essa config é quem define as regras de segurança da aplicação inteira, incluido as rotas permitidas
+// Regras de segurança da aplicação e rotas liberadas
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -53,7 +53,7 @@ public class SecurityConfig {
     @Value("${app.url}")
     private String appUrl;
 
-    // Esse é o bean principal que monta a cadeia de filtros do Spring Security
+    // Monta a cadeia de filtros do Spring Security
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -62,10 +62,9 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 /*
-                   Desligamos a proteção CSRF padrão do Spring porque o cookie do login é SameSite=Strict
-                   (AuthController): o navegador não envia o cookie em requisições vindas de outros sites,
-                   e é isso que impede o ataque CSRF. O login por formulário e o login básico padrão
-                   também saem, porque a nossa tela de login é própria
+                   A proteção CSRF do Spring fica desligada porque o cookie do login é SameSite=Strict, e o
+                   navegador não envia esse cookie em requisições de outros sites. O login por formulário e
+                   o login básico também saem, porque a tela de login é própria
                 */
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
@@ -83,9 +82,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         /*
-                           Rotas públicas, que qualquer um acessa sem estar logado.
-                           Aqui entram login, telas de consentimento, arquivos estáticos
-                           e os endpoints de 2fa, que rodam antes do login terminar
+                           Rotas públicas, acessadas sem login. Entram o login, as telas de consentimento, os arquivos
+                           estáticos e os endpoints de 2FA, que rodam antes do login terminar
                         */
                         .requestMatchers(
                                 "/login",
@@ -117,11 +115,7 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/actuator/prometheus"
                         ).permitAll()
-                        /*
-                           Aqui começa a proteção por perfil, cada rota só aceita
-                           quem tem o papel certo. O lgpd é o único que libera
-                           para vários perfis ao mesmo tempo
-                        */
+                        // Proteção por perfil. Cada rota só aceita o perfil certo, e a da LGPD aceita vários
                         .requestMatchers("/admin/**", "/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/v1/coordenador/**").hasRole("COORDENADOR")
                         .requestMatchers("/api/v1/orientador/**").hasRole("ORIENTADOR")
@@ -133,13 +127,12 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
-                // Coloca o filtro do JWT antes do filtro padrão de login por usuário e senha
+                // Filtro do JWT antes do filtro padrão de login por usuário e senha
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         /*
-           Só força HTTPS em produção. Em dev fica livre para rodar em HTTP,
-           senão atrapalharia o desenvolvimento local. O /livez e o /readyz ficam
-           de fora, porque o health check do Render chama por HTTP na rede interna
+           Força HTTPS só em produção, para o desenvolvimento local rodar em HTTP. O /livez e o /readyz
+           ficam de fora porque o health check do Render chama por HTTP na rede interna
         */
         if (env.acceptsProfiles(Profiles.of("prod"))) {
             http.redirectToHttps(https -> https
@@ -173,7 +166,7 @@ public class SecurityConfig {
                 OffsetDateTime.now(ZoneOffset.UTC)));
     }
 
-    // Esse é o provider que autentica de verdade, usando o UserDetailsService e o BCrypt
+    // Provider que autentica com o UserDetailsService e o BCrypt
     @Bean
     public AuthenticationProvider authenticationProvider(
             UserDetailsService userDetailsService) {

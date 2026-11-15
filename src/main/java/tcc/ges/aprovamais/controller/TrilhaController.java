@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tcc.ges.aprovamais.dto.TrilhaResponse;
 import tcc.ges.aprovamais.service.TrilhaService;
 
-// Esse controller é quem recebe a requisição do aluno para buscar a trilha dele
+// Trilha de tarefas do aluno
 @Tag(name = "Trilha", description = "Consulta da trilha de tarefas do estágio do aluno")
 @RestController
 @RequestMapping("/api/v1/aluno")
@@ -19,7 +19,7 @@ public class TrilhaController {
 
     private final TrilhaService trilhaService;
 
-    // Esse é o endpoint que devolve a trilha de tarefas do aluno logado
+    // Devolve a trilha de tarefas do aluno logado
     @GetMapping("/trilha")
     @PreAuthorize("hasRole('ALUNO')")
     public TrilhaResponse buscarTrilha(Authentication authentication) {

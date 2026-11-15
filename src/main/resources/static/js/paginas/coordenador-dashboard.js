@@ -1,9 +1,6 @@
-// Script da página coordenador/dashboard.html: carrega os números do dashboard do coordenador (Seção 6.11 da monografia)
+// Página coordenador/dashboard.html, que carrega os números do dashboard do coordenador
 
-/*
-   Painel vazio, usado antes da primeira resposta da API e quando dá erro.
-   Assim a tela nunca tenta ler um número que ainda não chegou
-*/
+// Painel vazio, usado antes da primeira resposta da API e quando dá erro, para a tela nunca ler um número que não chegou
 function painelVazio() {
     return {
         estagiosSemOrientador: 0,
@@ -21,10 +18,7 @@ function painelVazio() {
     };
 }
 
-/*
-   A tela não faz nenhuma conta: os números, a largura das barras e o texto do prazo
-   já vêm prontos do PainelCoordenadorService. Aqui só buscamos e guardamos a resposta
-*/
+// A tela não faz contas. Os números, a largura das barras e o texto do prazo vêm prontos do PainelCoordenadorService
 function painelPagina() {
     return {
         cursos: [],

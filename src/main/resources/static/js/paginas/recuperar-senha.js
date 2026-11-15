@@ -1,4 +1,4 @@
-// Script da página recuperar-senha.html: pede o link de recuperação de senha por e-mail
+// Página recuperar-senha.html, que pede o link de recuperação de senha por e-mail
 
 function recuperarSenhaForm() {
     return {
@@ -31,10 +31,7 @@ function recuperarSenhaForm() {
                     dados = {};
                 }
 
-                /*
-                   A resposta é a mesma para qualquer e-mail, com ou sem conta, então
-                   a tela também mostra sempre a mesma mensagem e esconde o formulário
-                */
+                // A resposta é a mesma para qualquer e-mail, então a tela mostra sempre a mesma mensagem e esconde o formulário
                 if (resposta.ok) {
                     this.mensagem = dados.mensagem;
                     this.enviado = true;

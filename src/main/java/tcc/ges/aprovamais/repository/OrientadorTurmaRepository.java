@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface OrientadorTurmaRepository extends JpaRepository<OrientadorTurma, Long> {
 
-    // O vínculo da turma com o orientador. Pela restrição única do turma_id, existe no máximo um (RF13)
+    // Vínculo da turma com o orientador. Pela restrição única do turma_id, existe no máximo um
     Optional<OrientadorTurma> findByTurmaId(Long turmaId);
 
     // Vínculos de todas as turmas de um curso, para a lista de turmas mostrar o orientador de cada uma numa consulta só

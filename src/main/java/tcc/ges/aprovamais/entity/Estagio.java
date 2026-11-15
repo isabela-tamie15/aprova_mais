@@ -45,7 +45,7 @@ public class Estagio {
     @Column(name = "local_empresa")
     private String localEmpresa;
 
-    // CNPJ só com números e letras, sem pontuação (14 caracteres). Fica nulo nos estágios cadastrados antes do campo existir
+    // CNPJ só com números e letras, sem pontuação. Fica nulo nos estágios antigos
     @Column(name = "cnpj_empresa", length = 14)
     private String cnpjEmpresa;
 
@@ -60,8 +60,7 @@ public class Estagio {
     @Column(name = "data_prevista_conclusao")
     private LocalDate dataPrevistaConclusao;
 
-    // Carga total e jornada semanal copiadas do tipo no cadastro (RN31).
-    // Ficam congeladas aqui, então mudar o tipo depois não afeta esse estágio
+    // Carga total e jornada semanal copiadas do tipo no cadastro. Mudar o tipo depois não afeta este estágio
     @Column(name = "carga_horaria_necessaria", nullable = false)
     private BigDecimal cargaHorariaNecessaria;
 
@@ -76,8 +75,7 @@ public class Estagio {
     @Column(name = "motivo_encerramento")
     private MotivoEncerramento motivoEncerramento;
 
-    // Texto livre do orientador sobre o aluno: cifrado em repouso com AES-256-GCM.
-    // TEXT porque o valor cifrado (IV + tag + Base64) é maior que o texto original.
+    // Texto livre do orientador sobre o aluno, cifrado em repouso com AES-256-GCM. É TEXT porque o valor cifrado é maior que o original
     @Convert(converter = AesEncryptor.class)
     @Column(name = "justificativa_rejeicao", columnDefinition = "TEXT")
     private String justificativaRejeicao;

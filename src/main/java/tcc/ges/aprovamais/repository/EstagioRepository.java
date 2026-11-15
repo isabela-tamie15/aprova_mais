@@ -26,9 +26,8 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
     Optional<Estagio> findByMatriculaIdAndStatus(Long matriculaId, StatusEstagio status);
 
     /*
-       Estágios do orientador para a tela de validações, numa ordem fixa: o alterado há mais tempo
-       primeiro, e no empate o de menor id. Sem o OrderBy, o banco devolvia em qualquer ordem e a
-       lista mudava de posição entre um acesso e outro
+       Estágios do orientador para a tela de validações, do alterado há mais tempo para o mais recente,
+       e no empate pelo menor id
     */
     List<Estagio> findByOrientadorEmailAndStatusInOrderByAlteradoEmAscIdAsc(String email, List<StatusEstagio> statuses);
 
@@ -36,14 +35,12 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
     List<Estagio> findByOrientadorEmailAndStatusInOrderByIdAsc(String email, List<StatusEstagio> statuses);
 
     /*
-       Esse aqui é o mais importante da segurança, busca o estágio pelo id
-       E pelo e-mail do orientador juntos. Assim o orientador só consegue
-       achar estágios que pertencem a ele, mesmo que tente passar o id de
-       outro estágio na URL
+       Busca o estágio pelo id e pelo e-mail do orientador juntos. Assim o orientador só acha
+       os próprios estágios, mesmo que passe o id de outro na URL
     */
     Optional<Estagio> findByIdAndOrientadorEmail(Long id, String email);
 
-    // Estágios das matrículas de uma turma em certos status, usado para passar os estágios em aberto ao novo orientador (RF13)
+    // Estágios das matrículas de uma turma nesses status, usado para passar os estágios em aberto ao novo orientador
     List<Estagio> findByMatriculaTurmaIdAndStatusIn(Long turmaId, Collection<StatusEstagio> statuses);
 
     // Estágios de um aluno nesses status, usado na anonimização

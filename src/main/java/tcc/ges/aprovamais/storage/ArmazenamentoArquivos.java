@@ -1,10 +1,9 @@
 package tcc.ges.aprovamais.storage;
 
 /*
-   Onde os arquivos das entregas ficam guardados. Existem duas implementações:
-   disco local (desenvolvimento e Docker, numa pasta montada como volume) e
-   Cloudflare R2 (produção). A escolha é feita no ArmazenamentoConfig, pelas
-   variáveis R2_*. O resto do sistema só conhece essa interface
+   Onde os arquivos das entregas ficam guardados. Existem duas implementações, o disco local
+   (desenvolvimento e Docker) e o Cloudflare R2 (produção). A escolha fica no ArmazenamentoConfig,
+   e o resto do sistema só conhece esta interface
 */
 public interface ArmazenamentoArquivos {
 

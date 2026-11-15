@@ -25,9 +25,8 @@ import java.time.ZoneId;
 import java.util.*;
 
 /*
-   Painel de correção do orientador e avaliação das entregas
-   O orientador só enxerga as entregas dos estágios em que ele é o orientador
-   O checklist de critérios entra na avaliação depois
+   Painel de correção do orientador e avaliação das entregas. O orientador só enxerga as entregas
+   dos estágios em que ele é o orientador
 */
 @Service
 @RequiredArgsConstructor
@@ -61,9 +60,9 @@ public class CorrecaoService {
     }
 
     /*
-       Entregas dos alunos do orientador, da mais antiga para a mais recente.
-       Sem filtro de status, mostra as que aguardam análise, com o filtro, qualquer status (inclusive as já aprovadas ou devolvidas).
-       O filtro, a ordem e a paginação são feitos no banco, que devolve só a página pedida (AUD-10)
+       Entregas dos alunos do orientador, da mais antiga para a mais recente. Sem filtro de status
+       mostra as que esperam análise, e com o filtro mostra qualquer status. O filtro, a ordem e a
+       paginação são feitos no banco
     */
     @Transactional(readOnly = true)
     public PainelCorrecaoResponse listar(String emailOrientador, FiltroPainel filtro) {
@@ -78,7 +77,7 @@ public class CorrecaoService {
             tamanho = TAMANHO_MAXIMO_PAGINA;
         }
 
-        // O período da tela é em dias do calendário de SP: vai do início do dia "de" até antes do início do dia seguinte ao "ate"
+        // O período da tela é em dias do calendário de São Paulo, do início do dia "de" até o fim do dia "ate"
         OffsetDateTime inicio = null;
         if (filtro.de() != null) {
             inicio = filtro.de().atStartOfDay(FUSO).toOffsetDateTime();
@@ -91,7 +90,7 @@ public class CorrecaoService {
         Page<EntregaVersao> paginaDoPainel = entregaVersaoRepository.buscarPainelDeCorrecao(emailOrientador, status,
                 filtro.alunoId(), filtro.tarefaId(), inicio, fim, PageRequest.of(Math.max(filtro.pagina(), 0), tamanho));
 
-        // Página além da última volta para a última, como antes
+        // Página além da última volta para a última
         if (paginaDoPainel.getTotalPages() > 0 && filtro.pagina() >= paginaDoPainel.getTotalPages()) {
             paginaDoPainel = entregaVersaoRepository.buscarPainelDeCorrecao(emailOrientador, status,
                     filtro.alunoId(), filtro.tarefaId(), inicio, fim,
@@ -123,8 +122,8 @@ public class CorrecaoService {
     }
 
     /*
-       Histórico de correções do orientador: cada versão que ele aprovou ou devolveu é uma linha,
-       da avaliação mais recente para a mais antiga. Uma tarefa devolvida e depois aprovada aparece duas vezes, porque foram duas correções
+       Histórico de correções do orientador. Cada versão aprovada ou devolvida é uma linha, da avaliação
+       mais recente para a mais antiga, então uma tarefa devolvida e depois aprovada aparece duas vezes
     */
     @Transactional(readOnly = true)
     public HistoricoCorrecoesResponse listarHistorico(String emailOrientador, int pagina, int tamanho) {
@@ -176,8 +175,8 @@ public class CorrecaoService {
     }
 
     /*
-       O orientador abre a entrega. Se ela estava ENVIADA, passa a EM_REVISAO, para o aluno saber que já está sendo analisada.
-       Volta o histórico completo, com o feedback das versões anteriores
+       Abre a entrega para o orientador. A entrega ENVIADA passa a EM_REVISAO, para o aluno saber que
+       ela está sendo analisada. Devolve o histórico completo, com o feedback das versões anteriores
     */
     @Transactional
     public EntregaDetalheResponse abrir(String emailOrientador, Long entregaId) {

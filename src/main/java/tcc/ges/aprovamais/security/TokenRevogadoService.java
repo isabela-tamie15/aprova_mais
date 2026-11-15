@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /*
    Lista dos tokens encerrados pelo logout, guardada no Redis pelo prazo de cada token.
-   Se o Redis cair, a lista fica na memória por 30 segundos. Nos testes, fica só na memória
+   Se o Redis cair, a lista fica na memória por 30 segundos, e nos testes ela fica só na memória
 */
 @Component
 public class TokenRevogadoService {
@@ -29,10 +29,10 @@ public class TokenRevogadoService {
     private final StringRedisTemplate redis;
     private final boolean usarRedis;
 
-    // Lista na memória: hash do token e o momento em que ele expira
+    // Lista na memória com o hash do token e o momento em que ele expira
     private final Map<String, Instant> revogadosNaMemoria = new ConcurrentHashMap<>();
 
-    // Até quando nós deixamos de tentar o Redis depois de uma falha
+    // Até quando o Redis deixa de ser tentado depois de uma falha
     private volatile long redisIndisponivelAte = 0L;
 
     public TokenRevogadoService(JwtService jwtService, StringRedisTemplate redis,

@@ -14,10 +14,9 @@ import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 
 /*
-   Essa service é quem cria as contas iniciais na primeira vez que o sistema sobe
-
-   A conta do Administrador é a definitiva. A da secretaria inicial é provisória: enquanto o
-   coordenador não convida secretarias pela tela (RF03), sem ela ninguém mais entraria no sistema
+   Cria as contas iniciais na primeira vez que o sistema sobe. A conta do administrador é a
+   definitiva. A da secretaria inicial garante o acesso enquanto o coordenador não convida
+   secretarias pela tela
 */
 @Service
 @RequiredArgsConstructor
@@ -31,9 +30,8 @@ public class ContaInicialService {
     private final AuditoriaService auditoriaService;
 
     /*
-       Cria o Administrador inicial se ainda não existir nenhum.
-       Ele nasce sem 2FA, e como o perfil exige 2FA, o primeiro login
-       já cai na configuração obrigatória com o QR Code antes de liberar o acesso
+       Cria o administrador inicial se ainda não existir nenhum. Ele nasce sem 2FA, então o primeiro
+       login já cai na configuração obrigatória
     */
     @Transactional
     public void criarAdministradorInicialSeNecessario(String email, String senha, String nome) {
@@ -70,9 +68,8 @@ public class ContaInicialService {
     }
 
     /*
-       Faz os check antes de criar, cada um com uma mensagem específica no log
-       A ideia é que se algo estiver faltando o sistema sobe do mesmo jeito, só avisa no log em vez de quebrar a inicialização
-       O prefixo é o começo do nome das variáveis de ambiente, usado nas mensagens
+       Conferências antes de criar a conta, cada uma com a sua mensagem no log. Se algo faltar, o sistema
+       sobe do mesmo jeito e só avisa. O prefixo é o começo do nome das variáveis de ambiente
     */
     private boolean podeCriar(PerfilUsuario perfil, String email, String senha, String prefixo) {
 
@@ -95,7 +92,7 @@ public class ContaInicialService {
             return false;
         }
 
-        // Email já está sendo usado, então não pode usar
+        // O e-mail já pertence a outro usuário
         if (usuarioRepository.existsByEmail(email)) {
             log.error("[CONTA INICIAL] O e-mail {} já pertence a outro usuário. Conta {} não criada.",
                     email, perfil);
@@ -105,8 +102,8 @@ public class ContaInicialService {
     }
 
     /*
-       Preenche os campos comuns. A conta já sai ativa e sem o fluxo de convite (primeiroAcesso false), porque não existe convite para a conta inicial
-       O 2FA fica desligado de propósito, o login vai obrigar a configurar
+       Preenche os campos comuns. A conta já sai ativa e sem convite, e o 2FA fica desligado para o
+       primeiro login obrigar a configuração
     */
     private void preencherConta(Usuario usuario, PerfilUsuario perfil, String email, String senha, String nome) {
         usuario.setNome(nome);

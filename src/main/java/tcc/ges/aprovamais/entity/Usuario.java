@@ -103,7 +103,7 @@ public abstract class Usuario {
         return versaoSessao == null ? 0 : versaoSessao;
     }
 
-    // Encerra todas as sessões abertas da conta: os tokens emitidos antes deixam de valer
+    // Encerra todas as sessões abertas da conta, e os tokens emitidos antes deixam de valer
     public void encerrarSessoes() {
         versaoSessao = versaoSessaoAtual() + 1;
     }

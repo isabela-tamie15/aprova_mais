@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PendenciasEstagioTest {
 
-    // F2: atividades restantes e pendência, sem banco e sem mock, como no CalculadoraCargaHorariaTest
+    // Atividades restantes e pendência, sem banco e sem mock
 
     @Test
     @DisplayName("Com 3 tarefas e 1 aprovada faltam 2 atividades")

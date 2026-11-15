@@ -20,7 +20,7 @@ import tcc.ges.aprovamais.service.ValidadorCnpj;
 import java.util.List;
 import java.util.Optional;
 
-// Esse controller é quem recebe as requisições do aluno relacionadas ao estágio
+// Estágio do aluno
 @Tag(name = "Estágio do aluno", description = "Cadastro, consulta e reenvio do estágio pelo aluno")
 @RestController
 @RequestMapping("/api/v1/aluno/estagio")
@@ -30,28 +30,22 @@ public class AlunoEstagioController {
     private final EstagioService estagioService;
     private final ConsultaCnpjService consultaCnpjService;
 
-    // Esse é o endpoint que devolve a lista de tipos de estágio que o aluno pode escolher, só os do curso dele
+    // Devolve os tipos de estágio que o aluno pode escolher, só os do curso dele
     @GetMapping("/tipos")
     public ResponseEntity<List<TipoEstagioResponse>> listarTiposEstagio(Authentication authentication) {
         List<TipoEstagioResponse> tipos = estagioService.listarTiposEstagioDisponiveis(authentication.getName());
         return ResponseEntity.ok(tipos);
     }
 
-    // Esse é o endpoint que devolve o estágio atual do aluno logado
+    // Devolve o estágio atual do aluno logado
     @GetMapping
     public ResponseEntity<EstagioResponse> buscarMeuEstagio(Authentication authentication) {
 
-        /*
-           Pega o e-mail do token em vez de receber por parâmetro, assim o aluno
-           não consegue passar o e-mail de outro e ver o estágio alheio
-        */
+        // O e-mail vem do token, então o aluno não consegue ver o estágio de outro
         String email = authentication.getName();
         Optional<EstagioResponse> estagioEncontrado = estagioService.buscarEstagioDoAluno(email);
 
-        /*
-           Se achou, devolve com 200. Se não achou, devolve 204 No Content,
-           que é a forma padrão de dizer que não tem nada para retornar
-        */
+        // Sem estágio, a resposta é 204 No Content
         if (estagioEncontrado.isPresent()) {
             EstagioResponse resposta = estagioEncontrado.get();
             return ResponseEntity.ok(resposta);
@@ -60,7 +54,7 @@ public class AlunoEstagioController {
         }
     }
 
-    // Esse é o endpoint que o aluno usa para cadastrar um novo estágio ou atualizar o que já existe
+    // Cadastra um estágio novo ou reenvia o que foi rejeitado
     @PostMapping
     public ResponseEntity<EstagioResponse> cadastrarOuAtualizar(
             Authentication authentication,
@@ -73,7 +67,7 @@ public class AlunoEstagioController {
         */
         String email = authentication.getName();
 
-        // A consulta à BrasilAPI é feita antes, fora da transação do cadastro (AUD-10)
+        // A consulta à BrasilAPI é feita antes, fora da transação do cadastro
         ConsultaCnpjResponse consultaNaReceita = consultaCnpjService.consultar(
                 ValidadorCnpj.normalizar(request.getCnpjEmpresa()));
 
@@ -88,14 +82,14 @@ public class AlunoEstagioController {
         return ResponseEntity.ok(estagioService.listarHistoricoDoAluno(authentication.getName()));
     }
 
-    // Esse é o endpoint que lista todos os estágios da matrícula do aluno, o atual e os já concluídos ou encerrados
+    // Lista todos os estágios da matrícula do aluno, o atual e os já concluídos ou encerrados
     @GetMapping("/todos")
     public ResponseEntity<List<EstagioResponse>> listarTodos(Authentication authentication) {
         return ResponseEntity.ok(estagioService.listarEstagiosDoAluno(authentication.getName()));
     }
 
 
-    //Esse é o endpoint que a tela de cadastro chama quando o aluno termina de digitar o CNPJ, para já preencher o nome da empresa com a razão social.
+    // Chamado quando o aluno termina de digitar o CNPJ, para preencher o nome da empresa com a razão social
     @GetMapping("/cnpj/{cnpj}")
     public ResponseEntity<ConsultaCnpjResponse> consultarCnpj(@PathVariable String cnpj) {
         if (!ValidadorCnpj.valido(cnpj)) {

@@ -17,7 +17,7 @@ import tcc.ges.aprovamais.security.JwtService;
 import tcc.ges.aprovamais.service.DoisFatoresService;
 
 
-// Esse controller é quem recebe as requisições de gerenciamento de 2fa da conta do usuário logado
+// Verificação em duas etapas da conta do usuário logado
 @Tag(name = "Verificação em duas etapas", description = "Consulta, configuração e desativação do 2FA da conta logada")
 @RestController
 @RequestMapping("/api/v1/conta/2fa")
@@ -28,36 +28,32 @@ public class DoisFatoresController {
     private final JwtService jwtService;
     private final CookieSessao cookieSessao;
 
-    // Esse é o endpoint que diz se o usuário já tem 2fa ativado ou não
+    // Diz se o usuário já tem o 2FA ativo
     @GetMapping
     public ResponseEntity<StatusDoisFatoresResponse> consultarStatus(Authentication authentication) {
         return ResponseEntity.ok(doisFatoresService.consultarStatus(authentication.getName()));
     }
 
-    // Esse é o endpoint que gera um novo segredo e devolve o QR Code para configurar o 2fa
+    // Gera um novo segredo e devolve o QR Code para configurar o 2FA
     @PostMapping("/configurar")
     public ResponseEntity<ConfiguracaoDoisFatoresResponse> configurar(Authentication authentication) {
         return ResponseEntity.ok(doisFatoresService.configurar(authentication.getName()));
     }
 
-    // Esse é o endpoint que ativa o 2fa de vez, depois que o usuário confirma o código
+    // Ativa o 2FA depois que o usuário confirma o código
     @PostMapping("/ativar")
     public ResponseEntity<Void> ativar(
             @Valid @RequestBody CodigoDoisFatoresRequest requisicao,
             Authentication authentication,
             HttpServletRequest request) {
 
-        /*
-           E-mail do token e IP da requisição. O código vem no corpo,
-           é o que o app autenticador gerou para confirmar que o usuário
-           conseguiu configurar direito
-        */
+        // O código no corpo é o gerado pelo app autenticador, e confirma que a configuração deu certo
         doisFatoresService.ativarPelaConta(
                 authentication.getName(), requisicao.getCodigo(), request.getRemoteAddr());
         return ResponseEntity.ok().build();
     }
 
-    // Esse é o endpoint que desativa o 2fa, exige o código atual para confirmar
+    // Desativa o 2FA, exigindo o código atual
     @PostMapping("/desativar")
     public ResponseEntity<Void> desativar(
             @Valid @RequestBody CodigoDoisFatoresRequest requisicao,
@@ -72,7 +68,7 @@ public class DoisFatoresController {
         Usuario usuario = doisFatoresService.desativar(
                 authentication.getName(), requisicao.getCodigo(), request.getRemoteAddr());
 
-        // Desativar o 2FA encerra as sessões da conta; aqui nós mantemos o usuário logado neste navegador com um token novo
+        // Desativar o 2FA encerra as sessões da conta, e o usuário continua logado neste navegador com um token novo
         String tokenNovo = jwtService.gerarToken(usuario.getEmail(), usuario.getPerfil().name(),
                 usuario.versaoSessaoAtual());
         cookieSessao.gravar(respostaHttp, tokenNovo);

@@ -6,9 +6,8 @@ import tcc.ges.aprovamais.exception.DadoInvalidoException;
 import java.util.Locale;
 
 /*
-   Confere o arquivo enviado na entrega (RN56): formato pela extensão e pelos
-   primeiros bytes do conteúdo, para um .exe renomeado para .pdf não passar.
-   Separado do service para dar para testar sem Spring
+   Confere o arquivo da entrega pelo formato da extensão e pelos primeiros bytes do conteúdo,
+   para um .exe renomeado para .pdf não passar. Fica separado do service para ser testado sem Spring
 */
 public final class ValidadorArquivoEntrega {
 
@@ -25,7 +24,7 @@ public final class ValidadorArquivoEntrega {
     private ValidadorArquivoEntrega() {
     }
 
-    // Devolve o tipo do arquivo ou recusa com a mensagem que vai para a tela (CA02 do RF33)
+    // Devolve o tipo do arquivo ou recusa com a mensagem que vai para a tela
     public static TipoArquivo validar(String nomeOriginal, byte[] conteudo) {
         if (conteudo == null || conteudo.length == 0) {
             throw new DadoInvalidoException("Selecione um arquivo para enviar.");
@@ -45,10 +44,7 @@ public final class ValidadorArquivoEntrega {
         return tipoArquivo;
     }
 
-    /*
-       Nome que fica gravado e aparece no download: só o nome, sem pastas, sem
-       caracteres de controle e com no máximo 200 caracteres
-    */
+    // Nome gravado e mostrado no download, sem pastas, sem caracteres de controle e com no máximo 200 caracteres
     public static String limparNome(String nomeOriginal) {
         String nomeDoArquivo = nomeOriginal == null ? "" : nomeOriginal;
         nomeDoArquivo = nomeDoArquivo.substring(Math.max(nomeDoArquivo.lastIndexOf('/'), nomeDoArquivo.lastIndexOf('\\')) + 1);

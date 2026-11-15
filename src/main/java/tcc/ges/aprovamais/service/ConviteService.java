@@ -32,17 +32,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-// Essa service é quem cuida do ciclo de vida dos convites, desde o envio até o aceite ou recusa
+// Envio, validação, aceite e recusa dos convites
 @Service
 @RequiredArgsConstructor
 public class ConviteService {
 
     private static final Logger log = LoggerFactory.getLogger(ConviteService.class);
 
-    /*
-       Hierarquia de cadastro cada perfil só convida o nível logo abaixo dele.
-       Assim um perfil operacional nunca cria uma conta com mais poder que a sua
-    */
+    // Cada perfil só convida o nível logo abaixo dele, então ninguém cria uma conta com mais poder que a sua
     private static final Map<PerfilUsuario, Set<PerfilDestino>> HIERARQUIA = Map.of(
             PerfilUsuario.ADMINISTRADOR, Set.of(PerfilDestino.COORDENADOR),
             PerfilUsuario.COORDENADOR, Set.of(PerfilDestino.SECRETARIA),
@@ -61,7 +58,7 @@ public class ConviteService {
     @Value("${app.url}")
     private String appUrl;
 
-    // Esse é o método que envia o convite e cria o usuário pendente se ainda não existir
+    // Envia o convite e cria o usuário pendente quando ele ainda não existe
     @Transactional
     public void enviarConvite(String emailDestino, PerfilDestino perfil, String nome,
                               String emailRemetente, String ipOrigem) {
@@ -71,13 +68,13 @@ public class ConviteService {
         Usuario remetente = usuarioRepository.findByEmail(emailRemetente)
                 .orElseThrow(() -> new ResourceNotFoundException("Remetente não encontrado"));
 
-        // RN01: perfil fora da hierarquia do remetente recebe 403 (CA02)
+        // Perfil fora da hierarquia do remetente recebe 403
         if (!HIERARQUIA.getOrDefault(remetente.getPerfil(), Set.of()).contains(perfil)) {
             log.warn("[CONVITE] {} ({}) tentou convidar o perfil {}", emailRemetente, remetente.getPerfil(), perfil);
             throw new AccessDeniedException("Seu perfil não pode convidar " + perfil);
         }
 
-        // RN05: aluno e orientador só recebem convite se estiverem no pré-cadastro, com o mesmo perfil (CA03)
+        // Aluno e orientador só recebem convite se estiverem no pré-cadastro com o mesmo perfil
         PreCadastro preCadastro = null;
         if (perfil == PerfilDestino.ALUNO || perfil == PerfilDestino.ORIENTADOR) {
             preCadastro = preCadastroService.buscarPorEmail(email)
@@ -90,9 +87,8 @@ public class ConviteService {
         }
 
         /*
-           Um convite pendente por email. Antes de conferir, o convite vencido desse e-mail vira
-           EXPIRADO, assim a secretaria consegue mandar um novo depois das 24 horas sem depender
-           de alguém ter aberto o link antigo
+           Um convite pendente por e-mail. O convite vencido desse e-mail vira EXPIRADO antes da conferência,
+           para a secretaria poder mandar um novo depois das 24 horas
         */
         conviteRepository.expirarVencidosDoEmail(email, OffsetDateTime.now(ZoneOffset.UTC));
         if (conviteRepository.existsByEmailAndStatus(email, StatusConvite.PENDENTE)) {
@@ -100,11 +96,9 @@ public class ConviteService {
         }
 
         /*
-           Se ainda não existe usuário com esse email, cria um já com status
-           pendente. A ideia é deixar o registro pronto para quando a pessoa
-           aceitar o convite e definir a senha de verdade. Fica ativo=false
-           e primeiroAcesso=true até lá. Quem já tem conta ativa não é convidado
-           de novo e um cadastro pendente de outro perfil também barra o envio
+           Sem usuário com esse e-mail, cria um pendente, inativo e com primeiroAcesso true, pronto para o
+           aceite do convite. Quem já tem conta ativa não é convidado de novo, e um cadastro pendente
+           de outro perfil também barra o envio
         */
         Optional<Usuario> existente = usuarioRepository.findByEmail(email);
         if (existente.isPresent()) {
@@ -122,10 +116,7 @@ public class ConviteService {
             criarUsuarioPendente(email, perfil, nomeConvidado);
         }
 
-        /*
-           Gera o token do convite, que vai no link enviado por e-mail.
-           O banco guarda só o hash dele, como no token de recuperação de senha
-        */
+        // Token do convite, que vai no link do e-mail. O banco guarda só o hash dele
         String token = UUID.randomUUID().toString();
 
         Convite convite = new Convite();
@@ -149,7 +140,7 @@ public class ConviteService {
         String linkConvite = appUrl + "/primeiro-acesso?token=" + token;
         emailService.enviarConvite(email, email, linkConvite);
 
-        // Só aparece com o log em DEBUG, que é o do perfil dev, isso n deve nunca sair em produção
+        // Só aparece com o log em DEBUG, que é o do perfil dev
         log.debug("[CONVITE] Link de primeiro acesso para {}: {}", email, linkConvite);
 
         auditoriaService.registrar(
@@ -163,7 +154,7 @@ public class ConviteService {
         log.info("[CONVITE] Convite enviado para: {} pelo remetente: {}", email, emailRemetente);
     }
 
-    // Esse é o método que lista os convites enviados pelo usuário logado, do mais recente para o mais antigo
+    // Lista os convites enviados pelo usuário logado, do mais recente para o mais antigo
     @Transactional(readOnly = true)
     public List<ConviteResponse> listarEnviados(String emailRemetente) {
         List<Convite> convitesEnviados = conviteRepository.findByRemetenteEmailOrderByCriadoEmDesc(emailRemetente);
@@ -184,9 +175,8 @@ public class ConviteService {
     }
 
     /*
-       Cria a conta pendente do convidado, com senha provisória que não serve para
-       login. O RGM e a matrícula institucional reais vêm do pré-cadastro no
-       aceite
+       Cria a conta pendente do convidado, com uma senha provisória que não serve para login.
+       O RGM e a matrícula institucional reais vêm do pré-cadastro no aceite
     */
     private void criarUsuarioPendente(String email, PerfilDestino perfil, String nome) {
         Usuario usuario = switch (perfil) {
@@ -233,10 +223,7 @@ public class ConviteService {
         }
     }
 
-    /*
-       Rotina diária que marca como EXPIRADO os convites vencidos, para a lista de convites da
-       secretaria e do coordenador mostrar a situação real. Roda às 3h, horário de pouco uso
-    */
+    // Marca todo dia, às 3h, os convites vencidos como EXPIRADO, para a lista de convites mostrar a situação real
     @Scheduled(cron = "0 0 3 * * *", zone = "America/Sao_Paulo")
     @Transactional
     public void expirarConvitesVencidos() {
@@ -246,7 +233,7 @@ public class ConviteService {
         }
     }
 
-    // Esse é o método que valida um token de convite, usado antes de aceitar, recusar ou abrir a página
+    // Valida o token do convite, antes de abrir a página, aceitar ou recusar
     @Transactional(readOnly = true)
     public Convite validarToken(String token) {
         if (token == null || token.isBlank() || token.length() > 200) {
@@ -261,10 +248,8 @@ public class ConviteService {
         }
 
         /*
-           Se o prazo já venceu, marca como expirado no banco antes de lançar.
-           Assim o registro fica atualizado e a pessoa sabe que o convite
-           realmente passou da validade, não que o token está errado.
-           A transação é só leitura e a exceção logo abaixo desfaz tudo, então o update roda numa transação própria
+           Convite vencido é marcado como expirado antes da exceção, para a pessoa saber que ele passou
+           da validade. Como a exceção desfaz a transação de leitura, o update roda numa transação própria
         */
         if (OffsetDateTime.now(ZoneOffset.UTC).isAfter(convite.getExpiracaoToken())) {
             convite.setStatus(StatusConvite.EXPIRADO);

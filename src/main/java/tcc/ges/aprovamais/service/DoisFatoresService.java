@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
-// Esse service cuida de tudo relacionado ao 2fa, tanto o token de pré-autenticação quanto o TOTP em si
+// Token de pré-autenticação e códigos TOTP da verificação em duas etapas
 @Service
 @RequiredArgsConstructor
 public class DoisFatoresService {
@@ -42,10 +42,8 @@ public class DoisFatoresService {
     // ===== Token de pré-autenticação (fluxo de login) =====
 
     /*
-       Gera o token de pré-autenticação para quem acabou de acertar a senha.
-       O valor original vai para o cliente, mas o que fica salvo no banco é só
-       o hash. Assim, se o banco vazar, ninguém consegue usar os tokens que
-       estão lá dentro
+       Gera o token de pré-autenticação para quem acertou a senha. O cliente recebe o valor original
+       e o banco guarda só o hash, então um vazamento do banco não expõe tokens válidos
     */
     public String gerarTokenPreAutenticacao(Usuario usuario) {
         String token = UUID.randomUUID().toString();
@@ -56,10 +54,8 @@ public class DoisFatoresService {
     }
 
     /*
-       Busca o usuário dono do token de pré-autenticação. Faz várias checagens
-       em sequência: token existe, não expirou e a conta ainda está ativa. Se
-       qualquer uma falhar, lança a mesma exceção genérica, sem dizer qual
-       foi o problema, para não dar pista para quem está tentando adivinhar
+       Busca o dono do token de pré-autenticação, conferindo se o token existe, não expirou e se a
+       conta continua ativa. Qualquer falha dá a mesma exceção, sem dizer qual foi o problema
     */
     public Usuario buscarPorTokenPreAutenticacao(String token) {
         if (token == null || token.isBlank()) {
@@ -97,12 +93,12 @@ public class DoisFatoresService {
 
     // ===== TOTP =====
 
-    // O TOTP troca de código a cada 30 segundos; cada intervalo é um passo
+    // O TOTP troca de código a cada 30 segundos, e cada intervalo é um passo
     private static final long MILISSEGUNDOS_POR_PASSO = 30_000L;
 
     /*
-       Confere o código de 6 dígitos e se ele ainda não foi usado. Aceitamos o passo atual e um
-       para cada lado, por causa de relógio adiantado ou atrasado no celular
+       Confere o código de 6 dígitos e se ele ainda não foi usado. Aceita o passo atual e um para
+       cada lado, por causa de relógio adiantado ou atrasado no celular
     */
     public boolean codigoValido(Usuario usuario, String codigo) {
         String segredo = usuario.getDoisFatoresSegredo();
@@ -127,9 +123,8 @@ public class DoisFatoresService {
     }
 
     /*
-       Gera um segredo novo para o usuário, ainda não ativo. O segredo em si
-       fica cifrado no banco, o AesEncryptor cuida disso quando salva.
-       Devolve a URI que o frontend usa para montar o QR Code
+       Gera um segredo novo, ainda não ativo, que o AesEncryptor cifra ao salvar. Devolve a URI
+       usada pela tela para montar o QR Code
     */
     public ConfiguracaoDoisFatoresResponse gerarNovoSegredo(Usuario usuario) {
         GoogleAuthenticatorKey chave = googleAuthenticator.createCredentials();
@@ -137,10 +132,8 @@ public class DoisFatoresService {
         usuarioRepository.save(usuario);
 
         /*
-           Usa o getOtpAuthTotpURL em vez do getOtpAuthURL porque o primeiro
-           só monta a URI no formato otpauth:// e o QR Code é gerado no
-           navegador. O segundo geraria um QR Code chamando um serviço
-           externo, o que mandaria o segredo do usuário para fora
+           O getOtpAuthTotpURL só monta a URI otpauth://, e o QR Code é gerado no navegador.
+           O getOtpAuthURL chamaria um serviço externo e mandaria o segredo para fora
         */
         String uri = GoogleAuthenticatorQRGenerator.getOtpAuthTotpURL(EMISSOR, usuario.getEmail(), chave);
         return new ConfiguracaoDoisFatoresResponse(uri, chave.getKey());
@@ -167,7 +160,7 @@ public class DoisFatoresService {
         );
     }
 
-    // Gera um segredo novo para configurar o 2fa, usado quando o usuário está ativando pela conta
+    // Gera um segredo novo para quem está ativando o 2FA pela conta
     @Transactional
     public ConfiguracaoDoisFatoresResponse configurar(String email) {
         Usuario usuario = buscarPorEmail(email);
@@ -180,10 +173,8 @@ public class DoisFatoresService {
     }
 
     /*
-       Ativa o 2fa validando um código primeiro para confirmar que o usuário
-       conseguiu configurar o app autenticador. O noRollbackFor é porque, se
-       o código tiver errado, nós já registramos a falha na auditoria e
-       quer que isso persista mesmo com a exceção
+       Ativa o 2FA depois de validar um código, para confirmar que o app autenticador foi configurado.
+       O noRollbackFor mantém gravada a falha registrada quando o código está errado
     */
     @Transactional(noRollbackFor = {CodigoDoisFatoresInvalidoException.class, AuthenticationException.class})
     public void ativarPelaConta(String email, String codigo, String ipOrigem) {
@@ -212,11 +203,7 @@ public class DoisFatoresService {
             throw new RegraNegocioException("A autenticação de dois fatores não está ativa.");
         }
 
-        /*
-           Exige o código mesmo com a sessão aberta. Assim, se alguém pegar
-           o computador do usuário já logado, não consegue simplesmente
-           desativar o 2fa da vítima
-        */
+        // Exige o código mesmo com a sessão aberta, para quem pegar o computador logado não desativar o 2FA
         validarCodigoDaConta(usuario, codigo, ipOrigem);
 
         usuario.setDoisFatoresAtivo(false);
@@ -233,11 +220,7 @@ public class DoisFatoresService {
 
     // ===== Auxiliares =====
 
-    /*
-       Valida o código do 2fa compartilhando o mesmo limite de tentativas do
-       login. Isso impede que alguém com a sessão aberta fique testando
-       códigos até acertar, porque depois de 5 erros a conta bloqueia
-    */
+    // Valida o código do 2FA com o mesmo limite de tentativas do login. Depois de 5 erros a conta bloqueia
     private void validarCodigoDaConta(Usuario usuario, String codigo, String ipOrigem) {
         bloqueioContaService.verificarBloqueio(usuario, "DOIS_FATORES_FALHA", ipOrigem);
 
@@ -252,7 +235,6 @@ public class DoisFatoresService {
         bloqueioContaService.limparFalhas(usuario);
     }
 
-    // Busca o usuário pelo e-mail, usado nos métodos que recebem o e-mail do token
     private Usuario buscarPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));

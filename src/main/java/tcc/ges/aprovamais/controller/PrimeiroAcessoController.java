@@ -14,7 +14,7 @@ import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.service.ConviteService;
 import tcc.ges.aprovamais.service.PrimeiroAcessoService;
 
-// Esse controller é quem serve o fluxo de primeiro acesso, onde o convidado cria a senha pelo link do convite
+// Primeiro acesso, em que o convidado cria a senha pelo link do convite
 @Controller
 @RequestMapping("/primeiro-acesso")
 @RequiredArgsConstructor
@@ -23,39 +23,29 @@ public class PrimeiroAcessoController {
     private final PrimeiroAcessoService primeiroAcessoService;
     private final ConviteService conviteService;
 
-    // Esse é o endpoint que abre a página de primeiro acesso quando o usuário clica no link do convite
+    // Abre a página de primeiro acesso pelo link do convite
     @GetMapping
     public String exibirPrimeiroAcesso(@RequestParam String token, Model model) {
         try {
-            /*
-               Valida o token do convite e, se estiver tudo certo, coloca o
-               token e o e-mail no Model para a página poder usar. Se o token
-               estiver inválido ou expirado, cai no catch e mostra a página
-               de erro com a mensagem da exceção
-            */
+            // Com o token válido, a página recebe o token e o e-mail. Token inválido ou expirado mostra a página de erro com a mensagem
             Convite convite = conviteService.validarToken(token);
             model.addAttribute("token", token);
             model.addAttribute("email", convite.getEmail());
             return "primeiro-acesso";
         } catch (ResourceNotFoundException | RegraNegocioException excecao) {
-            // Só as falhas do convite (inexistente, usado ou expirado) viram a página de erro com a mensagem (AUD-18)
+            // Só as falhas do convite, inexistente, usado ou expirado, viram a página de erro
             model.addAttribute("erro", excecao.getMessage());
             return "primeiro-acesso-erro";
         }
     }
 
-    // Esse é o endpoint que conclui o cadastro quando o usuário define a senha
+    // Conclui o cadastro com a senha definida pelo usuário
     @PostMapping("/aceitar")
     @ResponseBody
     public ResponseEntity<Void> aceitar(@RequestParam String token,
                                         @Valid @RequestBody PrimeiroAcessoRequest request,
                                         HttpServletRequest httpRequest) {
-        /*
-           Passa o token, a senha escolhida e o IP para concluir o cadastro. Sem try aqui:
-           convite inválido volta 404, usado ou expirado volta 409, os dois com a mensagem
-           para a tela, e um erro inesperado vira 500 com a mensagem genérica do
-           GlobalExceptionHandler, sem esconder a falha num 400 (AUD-18)
-        */
+        // Convite inválido volta 404 e convite usado ou expirado volta 409, os dois com a mensagem para a tela
         primeiroAcessoService.concluirCadastro(
                 token,
                 request.getSenha(),
@@ -64,7 +54,7 @@ public class PrimeiroAcessoController {
         return ResponseEntity.ok().build();
     }
 
-    // Esse é o endpoint que o usuário usa para recusar o convite e não criar a conta
+    // Recusa o convite sem criar a conta
     @PostMapping("/recusar")
     public String recusar(@RequestParam String token,
                           HttpServletRequest httpRequest,

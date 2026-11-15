@@ -25,19 +25,16 @@ public class EstagioResponse {
     private final String situacaoCnpj;
     private final String justificativaRejeicao;
 
-    // F2: horas que faltam, data em que as entregas do semestre fecham, dias até essa data e o aviso de prazo
+    // Horas que faltam, data em que as entregas do semestre fecham, dias até essa data e o aviso de prazo
     private final BigDecimal cargaHorariaRestante;
     private final LocalDate dataEncerramentoEntregas;
     private final Long diasParaEncerramentoEntregas;
     private final String avisoPrazo;
 
-    // RF22: semanas completas contadas desde o início, para o cálculo da carga horária. Só vem preenchido no estágio ATIVO
+    // Semanas completas contadas desde o início, para o cálculo da carga horária. Só vem no estágio ATIVO
     private final Long semanasContadas;
 
-    /*
-       F2: atividades da trilha do tipo de estágio, contadas no service: as aprovadas, o total
-       de tarefas e as que ainda faltam. Só vêm preenchidas no estágio ATIVO
-    */
+    // Atividades da trilha do tipo de estágio, com as aprovadas, o total de tarefas e as que faltam. Só vêm no estágio ATIVO
     private final Long atividadesAprovadas;
     private final Long atividadesTotal;
     private final Long atividadesRestantes;

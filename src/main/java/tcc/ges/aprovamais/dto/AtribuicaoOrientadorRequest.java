@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-// Corpo da atribuição do orientador a uma turma pelo coordenador (RF13)
+// Atribuição do orientador a uma turma pelo coordenador
 @Getter
 @Setter
 public class AtribuicaoOrientadorRequest {

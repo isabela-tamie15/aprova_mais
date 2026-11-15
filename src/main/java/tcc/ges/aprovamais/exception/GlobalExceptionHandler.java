@@ -22,7 +22,7 @@ import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// Esse handler centraliza o tratamento de exceções, é quem transforma os erros em respostas JSON padronizadas
+// Transforma as exceções em respostas JSON padronizadas
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -90,11 +90,9 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException excecao) {
 
         /*
-           Cada campo com erro vira uma entrada no mapa "campos", o nome do
-           campo como chave e a mensagem como valor, para o frontend mostrar o
-           erro embaixo do campo certo. A "mensagem" traz o primeiro erro,
-           assim as telas que só leem dados.mensagem também mostram algo útil.
-           O LinkedHashMap mantém a ordem em que os erros foram encontrados
+           Cada campo com erro entra no mapa "campos", com o nome do campo e a mensagem, para a tela
+           mostrar o erro embaixo do campo certo. A "mensagem" traz o primeiro erro para as telas que
+           só leem dados.mensagem. O LinkedHashMap mantém a ordem em que os erros foram encontrados
         */
         Map<String, String> campos = new LinkedHashMap<>();
         for (FieldError fieldError : excecao.getBindingResult().getFieldErrors()) {
@@ -116,9 +114,8 @@ public class GlobalExceptionHandler {
     }
 
     /*
-       As validações cruzadas ficam em métodos isAlgumaCoisa (ex: isDataInicioDentroDoLimite),
-       e o erro chega com o nome desse método. Aqui troca pelo campo que o
-       usuário de fato preencheu, para a tela marcar o input certo
+       As validações cruzadas ficam em métodos isAlgumaCoisa, e o erro chega com o nome do método.
+       Aqui ele é trocado pelo campo que o usuário preencheu, para a tela marcar o campo certo
     */
     private String nomeDoCampo(String campo) {
         return switch (campo) {
@@ -161,7 +158,7 @@ public class GlobalExceptionHandler {
                 .body(construirErro(HttpStatus.BAD_REQUEST, "Selecione um arquivo para enviar."));
     }
 
-    // 400 parâmetro inválido que não passa pelo @Valid (ex: CNPJ na URL)
+    // 400 parâmetro inválido que não passa pelo @Valid, como o CNPJ na URL
     @ExceptionHandler(DadoInvalidoException.class)
     public ResponseEntity<ErroResposta> handleDadoInvalido(DadoInvalidoException excecao) {
         log.warn("[EXCEPTION] Parâmetro inválido: {}", excecao.getMessage());
@@ -180,9 +177,8 @@ public class GlobalExceptionHandler {
     }
 
     /*
-       409 restrição única do banco, por exemplo dois envios da mesma entrega ao mesmo
-       tempo (AUD-22). A mensagem do banco fica só no log, porque traz nomes de tabela e
-       de coluna, e a tela recebe um texto para atualizar a página e conferir
+       409 restrição única do banco, como dois envios da mesma entrega ao mesmo tempo. A mensagem do
+       banco fica só no log, porque traz nomes de tabela e de coluna
     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErroResposta> handleIntegridade(DataIntegrityViolationException excecao) {
@@ -193,12 +189,7 @@ public class GlobalExceptionHandler {
                         "Esta operação conflita com outra feita ao mesmo tempo. Atualize a página e confira."));
     }
 
-    /*
-       403 acesso negado pelo @PreAuthorize, por exemplo um aluno abrindo uma página
-       da coordenação. Sem esse handler, a exceção caía no genérico lá embaixo e
-       virava 500. As rotas protegidas só pelo SecurityConfig já respondiam 403
-       antes de chegar aqui
-    */
+    // 403 acesso negado pelo @PreAuthorize, como um aluno abrindo uma página da coordenação
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErroResposta> handleAccessDenied(AccessDeniedException excecao) {
         log.warn("[EXCEPTION] Acesso negado: {}", excecao.getMessage());
@@ -229,10 +220,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErroResposta> handleGeneric(Exception excecao) {
 
         /*
-           Esse é o último handler da cadeia, se cair aqui é porque alguma
-           coisa estourou e não foi tratada em nenhum outro lugar. Registra
-           o stack completo com log.error e devolve uma mensagem genérica
-           para o cliente, sem expor detalhes internos
+           Último handler da cadeia, para o que não foi tratado em nenhum outro lugar. Registra o stack
+           completo no log e devolve uma mensagem genérica, sem expor detalhes internos
         */
         log.error("[EXCEPTION] Erro inesperado: {}", excecao.getMessage(), excecao);
         return ResponseEntity

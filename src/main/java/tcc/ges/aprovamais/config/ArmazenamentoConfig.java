@@ -20,10 +20,9 @@ import java.net.URI;
 import java.nio.file.Path;
 
 /*
-   Escolhe onde os arquivos das entregas são guardados. Com as variáveis
-   R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY e R2_BUCKET preenchidas, usa o
-   Cloudflare R2, sem essas variáveis ele usa a pasta local ARMAZENAMENTO_DIRETORIO (padrão "uploads", que no Docker é um volume).
-   No perfil prod, o R2 é obrigatório
+   Escolhe onde os arquivos das entregas são guardados. Com R2_ENDPOINT, R2_ACCESS_KEY,
+   R2_SECRET_KEY e R2_BUCKET preenchidas, usa o Cloudflare R2. Sem elas, usa a pasta local
+   ARMAZENAMENTO_DIRETORIO, que no Docker é um volume. No perfil prod, o R2 é obrigatório
 */
 @Configuration
 public class ArmazenamentoConfig {

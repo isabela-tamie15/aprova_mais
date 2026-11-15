@@ -1,4 +1,4 @@
-// Script da página orientador/correcoes.html: painel de correção com filtros combináveis
+// Página orientador/correcoes.html, com o painel de correção e os filtros combináveis
 function painelCorrecao() {
     return {
         painel: null,

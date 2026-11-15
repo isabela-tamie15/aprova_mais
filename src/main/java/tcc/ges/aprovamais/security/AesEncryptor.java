@@ -14,7 +14,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-// Essa classe criptografa os atributos marcados com ele antes de salvar no banco e descriptografa ao ler
+// Cifra os atributos marcados antes de salvar no banco e decifra ao ler
 @Converter(autoApply = false)
 @Component
 public class AesEncryptor implements AttributeConverter<String, String> {
@@ -28,11 +28,7 @@ public class AesEncryptor implements AttributeConverter<String, String> {
 
     private byte[] bytesChaveSecreta;
 
-    /*
-       Roda uma vez quando a aplicação sobe para preparar a chave de criptografia.
-       Nós não usamos o segredo direto: ele passa por um hash SHA-256 para gerar
-       uma chave do tamanho certo para o AES, que precisa de 32 bytes
-    */
+    // Prepara a chave quando a aplicação sobe. O segredo passa por um SHA-256 para virar a chave de 32 bytes do AES
     @PostConstruct
     public void inicializar() {
         if (segredo == null || segredo.isBlank()) {
@@ -48,17 +44,12 @@ public class AesEncryptor implements AttributeConverter<String, String> {
         }
     }
 
-    // Esse é o método que o JPA chama antes de salvar, para criptografar o valor
+    // Chamado pelo JPA antes de salvar, para cifrar o valor
     @Override
     public String convertToDatabaseColumn(String atributo) {
         if (atributo == null) return null;
         try {
-            /*
-               Gera um IV aleatório a cada criptografia. Isso é essencial
-               porque se dois valores iguais forem criptografados com o mesmo
-               IV, o resultado também seria igual, o que vazaria informação.
-               Com IV aleatório, o mesmo texto vira cifrado diferente cada vez
-            */
+            // IV aleatório a cada cifragem, para o mesmo texto nunca gerar o mesmo valor cifrado
             byte[] iv = new byte[TAMANHO_IV];
             new SecureRandom().nextBytes(iv);
 
@@ -70,11 +61,7 @@ public class AesEncryptor implements AttributeConverter<String, String> {
             byte[] cifrado = cipher.doFinal(
                     atributo.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            /*
-               Junta o IV com o texto cifrado num único array. O IV não é
-               segredo, pode ficar salvo junto, e na hora de descriptografar
-               nós separamos de novo
-            */
+            // Junta o IV com o texto cifrado. O IV não é segredo e fica salvo junto, separado de novo ao decifrar
             ByteBuffer buffer = ByteBuffer.allocate(TAMANHO_IV + cifrado.length);
             buffer.put(iv);
             buffer.put(cifrado);
@@ -86,7 +73,7 @@ public class AesEncryptor implements AttributeConverter<String, String> {
         }
     }
 
-    // Esse é o método que o JPA chama ao ler do banco, para descriptografar o valor
+    // Chamado pelo JPA ao ler do banco, para decifrar o valor
     @Override
     public String convertToEntityAttribute(String dadosBanco) {
         if (dadosBanco == null) return null;

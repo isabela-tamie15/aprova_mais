@@ -11,25 +11,22 @@ import java.util.Locale;
 import java.util.Set;
 
 /*
-   Confere a configuração de segurança assim que a aplicação sobe, antes de atender
-   qualquer requisição (AUD-02 e AUD-15). Se faltar o perfil ou se uma chave for curta,
-   fraca ou igual a um exemplo da documentação, a aplicação não sobe e o log diz o motivo.
-   Antes, sem a variável SPRING_PROFILES_ACTIVE, a aplicação subia no perfil dev, com o
-   Swagger aberto e o log em DEBUG
+   Confere a configuração de segurança assim que a aplicação sobe. Sem o perfil, ou com uma
+   chave curta, fraca ou igual a um exemplo da documentação, a aplicação não sobe e o log diz o motivo
 */
 @Component
 public class ValidadorConfiguracao implements InitializingBean {
 
-    // Perfis que nós usamos: dev (máquina local), prod (servidor) e test (testes automatizados)
+    // Perfis do projeto, dev na máquina local, prod no servidor e test nos testes automatizados
     private static final List<String> PERFIS_CONHECIDOS = List.of("dev", "prod", "test");
 
-    // 32 bytes são o mínimo do HMAC-SHA256 do JWT; usamos o mesmo mínimo para a chave do AES
+    // Tamanho mínimo da chave do JWT (HMAC-SHA256), usado também para a chave do AES
     static final int TAMANHO_MINIMO_CHAVE = 32;
 
-    // Uma chave com poucos caracteres diferentes (ex: 32 letras "a") é fácil de adivinhar
+    // Uma chave com poucos caracteres diferentes, como 32 letras "a", é fácil de adivinhar
     static final int MINIMO_CARACTERES_DIFERENTES = 10;
 
-    // Valores que já apareceram como exemplo no README e no .env.example: não podem ir para um ambiente de verdade
+    // Trechos dos exemplos do README e do .env.example, que não podem ir para um ambiente de verdade
     private static final List<String> TRECHOS_DE_EXEMPLO = List.of(
             "aprova_mais_chave_secreta", "troque_por", "sua_chave", "changeme", "exemplo");
 

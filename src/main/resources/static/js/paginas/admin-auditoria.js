@@ -30,7 +30,7 @@ function auditoria() {
             }
         },
 
-        // Mesmas regras do backend, para avisar antes de mandar
+        // Mesmas regras do backend, para avisar antes de enviar
         validar() {
             this.erros = {};
             if (this.filtros.email.length > 254) {

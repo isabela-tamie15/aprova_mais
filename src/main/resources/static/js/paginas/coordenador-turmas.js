@@ -1,4 +1,4 @@
-// Script da página coordenador/turmas.html: lista, cadastra e altera as turmas de um curso
+// Página coordenador/turmas.html, que lista, cadastra e altera as turmas de um curso
 
 function turmasPagina() {
     return {

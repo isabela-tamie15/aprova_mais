@@ -15,7 +15,7 @@ public class RedefinicaoSenhaRequest {
     @Size(max = 200, message = "Link de recuperação inválido")
     private String token;
 
-    // Mesma regra de senha do primeiro acesso: 8 a 72 caracteres, com letra e número
+    // Mesma regra de senha do primeiro acesso, de 8 a 72 caracteres, com letra e número
     @NotBlank(message = "A senha é obrigatória")
     @Size(min = 8, max = 72, message = "A senha deve ter entre 8 e 72 caracteres")
     @Pattern(regexp = "^(?=.*\\p{L})(?=.*\\d).*$",

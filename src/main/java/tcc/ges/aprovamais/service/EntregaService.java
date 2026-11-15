@@ -49,7 +49,10 @@ public class EntregaService {
     }
 
 
-    // O aluno envia um arquivo para uma tarefa da trilha. Cada envio vira uma versão nova, com número igual ao maior anterior mais 1, e a entrega volta para ENVIADA, aparecendo no painel do orientador
+    /*
+       Envia um arquivo para uma tarefa da trilha. Cada envio vira uma versão nova, com o número da
+       anterior mais 1, e a entrega volta para ENVIADA no painel do orientador
+    */
     @Transactional
     public EntregaDetalheResponse enviar(String emailAluno, Long tarefaId, String nomeOriginal,
                                          byte[] conteudo, String comentario, String ipOrigem) {
@@ -61,7 +64,7 @@ public class EntregaService {
             throw new DadoInvalidoException("O comentário deve ter no máximo 1000 caracteres.");
         }
 
-        // O aluno já enviou essa tarefa antes? Se sim, usamos a mesma entrega; se não, criamos uma nova
+        // Reaproveita a entrega se a tarefa já foi enviada antes, ou cria uma nova
         Optional<Entrega> entregaExistente = entregaRepository.findByEstagioIdAndTarefaId(estagio.getId(), tarefa.getId());
         Entrega entrega;
         if (entregaExistente.isPresent()) {
@@ -71,7 +74,7 @@ public class EntregaService {
             entrega.setEstagio(estagio);
             entrega.setTarefa(tarefa);
         }
-        // CA03: com a entrega em análise ou já aprovada, não dá para mandar outra versão
+        // Com a entrega em análise ou já aprovada, não dá para mandar outra versão
         if (entrega.getStatus() != null && !podeEnviar(entrega.getStatus())) {
             throw new RegraNegocioException(entrega.getStatus() == StatusEntrega.APROVADA
                     ? "Esta tarefa já foi aprovada pelo orientador."
@@ -81,7 +84,7 @@ public class EntregaService {
         TipoArquivo tipoArquivo = ValidadorArquivoEntrega.validar(nomeOriginal, conteudo);
         String nomeArquivo = ValidadorArquivoEntrega.limparNome(nomeOriginal);
 
-        // Primeira entrega da tarefa é a versão 1; as próximas são a última versão mais 1 (RN55)
+        // A primeira entrega da tarefa é a versão 1, e as próximas são a última versão mais 1
         int numero = 1;
         if (entrega.getId() != null) {
             Optional<EntregaVersao> ultimaVersao = entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId());
@@ -108,11 +111,9 @@ public class EntregaService {
         versao.setComentarioAluno(comentarioLimpo);
 
         /*
-           O saveAndFlush manda as linhas para o banco na hora. Se outro envio da mesma tarefa
-           chegou ao mesmo tempo, a restrição única (uk_entrega_estagio_tarefa ou
-           uk_versao_entrega_numero) falha aqui e a resposta é 409, antes de o arquivo ser
-           gravado. Assim não sobra arquivo sem registro no armazenamento (AUD-22). Se a
-           gravação do arquivo falhar, a exceção desfaz a transação e as linhas somem junto
+           O saveAndFlush grava as linhas na hora. Se outro envio da mesma tarefa chegou ao mesmo tempo,
+           a restrição única falha aqui e a resposta é 409, antes de o arquivo ser gravado. Se a
+           gravação do arquivo falhar, a transação é desfeita e as linhas somem junto
         */
         entregaVersaoRepository.saveAndFlush(versao);
         armazenamentoArquivos.salvar(chave, conteudo, ValidadorArquivoEntrega.tipoConteudo(tipoArquivo));
@@ -179,7 +180,7 @@ public class EntregaService {
 
     // Monta a resposta com o histórico completo, igual para o aluno e para o orientador
     public EntregaDetalheResponse montarDetalhe(Tarefa tarefa, Entrega entrega) {
-        // Tarefa sem entrega ainda não tem versões; com entrega, listamos todas, da primeira para a última
+        // Tarefa sem entrega não tem versões. Com entrega, as versões vão da primeira para a última
         List<EntregaVersaoResponse> versoes = new ArrayList<>();
         if (entrega != null && entrega.getId() != null) {
             for (EntregaVersao versao : entregaVersaoRepository.findByEntregaIdOrderByNumeroAsc(entrega.getId())) {
@@ -235,7 +236,7 @@ public class EntregaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Estágio ativo não encontrado."));
     }
 
-    // A tarefa precisa ser da trilha do tipo do estágio do aluno, vindo de outra trilha vira 404
+    // A tarefa precisa ser da trilha do tipo do estágio do aluno. Tarefa de outra trilha vira 404
     private Tarefa buscarTarefaDaTrilha(Long tarefaId, Estagio estagio) {
         Tarefa tarefa = tarefaRepository.findById(tarefaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada na sua trilha."));

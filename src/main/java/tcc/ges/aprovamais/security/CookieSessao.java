@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CookieSessao {
 
-    // Mesmo prazo do token: 8 horas
+    // Mesmo prazo do token, 8 horas
     public static final int SEGUNDOS_DE_VALIDADE = 28800;
 
     // Diz se o cookie vai com o atributo Secure (só trafega em HTTPS).
@@ -25,10 +25,8 @@ public class CookieSessao {
     }
 
     /*
-       Monta na mão em vez de usar a classe Cookie do Java porque ela não
-       expõe o atributo SameSite. O HttpOnly impede leitura por JavaScript,
-       o Path=/ faz valer para toda aplicação e o SameSite=Strict evita
-       envio em requisições de outros sites
+       A classe Cookie do Java não tem o atributo SameSite, por isso o cabeçalho é montado aqui.
+       O HttpOnly impede a leitura por JavaScript e o SameSite=Strict impede o envio a partir de outros sites
     */
     private void adicionar(HttpServletResponse respostaHttp, String valorDoCookie, int segundosDeValidade) {
         String secure = cookieSeguro ? "; Secure" : "";

@@ -22,10 +22,10 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
     // Busca logs por e-mail tentado, usado para rastrear tentativas em e-mails que nem existem na base
     List<LogAuditoria> findByEmailTentativa(String emailTentativa);
 
-    // Filtra por perfil do usuário que gerou o log, útil para relatórios por tipo de conta
+    // Filtra pelo perfil do usuário que gerou o registro
     List<LogAuditoria> findByPerfil(PerfilAuditoria perfil);
 
-    // Filtra por tipo de ação, tipo LOGIN_SUCESSO, LOGIN_FALHA, etc
+    // Filtra pelo tipo de ação, como LOGIN_SUCESSO e LOGIN_FALHA
     List<LogAuditoria> findByAcao(String acao);
 
     // Filtra por sucesso ou falha, usado para auditorias e relatórios de segurança
@@ -43,13 +43,13 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
     @Query("UPDATE LogAuditoria l SET l.emailTentativa = :emailNovo WHERE l.emailTentativa = :emailAntigo")
     int trocarEmail(@Param("emailAntigo") String emailAntigo, @Param("emailNovo") String emailNovo);
 
-    // Troca um texto (e-mail ou nome) nos detalhes dos registros, usado na anonimização
+    // Troca um texto, e-mail ou nome, nos detalhes dos registros, usado na anonimização
     @Modifying
     @Query(value = "UPDATE registros_auditoria SET detalhes = REPLACE(detalhes, :textoAntigo, :textoNovo) "
             + "WHERE detalhes LIKE CONCAT('%', :textoAntigo, '%')", nativeQuery = true)
     int trocarTextoNosDetalhes(@Param("textoAntigo") String textoAntigo, @Param("textoNovo") String textoNovo);
 
-    // Elimina os registros anteriores ao prazo de guarda (RF45)
+    // Elimina os registros anteriores ao prazo de guarda
     @Modifying
     @Query("DELETE FROM LogAuditoria l WHERE l.criadoEm < :limite")
     int apagarAnterioresA(@Param("limite") OffsetDateTime limite);

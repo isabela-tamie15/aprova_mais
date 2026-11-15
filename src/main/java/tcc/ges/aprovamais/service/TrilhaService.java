@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-// Esse service é quem monta a trilha de tarefas do aluno baseado no estágio ativo dele
+// Trilha de tarefas do aluno, a partir do estágio ativo dele
 @Service
 @RequiredArgsConstructor
 public class TrilhaService {
@@ -38,15 +38,11 @@ public class TrilhaService {
     private final TarefaRepository tarefaRepository;
     private final EntregaService entregaService;
 
-    // Esse é o método principal, monta a trilha completa do aluno seguindo a cadeia matrícula → estágio → trilha → tarefas
+    // Monta a trilha do aluno seguindo matrícula, estágio, trilha e tarefas
     @Transactional(readOnly = true)
     public TrilhaResponse buscarTrilhaDoAluno(String emailAluno) {
 
-        /*
-           Cada passo depende do anterior, então se qualquer um falhar,
-           nós já paramos ali com 404. A ordem importa, se não tiver matrícula
-           ativa não faz sentido procurar estágio, e por aí vai
-        */
+        // Cada passo depende do anterior, e qualquer falha responde 404
         Matricula matricula = buscarMatriculaAtiva(emailAluno);
         Estagio estagio = buscarEstagioAtivo(matricula.getId());
         Trilha trilha = buscarTrilhaPorTipo(estagio.getTipoEstagio().getId());
@@ -62,7 +58,7 @@ public class TrilhaService {
                 .build();
     }
 
-    // Esse é o método usado quando só tem o id do tipo de estágio em mãos, só repassa para o auxiliar
+    // Monta a trilha a partir do id do tipo de estágio
     @Transactional(readOnly = true)
     public Trilha buscarTrilhaPorTipoEstagio(Long tipoEstagioId) {
         return buscarTrilhaPorTipo(tipoEstagioId);
@@ -88,7 +84,7 @@ public class TrilhaService {
                 });
     }
 
-    // Busca a trilha vinculada ao tipo de estágio, terceiro passo para chegar nas tarefas
+    // Busca a trilha do tipo de estágio
     private Trilha buscarTrilhaPorTipo(Long tipoEstagioId) {
         return trilhaRepository
                 .findByTipoEstagioId(tipoEstagioId)

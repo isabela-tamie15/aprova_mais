@@ -12,7 +12,7 @@ public class CursoRequest {
     @Size(min = 3, max = 150, message = "O nome do curso deve ter entre 3 e 150 caracteres")
     private String nome;
 
-    // Código da oferta no e-MEC (curso, instituição e unidade), único no sistema (RN19)
+    // Código da oferta no e-MEC (curso, instituição e unidade), único no sistema
     @NotBlank(message = "Informe o código e-MEC do curso")
     @Size(max = 20, message = "O código e-MEC deve ter no máximo 20 caracteres")
     @Pattern(regexp = "^[0-9A-Za-z-]+$", message = "O código e-MEC deve ter apenas letras, números e hífen")

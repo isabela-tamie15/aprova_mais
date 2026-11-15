@@ -11,10 +11,9 @@ import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import java.time.OffsetDateTime;
 
 /*
-   Pessoa autorizada pelo coordenador a receber convite. Sem estar
-   aqui, a secretaria não consegue convidar aluno nem orientador. Para aluno, a
-   turma é obrigatória, porque é nela que a matrícula é criada no aceite.
-   O identificador é o RGM do aluno ou a matrícula institucional do orientador
+   Pessoa autorizada pelo coordenador a receber convite. Sem estar aqui, a secretaria não convida
+   aluno nem orientador. Para o aluno a turma é obrigatória, porque a matrícula é criada nela no
+   aceite. O identificador é o RGM do aluno ou a matrícula institucional do orientador
 */
 @Data
 @Entity
@@ -39,13 +38,13 @@ public class PreCadastro {
     @Column(name = "identificador_institucional", nullable = false, unique = true, length = 50)
     private String identificadorInstitucional;
 
-    // Só para aluno; orientador fica sem turma, porque o vínculo dele é feito pelo coordenador (RF13)
+    // Só para aluno. O orientador fica sem turma, porque o vínculo dele é feito pelo coordenador
     @ManyToOne
     @JoinColumn(name = "turma_id")
     @ToString.Exclude
     private Turma turma;
 
-    // Quem cadastrou. É por ele que a lista fica restrita a cada coordenador (RN21)
+    // Quem cadastrou, para a lista ficar restrita a cada coordenador
     @ManyToOne
     @JoinColumn(name = "coordenador_id", nullable = false)
     @ToString.Exclude

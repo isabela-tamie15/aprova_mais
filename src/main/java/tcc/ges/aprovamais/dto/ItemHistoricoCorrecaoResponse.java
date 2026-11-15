@@ -5,7 +5,7 @@ import lombok.Getter;
 
 import java.time.OffsetDateTime;
 
-// Uma correção do histórico do orientador: uma versão que ele aprovou ou devolveu
+// Uma correção do histórico do orientador, que é uma versão que ele aprovou ou devolveu
 @Getter
 @Builder
 public class ItemHistoricoCorrecaoResponse {

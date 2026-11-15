@@ -1,4 +1,4 @@
-// Script da página orientador/correcao.html: avaliação da entrega pelo orientador
+// Página orientador/correcao.html, com a avaliação da entrega pelo orientador
 
 function avaliacaoEntrega(entregaId) {
     return {
@@ -15,7 +15,7 @@ function avaliacaoEntrega(entregaId) {
         formatarDataHora: formatarDataHoraEntrega,
         formatarTamanho: formatarTamanhoArquivo,
 
-        // Abrir a entrega já a coloca EM_REVISAO, se estava ENVIADA
+        // Abrir a entrega já coloca em EM_REVISAO a que estava ENVIADA
         async carregar() {
             try {
                 const resposta = await fetch(`/api/v1/orientador/entregas/${entregaId}`, { credentials: 'include' });
@@ -48,7 +48,7 @@ function avaliacaoEntrega(entregaId) {
             return this.detalhe && (this.detalhe.status === 'ENVIADA' || this.detalhe.status === 'EM_REVISAO');
         },
 
-        // Mesma regra do CorrecaoService (CA01 do RF36); o backend confere de novo
+        // Mesma regra do CorrecaoService, que confere de novo
         validar(decisao) {
             const erros = {};
             if (decisao === 'DEVOLVER' && !this.feedback.trim()) {

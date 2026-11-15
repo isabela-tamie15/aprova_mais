@@ -33,7 +33,7 @@ function convitesAdmin() {
             }
         },
 
-        // Mesmas regras do ConviteRequest; o backend valida de novo
+        // Mesmas regras do ConviteRequest. O backend valida de novo
         validar() {
             const erros = {};
             const nome = this.form.nome.trim();

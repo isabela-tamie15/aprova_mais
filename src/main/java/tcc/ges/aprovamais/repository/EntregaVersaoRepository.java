@@ -32,12 +32,15 @@ public interface EntregaVersaoRepository extends JpaRepository<EntregaVersao, Lo
     Optional<EntregaVersao> findByIdAndEntregaEstagioOrientadorEmail(Long id, String emailOrientador);
 
 
-    //Correções feitas pelo orientador: as versões que ele mesmo avaliou. A busca é por quem avaliou, e não pelo orientador atual do estágio, então uma troca de turma não mistura os históricos
+    /*
+       Versões que o orientador avaliou. A busca é por quem avaliou, e não pelo orientador atual
+       do estágio, então uma troca de turma não mistura os históricos
+    */
     Page<EntregaVersao> findByAvaliadorEmailAndResultadoIn(String emailAvaliador, Collection<StatusEntrega> resultados, Pageable pageable);
 
     /*
-       Painel de correção (RF35): a última versão de cada entrega dos alunos ativos do orientador,
-       filtrada e paginada no banco. Filtro nulo deixa passar tudo, e o período já vem no fuso de São Paulo
+       Última versão de cada entrega dos alunos ativos do orientador, filtrada e paginada no banco.
+       Filtro nulo deixa passar tudo, e o período já vem no fuso de São Paulo
     */
     @Query(value = """
             SELECT v FROM EntregaVersao v

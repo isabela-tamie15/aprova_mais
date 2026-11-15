@@ -1,4 +1,4 @@
-// Script da página redefinir-senha.html: troca a senha usando o token do link recebido por e-mail
+// Página redefinir-senha.html, que troca a senha com o token do link do e-mail
 
 function redefinirSenhaForm() {
     return {

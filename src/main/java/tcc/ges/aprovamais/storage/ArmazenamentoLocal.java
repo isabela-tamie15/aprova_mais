@@ -28,7 +28,7 @@ public class ArmazenamentoLocal implements ArmazenamentoArquivos {
         Path destino = resolver(chave);
         try {
             Files.createDirectories(destino.getParent());
-            // CREATE_NEW: uma versão gravada nunca é sobrescrita (RN56)
+            // CREATE_NEW porque uma versão gravada nunca é sobrescrita
             Files.write(destino, conteudo, StandardOpenOption.CREATE_NEW);
         } catch (IOException excecao) {
             log.error("[ARQUIVO] Erro ao gravar {}: {}", chave, excecao.getMessage(), excecao);

@@ -32,7 +32,7 @@ public class Tarefa {
     @Column(nullable = false)
     private Integer ordem;
 
-    // Link opcional para o material de apoio da tarefa, como o modelo do documento (RN33)
+    // Link opcional para o material de apoio da tarefa, como o modelo do documento
     @Column(name = "link_apoio", length = 500)
     private String linkApoio;
 

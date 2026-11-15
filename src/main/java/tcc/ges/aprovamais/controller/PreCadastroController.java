@@ -14,7 +14,7 @@ import tcc.ges.aprovamais.service.PreCadastroService;
 
 import java.util.List;
 
-// Esse controller recebe as requisições do coordenador para manter a lista de pré-cadastro
+// Lista de pré-cadastro mantida pelo coordenador
 @Tag(name = "Pré-cadastro", description = "Pessoas autorizadas pelo coordenador a receber convite")
 @RestController
 @RequestMapping("/api/v1/coordenador/pre-cadastros")
@@ -23,13 +23,13 @@ public class PreCadastroController {
 
     private final PreCadastroService preCadastroService;
 
-    // Esse é o endpoint que lista os pré-cadastros do coordenador logado
+    // Lista os pré-cadastros do coordenador logado
     @GetMapping
     public ResponseEntity<List<PreCadastroResponse>> listar(Authentication authentication) {
         return ResponseEntity.ok(preCadastroService.listarDoCoordenador(authentication.getName()));
     }
 
-    // Esse é o endpoint que inclui uma pessoa no pré-cadastro
+    // Inclui uma pessoa no pré-cadastro
     @PostMapping
     public ResponseEntity<PreCadastroResponse> cadastrar(@Valid @RequestBody PreCadastroRequest request,
                                                          Authentication authentication,
@@ -39,7 +39,7 @@ public class PreCadastroController {
         return ResponseEntity.status(HttpStatus.CREATED).body(criado);
     }
 
-    // Esse é o endpoint que altera um pré-cadastro do coordenador logado (de outro coordenador volta 404)
+    // Altera um pré-cadastro do coordenador logado. O de outro coordenador volta 404
     @PutMapping("/{id}")
     public ResponseEntity<PreCadastroResponse> atualizar(@PathVariable Long id,
                                                          @Valid @RequestBody PreCadastroRequest request,

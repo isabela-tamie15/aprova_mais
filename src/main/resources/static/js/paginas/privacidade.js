@@ -1,16 +1,16 @@
-// Script da página privacidade.html, que antes ficava escrito dentro dos botões
+// Página privacidade.html
 
 function direitosDoTitular() {
     return {
-        // Direito escolhido no select: 'acesso', 'correcao' ou 'exclusao'
+        // Direito escolhido no select, que pode ser acesso, correcao ou exclusao
         direito: '',
 
-        // Confirmação da anonimização: a senha sempre, e o código para quem usa a verificação em duas etapas
+        // A senha é sempre pedida, e o código para quem usa a verificação em duas etapas
         senha: '',
         codigo: '',
         erro: '',
 
-        // Acesso e correção: registramos o pedido na auditoria e abrimos o e-mail para a secretaria
+        // Acesso e correção registram o pedido na auditoria e abrem o e-mail para a secretaria
         async enviarSolicitacao() {
             let endereco = '/api/v1/lgpd/solicitar-correcao';
             let assuntoDoEmail = 'Aprova%2B%20-%20Solicitação%20de%20Correção%20de%20Dados';
@@ -28,7 +28,7 @@ function direitosDoTitular() {
             window.open('mailto:secretaria@umc.br?subject=' + assuntoDoEmail);
         },
 
-        // Exclusão: anonimizamos os dados e encerramos a sessão
+        // Exclusão anonimiza os dados e encerra a sessão
         async anonimizarMeusDados() {
             const confirmou = confirm('Confirma a anonimização dos seus dados pessoais? Esta ação não pode ser desfeita.');
             if (!confirmou) {

@@ -1,4 +1,4 @@
-// Script da página consentimento.html, que antes ficava num <script> dentro dela
+// Página consentimento.html
 
 function consentimentoForm() {
     return {

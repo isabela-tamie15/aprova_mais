@@ -43,7 +43,7 @@ class TurmaServiceTest {
     private CursoService cursoService;
     @Mock
     private AuditoriaService auditoriaService;
-    // RF13: sem vínculo cadastrado, o mock devolve vazio e a turma aparece sem orientador
+    // Sem vínculo cadastrado, o mock devolve vazio e a turma aparece sem orientador
     @Mock
     private OrientadorTurmaRepository orientadorTurmaRepository;
     @InjectMocks
@@ -148,7 +148,7 @@ class TurmaServiceTest {
     @Test
     @DisplayName("Edição grava a data de encerramento das entregas em uma turma antiga que estava sem ela (F2)")
     void deveGravarDataDeEncerramentoAoEditarTurmaAntiga() {
-        // arrange: turma cadastrada antes do campo existir, por isso sem a data
+        // Arrange: turma cadastrada sem a data de encerramento das entregas
         Turma turma = new Turma();
         turma.setId(20L);
         turma.setCurso(curso);

@@ -15,7 +15,7 @@ import tcc.ges.aprovamais.dto.AnonimizacaoRequest;
 import tcc.ges.aprovamais.dto.SolicitacaoTitularResponse;
 import tcc.ges.aprovamais.service.AnonimizacaoService;
 
-// Esse controller é quem recebe as solicitações de LGPD do usuário logado
+// Pedidos de LGPD do usuário logado
 @Tag(name = "LGPD", description = "Solicitações do titular e anonimização da conta")
 @RestController
 @RequestMapping("/api/v1/lgpd")
@@ -25,9 +25,8 @@ public class AnonimizacaoController {
     private final AnonimizacaoService anonimizacaoService;
 
     /*
-       DELETE /api/v1/lgpd/meus-dados: o método DELETE já diz a ação (excluir) e a URL diz o quê
-       (os meus dados). Como a Lei 11.788/2008 obriga a guardar os registros do estágio,
-       excluir aqui significa anonimizar: o AnonimizacaoService troca nome, e-mail e RGM por valores neutros
+       A Lei 11.788/2008 obriga a guardar os registros do estágio, então excluir aqui significa
+       anonimizar. O AnonimizacaoService troca nome, e-mail e RGM por valores neutros
     */
     @DeleteMapping("/meus-dados")
     public ResponseEntity<Void> solicitarExclusao(
@@ -48,25 +47,20 @@ public class AnonimizacaoController {
         return ResponseEntity.ok().build();
     }
 
-    // Esse é o endpoint onde o usuário solicita acesso aos próprios dados
+    // Pedido de acesso aos próprios dados
     @PostMapping("/solicitar-acesso")
     public ResponseEntity<SolicitacaoTitularResponse> solicitarAcesso(
             Authentication authentication,
             HttpServletRequest request) {
 
-        /*
-           Aqui nós não devolvemos os dados ainda, só registra a solicitação
-           na auditoria para ficar rastreável. Quem entrega os dados em si é
-           outro fluxo, mais controlado
-        */
-        // Devolve o protocolo e o prazo da resposta (RF43)
+        // Registra o pedido na auditoria e devolve o protocolo e o prazo da resposta. Os dados são entregues pela secretaria
         return ResponseEntity.ok(anonimizacaoService.registrarSolicitacao(authentication.getName(),
                 "SOLICITACAO_ACESSO_DADOS",
                 "Titular solicitou acesso aos seus dados pessoais",
                 request.getRemoteAddr()));
     }
 
-    // Esse é o endpoint onde o usuário solicita correção dos próprios dados
+    // Pedido de correção dos próprios dados
     @PostMapping("/solicitar-correcao")
     public ResponseEntity<SolicitacaoTitularResponse> solicitarCorrecao(
             Authentication authentication,

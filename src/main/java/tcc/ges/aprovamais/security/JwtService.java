@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
-// Esse service é quem gera e valida os tokens JWT usados na autenticação
+// Gera e valida os tokens JWT da autenticação
 @Service
 public class JwtService {
 
@@ -29,12 +29,7 @@ public class JwtService {
 
     private SecretKey chaveAssinatura;
 
-    /*
-       Roda uma vez quando a aplicação sobe para montar a chave de assinatura.
-       O segredo vem do application.yml em texto puro, e aqui ele é convertido
-       para o formato de chave HMAC que a lib JWT usa. Se o segredo for muito curto,
-       a própria lib rejeita e a aplicação nem sobe, o que é bom
-    */
+    // Monta a chave de assinatura quando a aplicação sobe. Um segredo curto demais é recusado pela biblioteca e a aplicação não sobe
     @PostConstruct
     public void inicializar() {
         if (segredo == null || segredo.isBlank()) {
@@ -45,23 +40,15 @@ public class JwtService {
         );
     }
 
-    // Esse é o método que gera o token no login, com o e-mail, o perfil e a versão da sessão
+    // Gera o token do login com o e-mail, o perfil e a versão da sessão
     public String gerarToken(String email, String perfil, int versaoSessao) {
         return Jwts.builder()
                 .subject(email)
-                /*
-                   O perfil vai como claim extra para depois o filtro conseguir
-                   montar a autenticação sem precisar buscar o usuário no banco
-                   de novo
-                */
+                // O perfil vai no token para o filtro montar a autenticação sem buscar o usuário de novo
                 .claim(CLAIM_PERFIL, perfil)
                 // Versão da sessão no momento do login, conferida pelo JwtFilter
                 .claim(CLAIM_VERSAO_SESSAO, versaoSessao)
-                /*
-                   Id único de cada token. Sem ele, dois logins do mesmo usuário
-                   no mesmo segundo geram o mesmo token, e o logout de um
-                   encerraria o outro junto (ver TokenRevogadoService)
-                */
+                // Id único de cada token, para o logout de um login não encerrar outro feito no mesmo segundo
                 .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiracaoMs))
@@ -79,7 +66,7 @@ public class JwtService {
         return extrairClaims(token).get(CLAIM_PERFIL, String.class);
     }
 
-    // Versão da sessão gravada no token; token sem esse campo vale como versão zero
+    // Versão da sessão gravada no token. O token sem esse campo vale como versão zero
     public int extrairVersaoSessao(String token) {
         // O JJWT pode devolver o número como Integer, Long ou Double, por isso lemos como Number
         Object versao = extrairClaims(token).get(CLAIM_VERSAO_SESSAO);
@@ -94,12 +81,7 @@ public class JwtService {
         return extrairClaims(token).getExpiration().toInstant();
     }
 
-    /*
-       Verifica se o token é válido e se pertence ao e-mail esperado. Aqui nós
-       confiamos no extrairClaims para validar assinatura e expiração, se
-       qualquer um dos dois estiver errado, ele já lança exceção e nós
-       devolvemos false em vez de estourar para cima
-    */
+    // Confere se o token é válido e se pertence ao e-mail esperado. Assinatura errada ou token expirado devolvem false
     public boolean tokenValido(String token, String email) {
         try {
             return extrairEmail(token).equals(email);

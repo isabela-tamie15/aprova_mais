@@ -16,7 +16,7 @@ public class TarefaVisaoAlunoResponse {
     // Nulo enquanto o aluno não enviou nada para a tarefa
     private final Long entregaId;
 
-    // PENDENTE quando não há entrega; senão, o status da entrega (ENVIADA, EM_REVISAO, APROVADA ou DEVOLVIDA)
+    // PENDENTE quando não há entrega, ou o status da entrega (ENVIADA, EM_REVISAO, APROVADA ou DEVOLVIDA)
     private final String status;
 
     private final int numeroVersoes;

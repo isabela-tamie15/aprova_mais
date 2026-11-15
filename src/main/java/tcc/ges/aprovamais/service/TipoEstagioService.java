@@ -16,11 +16,7 @@ import tcc.ges.aprovamais.repository.TipoEstagioRepository;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
-   Esse service é quem cuida do cadastro dos tipos de estágio pelo coordenador
-   (RF14, RN30, RN31). A lista que o aluno vê no cadastro do estágio continua no
-   EstagioService; aqui fica só o lado da coordenação
-*/
+// Cadastro dos tipos de estágio pelo coordenador. A lista que o aluno vê no cadastro do estágio fica no EstagioService
 @Service
 @RequiredArgsConstructor
 public class TipoEstagioService {
@@ -31,13 +27,12 @@ public class TipoEstagioService {
     private final CursoService cursoService;
     private final AuditoriaService auditoriaService;
 
-    // Esse é o método que lista os tipos de um curso, desde que o curso seja do coordenador logado
+    // Lista os tipos de um curso do coordenador logado
     @Transactional(readOnly = true)
     public List<TipoEstagioResponse> listar(Long cursoId, String emailCoordenador) {
         Curso curso = cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
         List<TipoEstagio> tiposDoCurso = tipoEstagioRepository.findByCursoIdOrderByNomeAsc(curso.getId());
 
-        // Transforma cada tipo de estágio do banco na resposta que vai para a tela
         List<TipoEstagioResponse> respostas = new ArrayList<>();
         for (TipoEstagio tipoEstagio : tiposDoCurso) {
             respostas.add(paraResponse(tipoEstagio));
@@ -45,7 +40,7 @@ public class TipoEstagioService {
         return respostas;
     }
 
-    // Esse é o método que cadastra um tipo de estágio num curso do coordenador
+    // Cadastra um tipo de estágio num curso do coordenador
     @Transactional
     public TipoEstagioResponse cadastrar(String emailCoordenador, TipoEstagioRequest request, String ipOrigem) {
         Curso curso = cursoService.buscarCursoDoCoordenador(request.getCursoId(), emailCoordenador);
@@ -69,9 +64,8 @@ public class TipoEstagioService {
     }
 
     /*
-       Esse é o método que altera um tipo de estágio. Mudar a carga ou a jornada
-       não afeta os estágios já cadastrados, porque eles guardam uma cópia dos
-       valores (RN31). Só os estágios cadastrados depois usam os valores novos
+       Altera um tipo de estágio. Os estágios já cadastrados guardam uma cópia da carga e da jornada,
+       então só os novos usam os valores alterados
     */
     @Transactional
     public TipoEstagioResponse atualizar(Long tipoId, String emailCoordenador, TipoEstagioRequest request,

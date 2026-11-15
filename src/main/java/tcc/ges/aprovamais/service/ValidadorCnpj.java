@@ -3,10 +3,9 @@ package tcc.ges.aprovamais.service;
 import java.util.Locale;
 
 /*
-   Confere os dígitos verificadores do CNPJ, sem consultar nada fora
-   Já aceita o CNPJ alfanumérico da Receita. No cálculo, cada caractere vale o código ASCII menos 48: os números continuam 0 a 9 e as
+   Confere os dígitos verificadores do CNPJ, sem consulta externa. Aceita o CNPJ alfanumérico da
+   Receita, em que cada caractere vale o código ASCII menos 48, os números continuam de 0 a 9 e as
    letras vão de A = 17 até Z = 42
-   Para o CNPJ só com números, a conta é a mesma de sempre
 */
 public final class ValidadorCnpj {
 
@@ -30,8 +29,7 @@ public final class ValidadorCnpj {
             return false;
         }
 
-        // Todos os caracteres iguais (ex.: 00000000000000) passam na conta dos dígitos, então recusamos.
-        // chars().distinct().count() conta quantos caracteres diferentes existem; se for 1, todos são iguais
+        // CNPJ com todos os caracteres iguais, como 00000000000000, passa na conta dos dígitos e é recusado aqui
         if (cnpjSemPontuacao.chars().distinct().count() == 1) {
             return false;
         }

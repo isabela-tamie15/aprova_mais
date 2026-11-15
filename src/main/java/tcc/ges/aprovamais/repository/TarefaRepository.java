@@ -13,10 +13,10 @@ public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
     // Lista as tarefas de uma trilha já na ordem certa para exibir na tela
     List<Tarefa> findByTrilhaIdOrderByOrdem(Long trilhaId);
 
-    // Busca a tarefa só se a trilha dela for de um curso do coordenador informado (RN21), senão vira 404
+    // Busca a tarefa só se a trilha dela for de um curso do coordenador informado, senão vira 404
     Optional<Tarefa> findByIdAndTrilhaTipoEstagioCursoCoordenadorEmail(Long id, String emailCoordenador);
 
-    // Impede duas tarefas na mesma posição da trilha, assim a ordem que o aluno vê não fica ambígua (RN33)
+    // Impede duas tarefas na mesma posição da trilha, para a ordem que o aluno vê não ficar ambígua
     boolean existsByTrilhaIdAndOrdem(Long trilhaId, Integer ordem);
 
     boolean existsByTrilhaIdAndOrdemAndIdNot(Long trilhaId, Integer ordem, Long id);

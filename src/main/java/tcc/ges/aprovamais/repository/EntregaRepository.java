@@ -21,13 +21,10 @@ public interface EntregaRepository extends JpaRepository<Entrega, Long> {
     // Todas as entregas do estágio, para a trilha do aluno mostrar o status de cada tarefa
     List<Entrega> findByEstagioId(Long estagioId);
 
-    /*
-       Busca a entrega pelo id E pelo e-mail do orientador do estágio. Um id de
-       entrega de outro orientador não é encontrado e vira 404 (RN17)
-    */
+    // Busca a entrega pelo id e pelo e-mail do orientador do estágio. A entrega de outro orientador não é encontrada e vira 404
     Optional<Entrega> findByIdAndEstagioOrientadorEmail(Long id, String emailOrientador);
 
-    // Entregas dos alunos do orientador, filtradas por status, para o painel de correção (RF35)
+    // Entregas dos alunos do orientador, filtradas por status
     List<Entrega> findByEstagioOrientadorEmailAndStatusIn(String emailOrientador, Collection<StatusEntrega> status);
 
     // Uma tarefa com entregas não pode ser removida da trilha, senão o histórico do aluno perde a referência
