@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface TarefaRepository extends JpaRepository<Tarefa, Long> {
 
-    // Lista as tarefas de uma trilha já na ordem certa pra exibir na tela
+    // Lista as tarefas de uma trilha já na ordem certa para exibir na tela
     List<Tarefa> findByTrilhaIdOrderByOrdem(Long trilhaId);
 
     // Busca a tarefa só se a trilha dela for de um curso do coordenador informado (RN21), senão vira 404

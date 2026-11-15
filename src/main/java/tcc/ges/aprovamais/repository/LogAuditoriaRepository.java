@@ -17,16 +17,16 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
     // Lista os logs de um usuário específico, usado na tela de histórico dele
     List<LogAuditoria> findByUsuarioId(Long usuarioId);
 
-    // Busca logs por e-mail tentado, usado pra rastrear tentativas em e-mails que nem existem na base
+    // Busca logs por e-mail tentado, usado para rastrear tentativas em e-mails que nem existem na base
     List<LogAuditoria> findByEmailTentativa(String emailTentativa);
 
-    // Filtra por perfil do usuário que gerou o log, útil pra relatórios por tipo de conta
+    // Filtra por perfil do usuário que gerou o log, útil para relatórios por tipo de conta
     List<LogAuditoria> findByPerfil(PerfilAuditoria perfil);
 
     // Filtra por tipo de ação, tipo LOGIN_SUCESSO, LOGIN_FALHA, etc
     List<LogAuditoria> findByAcao(String acao);
 
-    // Filtra por sucesso ou falha, usado pra auditorias e relatórios de segurança
+    // Filtra por sucesso ou falha, usado para auditorias e relatórios de segurança
     List<LogAuditoria> findBySucesso(Boolean sucesso);
 
     // Filtra por intervalo de datas, usado em relatórios e consultas de LGPD

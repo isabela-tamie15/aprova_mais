@@ -12,9 +12,9 @@ import java.util.Optional;
 public interface OrientadorRepository extends JpaRepository<Orientador, Long> {
 
     /*
-       Aqui não dá pra usar o nome do método que o Spring entende, porque a
-       relação entre orientador e turma tá numa tabela separada. Por isso
-       escrevi a query na mão com JOIN, e o LIMIT 1 é só pra garantir que
+       Aqui não dá para usar o nome do método que o Spring entende, porque a
+       relação entre orientador e turma está numa tabela separada. Por isso
+       escrevi a query na mão com JOIN, e o LIMIT 1 é só para garantir que
        volta um só, mesmo se por algum motivo tiver mais de um cadastrado
     */
     @Query(value = "SELECT o.* FROM orientadores o " +

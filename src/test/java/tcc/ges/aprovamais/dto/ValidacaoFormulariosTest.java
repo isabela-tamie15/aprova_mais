@@ -33,7 +33,7 @@ class ValidacaoFormulariosTest {
         fabrica.close();
     }
 
-    // Devolve só os nomes dos campos com erro, pra deixar os asserts mais legíveis
+    // Devolve só os nomes dos campos com erro, para deixar os asserts mais legíveis
     private static Set<String> camposComErro(Object objeto) {
         return validator.validate(objeto).stream()
                 .map(ConstraintViolation::getPropertyPath)

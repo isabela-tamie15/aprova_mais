@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
 
-    // Busca a matrícula de um aluno numa turma específica, pra evitar duplicidade
+    // Busca a matrícula de um aluno numa turma específica, para evitar duplicidade
     Optional<Matricula> findByAlunoIdAndTurmaId(Long alunoId, Long turmaId);
 
     // Pega a primeira matrícula ativa do aluno, usado quando só pode ter uma por vez
