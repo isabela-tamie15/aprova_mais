@@ -249,7 +249,7 @@ class EstagioServiceTest {
         Estagio rejeitado = criarEstagio(StatusEstagio.REJEITADO);
         rejeitado.setJustificativaRejeicao("Documentação incompleta");
         prepararCadastro(rejeitado);
-        when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
+        when(orientadorTurmaRepository.findByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
         when(estagioRepository.save(rejeitado)).then(returnsFirstArg());
         when(estagioRepository.findById(ESTAGIO_ID)).thenReturn(Optional.of(rejeitado));
 
@@ -273,7 +273,7 @@ class EstagioServiceTest {
     void deveCongelarCargaEJornadaDoTipoNoCadastro() {
         // arrange
         prepararCadastro(null);
-        when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
+        when(orientadorTurmaRepository.findByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
         ArgumentCaptor<Estagio> captor = ArgumentCaptor.forClass(Estagio.class);
         when(estagioRepository.save(captor.capture())).thenAnswer(inv -> {
             Estagio salvo = inv.getArgument(0);
@@ -420,7 +420,7 @@ class EstagioServiceTest {
         // arrange
         prepararCadastro(null);
         when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.indisponivel());
-        when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
+        when(orientadorTurmaRepository.findByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
         ArgumentCaptor<Estagio> captor = ArgumentCaptor.forClass(Estagio.class);
         when(estagioRepository.save(captor.capture())).thenAnswer(inv -> {
             Estagio salvo = inv.getArgument(0);

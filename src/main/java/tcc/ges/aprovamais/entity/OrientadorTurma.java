@@ -10,8 +10,13 @@ import java.time.OffsetDateTime;
 @Data
 @EntityListeners(AuditingEntityListener.class)
 @Entity
+/*
+   RF13: cada turma tem um orientador só. A restrição única fica no turma_id, então o
+   banco recusa um segundo vínculo para a mesma turma. Para trocar o orientador, nós
+   alteramos o vínculo que já existe, e o mesmo orientador pode ficar com várias turmas
+*/
 @Table(name = "orientadores_turmas",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"orientador_id", "turma_id"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_orientador_turma_turma", columnNames = {"turma_id"}))
 public class OrientadorTurma {
 
     @Id

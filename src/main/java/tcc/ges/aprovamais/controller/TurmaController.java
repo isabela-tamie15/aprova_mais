@@ -8,8 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tcc.ges.aprovamais.dto.AtribuicaoOrientadorRequest;
+import tcc.ges.aprovamais.dto.OpcaoFiltroResponse;
 import tcc.ges.aprovamais.dto.TurmaRequest;
 import tcc.ges.aprovamais.dto.TurmaResponse;
+import tcc.ges.aprovamais.service.OrientadorTurmaService;
 import tcc.ges.aprovamais.service.TurmaService;
 
 import java.util.List;
@@ -22,6 +25,7 @@ import java.util.List;
 public class TurmaController {
 
     private final TurmaService turmaService;
+    private final OrientadorTurmaService orientadorTurmaService;
 
     // Esse é o endpoint que lista as turmas de um curso do coordenador logado
     @GetMapping
@@ -47,5 +51,21 @@ public class TurmaController {
                                                    HttpServletRequest httpRequest) {
         return ResponseEntity.ok(turmaService.atualizar(
                 id, authentication.getName(), request, httpRequest.getRemoteAddr()));
+    }
+
+    // Esse é o endpoint que lista os orientadores com conta ativa, para o coordenador escolher o da turma (RF13)
+    @GetMapping("/orientadores")
+    public ResponseEntity<List<OpcaoFiltroResponse>> listarOrientadores() {
+        return ResponseEntity.ok(orientadorTurmaService.listarOrientadoresDisponiveis());
+    }
+
+    // Esse é o endpoint que atribui ou troca o orientador da turma, levando junto os estágios em aberto (RF13)
+    @PutMapping("/{id}/orientador")
+    public ResponseEntity<TurmaResponse> atribuirOrientador(@PathVariable Long id,
+                                                            @Valid @RequestBody AtribuicaoOrientadorRequest request,
+                                                            Authentication authentication,
+                                                            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(orientadorTurmaService.atribuirOrientador(
+                id, request.getOrientadorId(), authentication.getName(), httpRequest.getRemoteAddr()));
     }
 }

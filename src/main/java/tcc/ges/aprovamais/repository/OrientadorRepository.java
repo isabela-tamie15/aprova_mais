@@ -1,27 +1,20 @@
 package tcc.ges.aprovamais.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.Orientador;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface OrientadorRepository extends JpaRepository<Orientador, Long> {
 
-    /*
-       Aqui não dá para usar o nome do método que o Spring entende, porque a
-       relação entre orientador e turma está numa tabela separada. Por isso
-       escrevi a query na mão com JOIN, e o LIMIT 1 é só para garantir que
-       volta um só, mesmo se por algum motivo tiver mais de um cadastrado
-    */
-    @Query(value = "SELECT o.* FROM orientadores o " +
-            "INNER JOIN orientadores_turmas ot ON o.id = ot.orientador_id " +
-            "WHERE ot.turma_id = :turmaId LIMIT 1",
-            nativeQuery = true)
-    Optional<Orientador> findFirstByTurmaId(@Param("turmaId") Long turmaId);
+    // Orientadores com a conta ativa, em ordem alfabética, para o coordenador escolher na atribuição da turma (RF13)
+    List<Orientador> findByAtivoTrueOrderByNomeAsc();
+
+    // Busca o orientador só se a conta estiver ativa. Conta pendente, desativada ou anonimizada volta vazio
+    Optional<Orientador> findByIdAndAtivoTrue(Long id);
 
     // Confere se a matrícula institucional já pertence a um orientador, usado no pré-cadastro
     boolean existsByMatriculaInstitucional(String matriculaInstitucional);

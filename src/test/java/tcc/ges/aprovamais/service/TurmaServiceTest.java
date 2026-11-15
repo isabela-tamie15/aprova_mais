@@ -16,6 +16,7 @@ import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.Modalidade;
 import tcc.ges.aprovamais.entity.enums.Periodo;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.TurmaRepository;
 
 import java.time.LocalDate;
@@ -41,6 +42,9 @@ class TurmaServiceTest {
     private CursoService cursoService;
     @Mock
     private AuditoriaService auditoriaService;
+    // RF13: sem vínculo cadastrado, o mock devolve vazio e a turma aparece sem orientador
+    @Mock
+    private OrientadorTurmaRepository orientadorTurmaRepository;
     @InjectMocks
     private TurmaService turmaService;
 

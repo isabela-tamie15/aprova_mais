@@ -8,13 +8,19 @@ import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.TurmaRequest;
 import tcc.ges.aprovamais.dto.TurmaResponse;
 import tcc.ges.aprovamais.entity.Curso;
+import tcc.ges.aprovamais.entity.Orientador;
+import tcc.ges.aprovamais.entity.OrientadorTurma;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.TurmaRepository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 // Esse service é quem cuida do cadastro de turmas pelo coordenador (RF12, RN22)
 @Service
@@ -26,6 +32,7 @@ public class TurmaService {
     private final TurmaRepository turmaRepository;
     private final CursoService cursoService;
     private final AuditoriaService auditoriaService;
+    private final OrientadorTurmaRepository orientadorTurmaRepository;
 
     // Esse é o método que lista as turmas de um curso, desde que o curso seja do coordenador logado
     @Transactional(readOnly = true)
@@ -33,10 +40,16 @@ public class TurmaService {
         Curso curso = cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
         List<Turma> turmasDoCurso = turmaRepository.findByCursoIdOrderBySemestreDescIdentificadorAsc(curso.getId());
 
+        // Orientador de cada turma do curso (RF13), buscado numa consulta só e guardado pelo id da turma
+        Map<Long, Orientador> orientadorPorIdDaTurma = new HashMap<>();
+        for (OrientadorTurma vinculo : orientadorTurmaRepository.findByTurmaCursoId(curso.getId())) {
+            orientadorPorIdDaTurma.put(vinculo.getTurma().getId(), vinculo.getOrientador());
+        }
+
         // Transforma cada turma do banco na resposta que vai para a tela
         List<TurmaResponse> respostas = new ArrayList<>();
         for (Turma turma : turmasDoCurso) {
-            respostas.add(paraResponse(turma));
+            respostas.add(paraResponse(turma, orientadorPorIdDaTurma.get(turma.getId())));
         }
         return respostas;
     }
@@ -66,7 +79,8 @@ public class TurmaService {
                         + ") no curso id=" + curso.getId(), ipOrigem, true);
         log.info("[TURMA] Turma {} cadastrada no curso {} por {}", salva.getId(), curso.getId(), emailCoordenador);
 
-        return paraResponse(salva);
+        // Turma recém-criada ainda não tem orientador
+        return paraResponse(salva, null);
     }
 
     /*
@@ -95,7 +109,12 @@ public class TurmaService {
                 "Turma id=" + turmaId + " alterada", ipOrigem, true);
         log.info("[TURMA] Turma {} alterada por {}", turmaId, emailCoordenador);
 
-        return paraResponse(salva);
+        Optional<OrientadorTurma> vinculo = orientadorTurmaRepository.findByTurmaId(turmaId);
+        Orientador orientador = null;
+        if (vinculo.isPresent()) {
+            orientador = vinculo.get().getOrientador();
+        }
+        return paraResponse(salva, orientador);
     }
 
     private void preencher(Turma turma, TurmaRequest request, String identificador) {
@@ -113,7 +132,8 @@ public class TurmaService {
         return identificador.trim().toUpperCase(Locale.ROOT);
     }
 
-    private TurmaResponse paraResponse(Turma turma) {
+    // O orientador pode vir null, quando a turma ainda não tem orientador atribuído
+    TurmaResponse paraResponse(Turma turma, Orientador orientador) {
         return TurmaResponse.builder()
                 .id(turma.getId())
                 .cursoId(turma.getCurso().getId())
@@ -123,6 +143,8 @@ public class TurmaService {
                 .periodo(turma.getPeriodo().name())
                 .modalidade(turma.getModalidade().name())
                 .dataEncerramentoEntregas(turma.getDataEncerramentoEntregas())
+                .orientadorId(orientador != null ? orientador.getId() : null)
+                .nomeOrientador(orientador != null ? orientador.getNome() : null)
                 .build();
     }
 }

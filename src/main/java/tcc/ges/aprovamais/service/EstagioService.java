@@ -35,7 +35,7 @@ public class EstagioService {
     private static final Logger log = LoggerFactory.getLogger(EstagioService.class);
 
     // Status em que o estágio ainda está em aberto (RN35 e RN36). Só pode existir um assim por matrícula
-    static final Set<StatusEstagio> STATUS_EM_ABERTO = EnumSet.of(
+    public static final Set<StatusEstagio> STATUS_EM_ABERTO = EnumSet.of(
             StatusEstagio.PENDENTE, StatusEstagio.ATIVO, StatusEstagio.REJEITADO, StatusEstagio.SUSPENSO);
 
     private final EstagioRepository estagioRepository;
@@ -210,11 +210,11 @@ public class EstagioService {
         estagio.setJustificativaRejeicao(null);
 
         /*
-           Tenta achar o orientador da turma do aluno. Se a turma ainda não
-           tem orientador vinculado, deixa null mesmo, o estágio vai ficar
-           pendente até alguém atribuir
+           O orientador do estágio é o da turma do aluno (RF13). Se a turma ainda não
+           tem orientador, fica null e o estágio espera pendente: quando o coordenador
+           atribuir o orientador, os estágios em aberto da turma passam para ele
         */
-        Optional<OrientadorTurma> vinculoDaTurma = orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId());
+        Optional<OrientadorTurma> vinculoDaTurma = orientadorTurmaRepository.findByTurmaId(matricula.getTurma().getId());
         Orientador orientador = null;
         if (vinculoDaTurma.isPresent()) {
             orientador = vinculoDaTurma.get().getOrientador();
