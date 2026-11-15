@@ -40,7 +40,7 @@ public class ArmazenamentoR2 implements ArmazenamentoArquivos {
                     .bucket(bucket)
                     .key(chave)
                     .build()).asByteArray();
-        } catch (NoSuchKeyException e) {
+        } catch (NoSuchKeyException excecao) {
             log.warn("[ARQUIVO] Arquivo não encontrado no R2: {}", chave);
             throw new ResourceNotFoundException("Arquivo não encontrado.");
         }

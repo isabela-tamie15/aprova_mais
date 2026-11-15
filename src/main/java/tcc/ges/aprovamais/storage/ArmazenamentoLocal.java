@@ -30,9 +30,9 @@ public class ArmazenamentoLocal implements ArmazenamentoArquivos {
             Files.createDirectories(destino.getParent());
             // CREATE_NEW: uma versão gravada nunca é sobrescrita (RN56)
             Files.write(destino, conteudo, StandardOpenOption.CREATE_NEW);
-        } catch (IOException e) {
-            log.error("[ARQUIVO] Erro ao gravar {}: {}", chave, e.getMessage(), e);
-            throw new UncheckedIOException("Não foi possível gravar o arquivo", e);
+        } catch (IOException excecao) {
+            log.error("[ARQUIVO] Erro ao gravar {}: {}", chave, excecao.getMessage(), excecao);
+            throw new UncheckedIOException("Não foi possível gravar o arquivo", excecao);
         }
     }
 
@@ -40,12 +40,12 @@ public class ArmazenamentoLocal implements ArmazenamentoArquivos {
     public byte[] ler(String chave) {
         try {
             return Files.readAllBytes(resolver(chave));
-        } catch (NoSuchFileException e) {
+        } catch (NoSuchFileException excecao) {
             log.warn("[ARQUIVO] Arquivo não encontrado no disco: {}", chave);
             throw new ResourceNotFoundException("Arquivo não encontrado.");
-        } catch (IOException e) {
-            log.error("[ARQUIVO] Erro ao ler {}: {}", chave, e.getMessage(), e);
-            throw new UncheckedIOException("Não foi possível ler o arquivo", e);
+        } catch (IOException excecao) {
+            log.error("[ARQUIVO] Erro ao ler {}: {}", chave, excecao.getMessage(), excecao);
+            throw new UncheckedIOException("Não foi possível ler o arquivo", excecao);
         }
     }
 

@@ -16,13 +16,13 @@ function historicoCorrecoes() {
             this.erro = '';
             const parametros = new URLSearchParams({ pagina: this.pagina, tamanho: 10 });
             try {
-                const resp = await fetch('/api/v1/orientador/entregas/historico?' + parametros, { credentials: 'include' });
-                if (resp.ok) {
-                    this.historico = await resp.json();
+                const resposta = await fetch('/api/v1/orientador/entregas/historico?' + parametros, { credentials: 'include' });
+                if (resposta.ok) {
+                    this.historico = await resposta.json();
                 } else {
-                    this.erro = (await mensagemErroApi(resp, 'Não foi possível carregar o histórico.')).mensagem;
+                    this.erro = (await mensagemErroApi(resposta, 'Não foi possível carregar o histórico.')).mensagem;
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;

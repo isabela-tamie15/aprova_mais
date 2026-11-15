@@ -17,10 +17,12 @@ import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.*;
 import tcc.ges.aprovamais.storage.ArmazenamentoArquivos;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 //Envio das entregas pelo aluno e histórico de versões
@@ -57,13 +59,16 @@ public class EntregaService {
             throw new DadoInvalidoException("O comentário deve ter no máximo 1000 caracteres.");
         }
 
-        Entrega entrega = entregaRepository.findByEstagioIdAndTarefaId(estagio.getId(), tarefa.getId())
-                .orElseGet(() -> {
-                    Entrega nova = new Entrega();
-                    nova.setEstagio(estagio);
-                    nova.setTarefa(tarefa);
-                    return nova;
-                });
+        // O aluno já enviou essa tarefa antes? Se sim, usamos a mesma entrega; se não, criamos uma nova
+        Optional<Entrega> entregaExistente = entregaRepository.findByEstagioIdAndTarefaId(estagio.getId(), tarefa.getId());
+        Entrega entrega;
+        if (entregaExistente.isPresent()) {
+            entrega = entregaExistente.get();
+        } else {
+            entrega = new Entrega();
+            entrega.setEstagio(estagio);
+            entrega.setTarefa(tarefa);
+        }
         // CA03: com a entrega em análise ou já aprovada, não dá para mandar outra versão
         if (entrega.getStatus() != null && !podeEnviar(entrega.getStatus())) {
             throw new IllegalStateException(entrega.getStatus() == StatusEntrega.APROVADA
@@ -71,19 +76,23 @@ public class EntregaService {
                     : "Esta tarefa já tem uma entrega aguardando a análise do orientador.");
         }
 
-        TipoArquivo tipo = ValidadorArquivoEntrega.validar(nomeOriginal, conteudo);
+        TipoArquivo tipoArquivo = ValidadorArquivoEntrega.validar(nomeOriginal, conteudo);
         String nomeArquivo = ValidadorArquivoEntrega.limparNome(nomeOriginal);
 
-        int numero = entrega.getId() == null ? 1
-                : entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId())
-                        .map(v -> v.getNumero() + 1)
-                        .orElse(1);
+        // Primeira entrega da tarefa é a versão 1; as próximas são a última versão mais 1 (RN55)
+        int numero = 1;
+        if (entrega.getId() != null) {
+            Optional<EntregaVersao> ultimaVersao = entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId());
+            if (ultimaVersao.isPresent()) {
+                numero = ultimaVersao.get().getNumero() + 1;
+            }
+        }
 
 
         // A chave é gerada aqui, sem nada do nome que o aluno mandou. O UUID faz com que dois envios nunca caiam no mesmo arquivo
         String chave = "entregas/estagio-" + estagio.getId() + "/tarefa-" + tarefa.getId()
-                + "/v" + numero + "-" + UUID.randomUUID() + "." + tipo.name().toLowerCase(Locale.ROOT);
-        armazenamentoArquivos.salvar(chave, conteudo, ValidadorArquivoEntrega.tipoConteudo(tipo));
+                + "/v" + numero + "-" + UUID.randomUUID() + "." + tipoArquivo.name().toLowerCase(Locale.ROOT);
+        armazenamentoArquivos.salvar(chave, conteudo, ValidadorArquivoEntrega.tipoConteudo(tipoArquivo));
 
         entrega.setStatus(StatusEntrega.ENVIADA);
         Entrega salva = entregaRepository.save(entrega);
@@ -93,7 +102,7 @@ public class EntregaService {
         versao.setNumero(numero);
         versao.setNomeArquivo(nomeArquivo);
         versao.setChaveArquivo(chave);
-        versao.setTipoArquivo(tipo);
+        versao.setTipoArquivo(tipoArquivo);
         versao.setTamanhoBytes((long) conteudo.length);
         versao.setComentarioAluno(comentarioLimpo);
         entregaVersaoRepository.save(versao);
@@ -135,11 +144,11 @@ public class EntregaService {
     // Status da entrega de cada tarefa do estágio, para a trilha do aluno
     @Transactional(readOnly = true)
     public Map<Long, Entrega> entregasPorTarefa(Long estagioId) {
-        Map<Long, Entrega> mapa = new HashMap<>();
+        Map<Long, Entrega> entregaPorIdDaTarefa = new HashMap<>();
         for (Entrega entrega : entregaRepository.findByEstagioId(estagioId)) {
-            mapa.put(entrega.getTarefa().getId(), entrega);
+            entregaPorIdDaTarefa.put(entrega.getTarefa().getId(), entrega);
         }
-        return mapa;
+        return entregaPorIdDaTarefa;
     }
 
     @Transactional(readOnly = true)
@@ -149,11 +158,13 @@ public class EntregaService {
 
     // Monta a resposta com o histórico completo, igual para o aluno e para o orientador
     public EntregaDetalheResponse montarDetalhe(Tarefa tarefa, Entrega entrega) {
-        List<EntregaVersaoResponse> versoes = entrega == null || entrega.getId() == null
-                ? List.of()
-                : entregaVersaoRepository.findByEntregaIdOrderByNumeroAsc(entrega.getId()).stream()
-                        .map(this::paraVersaoResponse)
-                        .toList();
+        // Tarefa sem entrega ainda não tem versões; com entrega, listamos todas, da primeira para a última
+        List<EntregaVersaoResponse> versoes = new ArrayList<>();
+        if (entrega != null && entrega.getId() != null) {
+            for (EntregaVersao versao : entregaVersaoRepository.findByEntregaIdOrderByNumeroAsc(entrega.getId())) {
+                versoes.add(paraVersaoResponse(versao));
+            }
+        }
 
         StatusEntrega status = entrega == null ? null : entrega.getStatus();
         return EntregaDetalheResponse.builder()

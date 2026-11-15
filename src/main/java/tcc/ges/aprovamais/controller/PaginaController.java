@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.service.ConviteService;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.TrilhaService;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,8 +68,8 @@ public class PaginaController {
         /*
            Pega a primeira authority do usuário, que vem no formato ROLE_ALGO.
            O PerfilUsuario.deAuthority tira esse prefixo e devolve o enum, e
-           daí a gente usa a rotaInicial que cada perfil já tem configurada.
-           Assim evita ter um if gigante aqui decidindo pra onde redirecionar
+           daí nós usamos a rotaInicial que cada perfil já tem configurada.
+           Assim evita ter um if gigante aqui decidindo para onde redirecionar
         */
         String authority = authentication.getAuthorities().iterator().next().getAuthority();
         return "redirect:" + PerfilUsuario.deAuthority(authority).getRotaInicial();
@@ -92,17 +93,23 @@ public class PaginaController {
 
         /*
            Pega o e-mail do token, busca o estágio e joga no Model. O orElse(null)
-           serve pra quando o aluno ainda não tem estágio, aí a página mostra o
+           serve para quando o aluno ainda não tem estágio, aí a página mostra o
            estado vazio em vez de dar erro
         */
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         model.addAttribute("historico", estagioService.listarHistoricoDoAluno(email));
 
-        // Estagios que já sairam de aberto (concluidos ou encerrados) ficam listados como anteriores
-        model.addAttribute("estagiosAnteriores", estagioService.listarEstagiosDoAluno(email).stream()
-                .filter(e -> e.getStatus().equals("CONCLUIDO") || e.getStatus().equals("ENCERRADO"))
-                .toList());
+        // Estágios que já saíram de aberto (concluídos ou encerrados) aparecem na lista de anteriores
+        List<EstagioResponse> estagiosAnteriores = new ArrayList<>();
+        for (EstagioResponse estagio : estagioService.listarEstagiosDoAluno(email)) {
+            boolean concluido = estagio.getStatus().equals("CONCLUIDO");
+            boolean encerrado = estagio.getStatus().equals("ENCERRADO");
+            if (concluido || encerrado) {
+                estagiosAnteriores.add(estagio);
+            }
+        }
+        model.addAttribute("estagiosAnteriores", estagiosAnteriores);
         return "aluno/dashboard";
     }
 
@@ -111,7 +118,7 @@ public class PaginaController {
     @PreAuthorize("hasRole('ALUNO')")
     public String trilhaAluno(Model model, Authentication authentication) {
 
-        // Busca a trilha do aluno e joga no Model pra página renderizar
+        // Busca a trilha do aluno e joga no Model para a página renderizar
         String email = authentication.getName();
         model.addAttribute("trilha", trilhaService.buscarTrilhaDoAluno(email));
         return "aluno/trilha";
@@ -124,7 +131,7 @@ public class PaginaController {
 
         /*
            Essa página precisa de duas coisas no Model, o estágio atual do
-           aluno (se já tiver um) e a lista de tipos disponíveis pra ele escolher
+           aluno (se já tiver um) e a lista de tipos disponíveis para ele escolher
         */
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
@@ -144,7 +151,7 @@ public class PaginaController {
         List<EstagioResponse> estagios = estagioService.listarPendentes(email);
         model.addAttribute("estagios", estagios);
 
-        // Histórico de decisões de cada estágio, indexado pelo id, pra página mostrar as rejeições anteriores
+        // Histórico de decisões de cada estágio, indexado pelo id, para a página mostrar as rejeições anteriores
         Map<Long, List<ValidacaoEstagioResponse>> historicos = new HashMap<>();
         for (EstagioResponse estagio : estagios) {
             historicos.put(estagio.getId(), estagioService.listarHistoricoDoOrientador(estagio.getId(), email));
@@ -185,4 +192,4 @@ public class PaginaController {
         model.addAttribute("convites", conviteService.listarEnviados(email));
         return "secretaria/convites";
     }
-}
+}

@@ -10,6 +10,7 @@ import tcc.ges.aprovamais.entity.Entrega;
 import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.EntregaVersao;
 import tcc.ges.aprovamais.entity.Tarefa;
+import tcc.ges.aprovamais.entity.Trilha;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.EntregaRepository;
@@ -18,10 +19,11 @@ import tcc.ges.aprovamais.repository.EstagioRepository;
 import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TrilhaRepository;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 /*
    Visão consolidada do aluno para o orientador.
@@ -47,25 +49,37 @@ public class VisaoAlunoService {
     @Transactional(readOnly = true)
     public VisaoAlunoResponse montar(String emailOrientador, Long estagioId) {
         Estagio estagio = estagioRepository.findByIdAndOrientadorEmail(estagioId, emailOrientador)
-                .filter(e -> e.getStatus() == StatusEstagio.ATIVO)
                 .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado."));
+        // A visão consolidada só existe para estágio ATIVO; nos outros status respondemos 404, como antes
+        if (estagio.getStatus() != StatusEstagio.ATIVO) {
+            throw new ResourceNotFoundException("Estágio não encontrado.");
+        }
 
-        EstagioResponse progresso = estagioService.listarAtivosDoOrientador(emailOrientador).stream()
-                .filter(e -> e.getId().equals(estagio.getId()))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado."));
+        // Progresso da F2 (horas, atividades e aviso de prazo) calculado só para este estágio
+        EstagioResponse progresso = estagioService.montarProgresso(estagio);
 
-        List<Tarefa> tarefas = trilhaRepository.findByTipoEstagioId(estagio.getTipoEstagio().getId())
-                .map(trilha -> tarefaRepository.findByTrilhaIdOrderByOrdem(trilha.getId()))
-                .orElse(List.of());
+        // Tarefas da trilha do tipo de estágio. Sem trilha, a lista fica vazia
+        List<Tarefa> tarefas = new ArrayList<>();
+        Optional<Trilha> trilhaDoTipo = trilhaRepository.findByTipoEstagioId(estagio.getTipoEstagio().getId());
+        if (trilhaDoTipo.isPresent()) {
+            tarefas = tarefaRepository.findByTrilhaIdOrderByOrdem(trilhaDoTipo.get().getId());
+        }
 
-        // Cada tarefa tem no máximo uma entrega no estágio (uk_entrega_estagio_tarefa)
-        Map<Long, Entrega> entregaPorTarefa = entregaRepository.findByEstagioId(estagio.getId()).stream()
-                .collect(Collectors.toMap(e -> e.getTarefa().getId(), Function.identity()));
+        // Guarda a entrega de cada tarefa pelo id da tarefa. Cada tarefa tem no máximo uma entrega no estágio (uk_entrega_estagio_tarefa)
+        Map<Long, Entrega> entregaPorTarefa = new HashMap<>();
+        for (Entrega entrega : entregaRepository.findByEstagioId(estagio.getId())) {
+            entregaPorTarefa.put(entrega.getTarefa().getId(), entrega);
+        }
+
+        // Uma linha por tarefa, com a situação da entrega do aluno (ou "sem entrega")
+        List<TarefaVisaoAlunoResponse> linhasDasTarefas = new ArrayList<>();
+        for (Tarefa tarefa : tarefas) {
+            linhasDasTarefas.add(paraTarefa(tarefa, entregaPorTarefa.get(tarefa.getId())));
+        }
 
         return VisaoAlunoResponse.builder()
                 .progresso(progresso)
-                .tarefas(tarefas.stream().map(t -> paraTarefa(t, entregaPorTarefa.get(t.getId()))).toList())
+                .tarefas(linhasDasTarefas)
                 .build();
     }
 
@@ -94,10 +108,10 @@ public class VisaoAlunoService {
 
     // A aprovação pode vir sem feedback, então o último feedback é o da versão mais recente que tem um
     static EntregaVersao ultimaComFeedback(List<EntregaVersao> versoesEmOrdem) {
-        for (int i = versoesEmOrdem.size() - 1; i >= 0; i--) {
-            String feedback = versoesEmOrdem.get(i).getFeedback();
+        for (int posicao = versoesEmOrdem.size() - 1; posicao >= 0; posicao--) {
+            String feedback = versoesEmOrdem.get(posicao).getFeedback();
             if (feedback != null && !feedback.isBlank()) {
-                return versoesEmOrdem.get(i);
+                return versoesEmOrdem.get(posicao);
             }
         }
         return null;

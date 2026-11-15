@@ -18,13 +18,13 @@ function avaliacaoEntrega(entregaId) {
         // Abrir a entrega já a coloca EM_REVISAO, se estava ENVIADA
         async carregar() {
             try {
-                const resp = await fetch(`/api/v1/orientador/entregas/${entregaId}`, { credentials: 'include' });
-                if (resp.ok) {
-                    this.detalhe = await resp.json();
+                const resposta = await fetch(`/api/v1/orientador/entregas/${entregaId}`, { credentials: 'include' });
+                if (resposta.ok) {
+                    this.detalhe = await resposta.json();
                 } else {
-                    this.erro = (await mensagemErroApi(resp, 'Não foi possível carregar a entrega.')).mensagem;
+                    this.erro = (await mensagemErroApi(resposta, 'Não foi possível carregar a entrega.')).mensagem;
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
@@ -66,23 +66,23 @@ function avaliacaoEntrega(entregaId) {
             }
             this.enviando = true;
             try {
-                const resp = await fetch(`/api/v1/orientador/entregas/${entregaId}/avaliacao`, {
+                const resposta = await fetch(`/api/v1/orientador/entregas/${entregaId}/avaliacao`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ decisao, feedback: this.feedback.trim() || null })
                 });
-                if (resp.ok) {
-                    this.detalhe = await resp.json();
+                if (resposta.ok) {
+                    this.detalhe = await resposta.json();
                     this.feedback = '';
                     this.sucesso = decisao === 'APROVAR'
                             ? 'Entrega aprovada. O aluno foi avisado por e-mail.'
                             : 'Entrega devolvida. O aluno foi avisado por e-mail e pode enviar uma nova versão.';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
-                    this.erro = (await mensagemErroApi(resp, 'Não foi possível salvar a avaliação.')).mensagem;
+                    this.erro = (await mensagemErroApi(resposta, 'Não foi possível salvar a avaliação.')).mensagem;
                 }
-            } catch (e) {
+            } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.enviando = false;
