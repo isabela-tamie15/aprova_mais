@@ -124,6 +124,7 @@ public class GlobalExceptionHandler {
             case "dataInicioDentroDoLimite" -> "dataInicio";
             case "cnpjComDigitosValidos" -> "cnpjEmpresa";
             case "senhasConferem" -> "confirmacaoSenha";
+            case "senhaDentroDoLimiteDoBcrypt" -> "senha";
             case "turmaInformadaParaAluno" -> "turmaId";
             case "perfilDePreCadastro" -> "perfil";
             case "nomeInformadoParaPerfilAdministrativo" -> "nome";

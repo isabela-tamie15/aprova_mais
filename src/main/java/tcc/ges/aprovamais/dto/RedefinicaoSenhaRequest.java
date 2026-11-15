@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import tcc.ges.aprovamais.security.LimiteSenha;
 
 @Data
 public class RedefinicaoSenhaRequest {
@@ -27,5 +28,11 @@ public class RedefinicaoSenhaRequest {
     @AssertTrue(message = "A senha e a confirmação de senha não conferem")
     public boolean isSenhasConferem() {
         return senha == null || senha.equals(confirmacaoSenha);
+    }
+
+    // O limite do BCrypt é em bytes, e não em caracteres (veja LimiteSenha)
+    @AssertTrue(message = LimiteSenha.MENSAGEM)
+    public boolean isSenhaDentroDoLimiteDoBcrypt() {
+        return LimiteSenha.cabeNoBcrypt(senha);
     }
 }

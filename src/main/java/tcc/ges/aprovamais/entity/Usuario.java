@@ -2,7 +2,8 @@ package tcc.ges.aprovamais.entity;
 
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -12,9 +13,11 @@ import tcc.ges.aprovamais.security.AesEncryptor;
 import java.time.OffsetDateTime;
 
 
+// @Getter e @Setter no lugar do @Data, para o toString não mostrar senha, segredo do 2FA e tokens
 @Inheritance(strategy = InheritanceType.JOINED)
 @EntityListeners(AuditingEntityListener.class)
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "usuarios")
 public abstract class Usuario {
@@ -103,5 +106,11 @@ public abstract class Usuario {
     // Encerra todas as sessões abertas da conta: os tokens emitidos antes deixam de valer
     public void encerrarSessoes() {
         versaoSessao = versaoSessaoAtual() + 1;
+    }
+
+    // Só o id e o perfil, para senha, segredo do 2FA, tokens e e-mail não aparecerem em log
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(id=" + id + ", perfil=" + perfil + ")";
     }
 }
