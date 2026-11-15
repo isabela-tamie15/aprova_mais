@@ -23,9 +23,9 @@ function auditoria() {
 
         async carregarAcoes() {
             try {
-                const resp = await fetch('/api/v1/admin/auditoria/acoes', { credentials: 'include' });
-                if (resp.ok) this.acoes = await resp.json();
-            } catch (e) {
+                const resposta = await fetch('/api/v1/admin/auditoria/acoes', { credentials: 'include' });
+                if (resposta.ok) this.acoes = await resposta.json();
+            } catch (erro) {
                 // Sem a lista, o select fica só com "Todas" e a consulta continua funcionando
             }
         },
@@ -66,14 +66,23 @@ function auditoria() {
 
             // Só vai para a URL o filtro que tem valor
             const parametros = new URLSearchParams({ pagina, tamanho: TAMANHO_PAGINA });
-            Object.entries(this.filtrosAplicados).forEach(([chave, valor]) => {
-                if (valor !== '' && valor !== null) parametros.append(chave, valor);
-            });
+            for (const nomeDoFiltro in this.filtrosAplicados) {
+                const valorDoFiltro = this.filtrosAplicados[nomeDoFiltro];
+                if (valorDoFiltro !== '' && valorDoFiltro !== null) {
+                    parametros.append(nomeDoFiltro, valorDoFiltro);
+                }
+            }
 
             try {
-                const resp = await fetch('/api/v1/admin/auditoria?' + parametros, { credentials: 'include' });
-                const dados = await resp.json().catch(() => ({}));
-                if (!resp.ok) {
+                const resposta = await fetch('/api/v1/admin/auditoria?' + parametros, { credentials: 'include' });
+                // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
+                if (!resposta.ok) {
                     this.mensagemErro = this.mensagemDeErro(dados);
                     return;
                 }
@@ -81,7 +90,7 @@ function auditoria() {
                 this.pagina = dados.pagina;
                 this.totalPaginas = dados.totalPaginas;
                 this.totalItens = dados.totalItens;
-            } catch (e) {
+            } catch (erro) {
                 this.mensagemErro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
