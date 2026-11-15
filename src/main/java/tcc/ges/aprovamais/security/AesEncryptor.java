@@ -29,9 +29,9 @@ public class AesEncryptor implements AttributeConverter<String, String> {
     private byte[] bytesChaveSecreta;
 
     /*
-       Roda uma vez quando a aplicação sobe pra preparar a chave de criptografia.
-       A gente não usa o segredo direto, passa por um hash SHA-256 pra gerar
-       uma chave do tamanho certo pro AES, que precisa de 32 bytes
+       Roda uma vez quando a aplicação sobe para preparar a chave de criptografia.
+       Nós não usamos o segredo direto: ele passa por um hash SHA-256 para gerar
+       uma chave do tamanho certo para o AES, que precisa de 32 bytes
     */
     @PostConstruct
     public void inicializar() {
@@ -43,12 +43,12 @@ public class AesEncryptor implements AttributeConverter<String, String> {
             bytesChaveSecreta = digest.digest(
                     segredo.getBytes(java.nio.charset.StandardCharsets.UTF_8)
             );
-        } catch (Exception e) {
-            throw new IllegalStateException("Erro ao derivar chave AES.", e);
+        } catch (Exception excecao) {
+            throw new IllegalStateException("Erro ao derivar chave AES.", excecao);
         }
     }
 
-    // Esse é o método que o JPA chama antes de salvar, pra criptografar o valor
+    // Esse é o método que o JPA chama antes de salvar, para criptografar o valor
     @Override
     public String convertToDatabaseColumn(String atributo) {
         if (atributo == null) return null;
@@ -73,20 +73,20 @@ public class AesEncryptor implements AttributeConverter<String, String> {
             /*
                Junta o IV com o texto cifrado num único array. O IV não é
                segredo, pode ficar salvo junto, e na hora de descriptografar
-               a gente separa de novo
+               nós separamos de novo
             */
             ByteBuffer buffer = ByteBuffer.allocate(TAMANHO_IV + cifrado.length);
             buffer.put(iv);
             buffer.put(cifrado);
 
-            // Codifica em Base64 pra virar texto e poder ser salvo numa coluna VARCHAR
+            // Codifica em Base64 para virar texto e poder ser salvo numa coluna VARCHAR
             return Base64.getEncoder().encodeToString(buffer.array());
-        } catch (Exception e) {
-            throw new RuntimeException("Falha na cifragem do atributo.", e);
+        } catch (Exception excecao) {
+            throw new RuntimeException("Falha na cifragem do atributo.", excecao);
         }
     }
 
-    // Esse é o método que o JPA chama ao ler do banco, pra descriptografar o valor
+    // Esse é o método que o JPA chama ao ler do banco, para descriptografar o valor
     @Override
     public String convertToEntityAttribute(String dadosBanco) {
         if (dadosBanco == null) return null;
@@ -108,8 +108,8 @@ public class AesEncryptor implements AttributeConverter<String, String> {
 
             return new String(cipher.doFinal(cifrado),
                     java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw new RuntimeException("Falha na decifragem do atributo.", e);
+        } catch (Exception excecao) {
+            throw new RuntimeException("Falha na decifragem do atributo.", excecao);
         }
     }
 }

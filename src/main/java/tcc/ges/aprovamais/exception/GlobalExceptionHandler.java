@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // Estrutura padrão pra respostas de erros
+    // Estrutura padrão para respostas de erros
     private record ErroResposta(
             int status,
             String erro,
@@ -55,8 +55,8 @@ public class GlobalExceptionHandler {
 
     // 401 credenciais inválidas
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErroResposta> handleBadCredentials(BadCredentialsException ex) {
-        log.warn("[EXCEPTION] Credenciais inválidas: {}", ex.getMessage());
+    public ResponseEntity<ErroResposta> handleBadCredentials(BadCredentialsException excecao) {
+        log.warn("[EXCEPTION] Credenciais inválidas: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(construirErro(HttpStatus.UNAUTHORIZED, "Credenciais inválidas."));
@@ -64,37 +64,37 @@ public class GlobalExceptionHandler {
 
     // 423 conta bloqueada ou desativada
     @ExceptionHandler(LockedException.class)
-    public ResponseEntity<ErroResposta> handleLocked(LockedException ex) {
-        log.warn("[EXCEPTION] Conta bloqueada: {}", ex.getMessage());
+    public ResponseEntity<ErroResposta> handleLocked(LockedException excecao) {
+        log.warn("[EXCEPTION] Conta bloqueada: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.LOCKED)
-                .body(construirErro(HttpStatus.LOCKED, ex.getMessage()));
+                .body(construirErro(HttpStatus.LOCKED, excecao.getMessage()));
     }
 
     // 400 código do 2FA inválido, então é ativar/desativar pela conta
     @ExceptionHandler(CodigoDoisFatoresInvalidoException.class)
     public ResponseEntity<ErroResposta> handleCodigoDoisFatoresInvalido(
-            CodigoDoisFatoresInvalidoException ex) {
+            CodigoDoisFatoresInvalidoException excecao) {
         log.warn("[EXCEPTION] Código 2FA inválido");
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(construirErro(HttpStatus.BAD_REQUEST, ex.getMessage()));
+                .body(construirErro(HttpStatus.BAD_REQUEST, excecao.getMessage()));
     }
 
     // 400 falha na validação do @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErroValidacao> handleValidation(
-            MethodArgumentNotValidException ex) {
+            MethodArgumentNotValidException excecao) {
 
         /*
            Cada campo com erro vira uma entrada no mapa "campos", o nome do
-           campo como chave e a mensagem como valor, pro frontend mostrar o
+           campo como chave e a mensagem como valor, para o frontend mostrar o
            erro embaixo do campo certo. A "mensagem" traz o primeiro erro,
            assim as telas que só leem dados.mensagem também mostram algo útil.
            O LinkedHashMap mantém a ordem em que os erros foram encontrados
         */
         Map<String, String> campos = new LinkedHashMap<>();
-        for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
+        for (FieldError fieldError : excecao.getBindingResult().getFieldErrors()) {
             campos.putIfAbsent(nomeDoCampo(fieldError.getField()), fieldError.getDefaultMessage());
         }
 
@@ -115,7 +115,7 @@ public class GlobalExceptionHandler {
     /*
        As validações cruzadas ficam em métodos isAlgumaCoisa (ex: isDataInicioDentroDoLimite),
        e o erro chega com o nome desse método. Aqui troca pelo campo que o
-       usuário de fato preencheu, pra tela marcar o input certo
+       usuário de fato preencheu, para a tela marcar o input certo
     */
     private String nomeDoCampo(String campo) {
         return switch (campo) {
@@ -131,8 +131,8 @@ public class GlobalExceptionHandler {
 
     // 400 corpo da requisição ilegível, por exemplo JSON quebrado ou data fora do formato AAAA-MM-DD
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErroResposta> handleNotReadable(HttpMessageNotReadableException ex) {
-        log.warn("[EXCEPTION] Corpo da requisição inválido: {}", ex.getMostSpecificCause().getMessage());
+    public ResponseEntity<ErroResposta> handleNotReadable(HttpMessageNotReadableException excecao) {
+        log.warn("[EXCEPTION] Corpo da requisição inválido: {}", excecao.getMostSpecificCause().getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(construirErro(HttpStatus.BAD_REQUEST,
@@ -141,8 +141,8 @@ public class GlobalExceptionHandler {
 
     // 400 arquivo da entrega maior que o limite do spring.servlet.multipart (10 MB)
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ErroResposta> handleArquivoGrande(MaxUploadSizeExceededException ex) {
-        log.warn("[EXCEPTION] Arquivo acima do limite: {}", ex.getMessage());
+    public ResponseEntity<ErroResposta> handleArquivoGrande(MaxUploadSizeExceededException excecao) {
+        log.warn("[EXCEPTION] Arquivo acima do limite: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(construirErro(HttpStatus.BAD_REQUEST, "O arquivo deve ter no máximo 10 MB."));
@@ -150,8 +150,8 @@ public class GlobalExceptionHandler {
 
     // 400 envio de entrega sem o arquivo
     @ExceptionHandler(MissingServletRequestPartException.class)
-    public ResponseEntity<ErroResposta> handleArquivoAusente(MissingServletRequestPartException ex) {
-        log.warn("[EXCEPTION] Parte ausente na requisição: {}", ex.getRequestPartName());
+    public ResponseEntity<ErroResposta> handleArquivoAusente(MissingServletRequestPartException excecao) {
+        log.warn("[EXCEPTION] Parte ausente na requisição: {}", excecao.getRequestPartName());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(construirErro(HttpStatus.BAD_REQUEST, "Selecione um arquivo para enviar."));
@@ -159,20 +159,20 @@ public class GlobalExceptionHandler {
 
     // 400 parâmetro inválido que não passa pelo @Valid (ex: CNPJ na URL)
     @ExceptionHandler(DadoInvalidoException.class)
-    public ResponseEntity<ErroResposta> handleDadoInvalido(DadoInvalidoException ex) {
-        log.warn("[EXCEPTION] Parâmetro inválido: {}", ex.getMessage());
+    public ResponseEntity<ErroResposta> handleDadoInvalido(DadoInvalidoException excecao) {
+        log.warn("[EXCEPTION] Parâmetro inválido: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(construirErro(HttpStatus.BAD_REQUEST, ex.getMessage()));
+                .body(construirErro(HttpStatus.BAD_REQUEST, excecao.getMessage()));
     }
 
     // 409 regra de negócio violada (exemplo, estágio já pendente, já analisado etc)
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErroResposta> handleIllegalState(IllegalStateException ex) {
-        log.warn("[EXCEPTION] Regra de negócio violada: {}", ex.getMessage());
+    public ResponseEntity<ErroResposta> handleIllegalState(IllegalStateException excecao) {
+        log.warn("[EXCEPTION] Regra de negócio violada: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(construirErro(HttpStatus.CONFLICT, ex.getMessage()));
+                .body(construirErro(HttpStatus.CONFLICT, excecao.getMessage()));
     }
 
     /*
@@ -182,8 +182,8 @@ public class GlobalExceptionHandler {
        antes de chegar aqui
     */
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErroResposta> handleAccessDenied(AccessDeniedException ex) {
-        log.warn("[EXCEPTION] Acesso negado: {}", ex.getMessage());
+    public ResponseEntity<ErroResposta> handleAccessDenied(AccessDeniedException excecao) {
+        log.warn("[EXCEPTION] Acesso negado: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(construirErro(HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este recurso."));
@@ -191,24 +191,24 @@ public class GlobalExceptionHandler {
 
     // 404 recurso não encontrado
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErroResposta> handleNotFound(ResourceNotFoundException ex) {
-        log.warn("[EXCEPTION] Recurso não encontrado: {}", ex.getMessage());
+    public ResponseEntity<ErroResposta> handleNotFound(ResourceNotFoundException excecao) {
+        log.warn("[EXCEPTION] Recurso não encontrado: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(construirErro(HttpStatus.NOT_FOUND, ex.getMessage()));
+                .body(construirErro(HttpStatus.NOT_FOUND, excecao.getMessage()));
     }
 
     // 500 erro genérico nao tratado
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErroResposta> handleGeneric(Exception ex) {
+    public ResponseEntity<ErroResposta> handleGeneric(Exception excecao) {
 
         /*
            Esse é o último handler da cadeia, se cair aqui é porque alguma
            coisa estourou e não foi tratada em nenhum outro lugar. Registra
            o stack completo com log.error e devolve uma mensagem genérica
-           pro cliente, sem expor detalhes internos
+           para o cliente, sem expor detalhes internos
         */
-        log.error("[EXCEPTION] Erro inesperado: {}", ex.getMessage(), ex);
+        log.error("[EXCEPTION] Erro inesperado: {}", excecao.getMessage(), excecao);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(construirErro(

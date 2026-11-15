@@ -29,9 +29,9 @@ public class JwtService {
     private SecretKey chaveAssinatura;
 
     /*
-       Roda uma vez quando a aplicação sobe pra montar a chave de assinatura.
+       Roda uma vez quando a aplicação sobe para montar a chave de assinatura.
        O segredo vem do application.yml em texto puro, e aqui ele é convertido
-       pro formato de chave HMAC que a lib JWT usa. Se o segredo for muito curto,
+       para o formato de chave HMAC que a lib JWT usa. Se o segredo for muito curto,
        a própria lib rejeita e a aplicação nem sobe, o que é bom
     */
     @PostConstruct
@@ -49,7 +49,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(email)
                 /*
-                   O perfil vai como claim extra pra depois o filtro conseguir
+                   O perfil vai como claim extra para depois o filtro conseguir
                    montar a autenticação sem precisar buscar o usuário no banco
                    de novo
                 */
@@ -82,15 +82,15 @@ public class JwtService {
     }
 
     /*
-       Verifica se o token é válido e se pertence ao e-mail esperado. Aqui a
-       gente confia no extrairClaims pra validar assinatura e expiração, se
-       qualquer um dos dois estiver errado, ele já lança exceção e a gente
-       devolve false em vez de estourar pra cima
+       Verifica se o token é válido e se pertence ao e-mail esperado. Aqui nós
+       confiamos no extrairClaims para validar assinatura e expiração, se
+       qualquer um dos dois estiver errado, ele já lança exceção e nós
+       devolvemos false em vez de estourar para cima
     */
     public boolean tokenValido(String token, String email) {
         try {
             return extrairEmail(token).equals(email);
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException excecao) {
             return false;
         }
     }
@@ -103,4 +103,4 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload();
     }
-}
+}
