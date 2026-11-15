@@ -97,12 +97,33 @@ public class DoisFatoresService {
 
     // ===== TOTP =====
 
-    // Confere se o código de 6 dígitos bate com o segredo do usuário
-    public boolean codigoValido(String segredo, String codigo) {
+    // O TOTP troca de código a cada 30 segundos; cada intervalo é um passo
+    private static final long MILISSEGUNDOS_POR_PASSO = 30_000L;
+
+    /*
+       Confere o código de 6 dígitos e se ele ainda não foi usado. Aceitamos o passo atual e um
+       para cada lado, por causa de relógio adiantado ou atrasado no celular
+    */
+    public boolean codigoValido(Usuario usuario, String codigo) {
+        String segredo = usuario.getDoisFatoresSegredo();
         if (segredo == null || codigo == null || !codigo.matches("\\d{6}")) {
             return false;
         }
-        return googleAuthenticator.authorize(segredo, Integer.parseInt(codigo));
+        int codigoDigitado = Integer.parseInt(codigo);
+        long passoAtual = System.currentTimeMillis() / MILISSEGUNDOS_POR_PASSO;
+
+        for (long passo = passoAtual - 1; passo <= passoAtual + 1; passo++) {
+            if (googleAuthenticator.getTotpPassword(segredo, passo * MILISSEGUNDOS_POR_PASSO) == codigoDigitado) {
+                Long ultimoPassoUsado = usuario.getUltimoPassoTotp();
+                if (ultimoPassoUsado != null && passo <= ultimoPassoUsado) {
+                    return false;
+                }
+                usuario.setUltimoPassoTotp(passo);
+                usuarioRepository.save(usuario);
+                return true;
+            }
+        }
+        return false;
     }
 
     /*
@@ -220,7 +241,7 @@ public class DoisFatoresService {
     private void validarCodigoDaConta(Usuario usuario, String codigo, String ipOrigem) {
         bloqueioContaService.verificarBloqueio(usuario, "DOIS_FATORES_FALHA", ipOrigem);
 
-        if (!codigoValido(usuario.getDoisFatoresSegredo(), codigo)) {
+        if (!codigoValido(usuario, codigo)) {
             int tentativas = bloqueioContaService.registrarFalha(usuario);
             auditoriaService.registrar(usuario, "DOIS_FATORES_FALHA",
                     "Código inválido. Tentativa " + tentativas + " de " + BloqueioContaService.MAX_TENTATIVAS,

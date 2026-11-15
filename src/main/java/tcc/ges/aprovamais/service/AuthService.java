@@ -149,7 +149,7 @@ public class AuthService {
             throw new BadCredentialsException("Credenciais inválidas");
         }
 
-        validarCodigoDoLogin(usuario, usuario.getDoisFatoresSegredo(), codigo, ip);
+        validarCodigoDoLogin(usuario, codigo, ip);
 
         // Código ok, então invalida o token temporário para não poder ser reusado
         doisFatoresService.invalidarPreAutenticacao(usuario);
@@ -171,7 +171,7 @@ public class AuthService {
     public LoginResponse confirmarConfiguracaoObrigatoria(String preAuthToken, String codigo, String ip) {
         Usuario usuario = buscarUsuarioEmConfiguracaoObrigatoria(preAuthToken);
 
-        validarCodigoDoLogin(usuario, usuario.getDoisFatoresSegredo(), codigo, ip);
+        validarCodigoDoLogin(usuario, codigo, ip);
 
         // Código certo, ativa o 2fa de vez e invalida o token temporário
         doisFatoresService.ativar(usuario, ip);
@@ -203,11 +203,11 @@ public class AuthService {
     }
 
     // Esse é o auxiliar que valida o código do 2fa, usado tanto no login normal quanto na configuração
-    private void validarCodigoDoLogin(Usuario usuario, String segredo, String codigo, String ip) {
+    private void validarCodigoDoLogin(Usuario usuario, String codigo, String ip) {
         bloqueioContaService.verificarBloqueio(usuario, "LOGIN_2FA_FALHA", ip);
 
         // Código errado, registra a falha e lança
-        if (!doisFatoresService.codigoValido(segredo, codigo)) {
+        if (!doisFatoresService.codigoValido(usuario, codigo)) {
             int tentativas = bloqueioContaService.registrarFalha(usuario);
 
             auditoriaService.registrar(

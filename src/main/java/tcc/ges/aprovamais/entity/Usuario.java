@@ -43,6 +43,10 @@ public abstract class Usuario {
     @Column(name = "dois_fatores_segredo")
     private String doisFatoresSegredo;
 
+    // Passo de 30 segundos do último código TOTP aceito, para cada código valer uma vez só
+    @Column(name = "ultimo_passo_totp")
+    private Long ultimoPassoTotp;
+
     @Column(name = "token_pre_autenticacao")
     private String tokenPreAutenticacao;
 
