@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tcc.ges.aprovamais.dto.AnonimizacaoRequest;
+import tcc.ges.aprovamais.dto.SolicitacaoTitularResponse;
 import tcc.ges.aprovamais.service.AnonimizacaoService;
 
 // Esse controller é quem recebe as solicitações de LGPD do usuário logado
@@ -49,7 +50,7 @@ public class AnonimizacaoController {
 
     // Esse é o endpoint onde o usuário solicita acesso aos próprios dados
     @PostMapping("/solicitar-acesso")
-    public ResponseEntity<Void> solicitarAcesso(
+    public ResponseEntity<SolicitacaoTitularResponse> solicitarAcesso(
             Authentication authentication,
             HttpServletRequest request) {
 
@@ -58,25 +59,24 @@ public class AnonimizacaoController {
            na auditoria para ficar rastreável. Quem entrega os dados em si é
            outro fluxo, mais controlado
         */
-        anonimizacaoService.registrarSolicitacao(authentication.getName(),
+        // Devolve o protocolo e o prazo da resposta (RF43)
+        return ResponseEntity.ok(anonimizacaoService.registrarSolicitacao(authentication.getName(),
                 "SOLICITACAO_ACESSO_DADOS",
                 "Titular solicitou acesso aos seus dados pessoais",
-                request.getRemoteAddr());
-        return ResponseEntity.ok().build();
+                request.getRemoteAddr()));
     }
 
     // Esse é o endpoint onde o usuário solicita correção dos próprios dados
     @PostMapping("/solicitar-correcao")
-    public ResponseEntity<Void> solicitarCorrecao(
+    public ResponseEntity<SolicitacaoTitularResponse> solicitarCorrecao(
             Authentication authentication,
             HttpServletRequest request) {
 
         // Mesma ideia do acesso, só registra a solicitação para a auditoria
-        anonimizacaoService.registrarSolicitacao(authentication.getName(),
+        return ResponseEntity.ok(anonimizacaoService.registrarSolicitacao(authentication.getName(),
                 "SOLICITACAO_CORRECAO_DADOS",
                 "Titular solicitou correção dos seus dados pessoais",
-                request.getRemoteAddr());
-        return ResponseEntity.ok().build();
+                request.getRemoteAddr()));
     }
 
 }

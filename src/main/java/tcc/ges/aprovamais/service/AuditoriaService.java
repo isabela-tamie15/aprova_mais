@@ -3,6 +3,8 @@ package tcc.ges.aprovamais.service;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.entity.LogAuditoria;
@@ -10,6 +12,9 @@ import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.PerfilAuditoria;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.repository.LogAuditoriaRepository;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 // Essa service é quem registra os logs de auditoria do sistema, tipo login, logout, anonimização etc
 @Service
@@ -19,6 +24,10 @@ public class AuditoriaService {
     private static final Logger log = LoggerFactory.getLogger(AuditoriaService.class);
 
     private final LogAuditoriaRepository logAuditoriaRepository;
+
+    // Prazo de guarda dos registros, em meses (RF45)
+    @Value("${app.auditoria.retencao-meses:6}")
+    private int mesesDeRetencao;
 
     // Registra um evento de auditoria na mesma transação da operação: os dois são gravados ou desfeitos juntos
     @Transactional
@@ -62,6 +71,17 @@ public class AuditoriaService {
         logAuditoriaRepository.save(registro);
 
         log.warn("[AUDITORIA] {} | {} | {} | sem usuário ativo vinculado", emailTentativa, acao, detalhes);
+    }
+
+    // Elimina todo dia, às 3h30, os registros mais antigos que o prazo de guarda (RF45)
+    @Scheduled(cron = "0 30 3 * * *", zone = "America/Sao_Paulo")
+    @Transactional
+    public void eliminarRegistrosAntigos() {
+        OffsetDateTime limite = OffsetDateTime.now(ZoneOffset.UTC).minusMonths(mesesDeRetencao);
+        int eliminados = logAuditoriaRepository.apagarAnterioresA(limite);
+        if (eliminados > 0) {
+            log.info("[AUDITORIA] {} registro(s) anteriores a {} eliminado(s) pelo prazo de guarda", eliminados, limite);
+        }
     }
 
     /*

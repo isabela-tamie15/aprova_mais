@@ -48,4 +48,9 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
     @Query(value = "UPDATE registros_auditoria SET detalhes = REPLACE(detalhes, :textoAntigo, :textoNovo) "
             + "WHERE detalhes LIKE CONCAT('%', :textoAntigo, '%')", nativeQuery = true)
     int trocarTextoNosDetalhes(@Param("textoAntigo") String textoAntigo, @Param("textoNovo") String textoNovo);
+
+    // Elimina os registros anteriores ao prazo de guarda (RF45)
+    @Modifying
+    @Query("DELETE FROM LogAuditoria l WHERE l.criadoEm < :limite")
+    int apagarAnterioresA(@Param("limite") OffsetDateTime limite);
 }

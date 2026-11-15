@@ -7,6 +7,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.dto.SolicitacaoTitularResponse;
 import tcc.ges.aprovamais.entity.Aluno;
 import tcc.ges.aprovamais.entity.Estagio;
 import tcc.ges.aprovamais.entity.Orientador;
@@ -30,6 +31,9 @@ import tcc.ges.aprovamais.repository.PreCadastroRepository;
 import tcc.ges.aprovamais.repository.SecretariaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -215,15 +219,20 @@ public class AnonimizacaoService {
         }
     }
 
-    /*
-       Registra na auditoria o pedido de acesso ou de correção dos dados pessoais.
-       Os dados em si são entregues pela secretaria, fora do sistema
-    */
-    // Grava o registro de auditoria, então não é só leitura
+    // Prazo da resposta ao titular nos pedidos de acesso e de correção (art. 19 da LGPD)
+    public static final int DIAS_PARA_RESPOSTA = 15;
+
+    // Registra o pedido de acesso ou de correção dos dados (RF43), com protocolo e data limite da resposta
     @Transactional
-    public void registrarSolicitacao(String email, String acao, String detalhes, String ipOrigem) {
+    public SolicitacaoTitularResponse registrarSolicitacao(String email, String acao, String detalhes, String ipOrigem) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
-        auditoriaService.registrar(usuario, acao, detalhes, ipOrigem, true);
+
+        String protocolo = "LGPD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+        LocalDate prazoResposta = LocalDate.now(ZoneId.of("America/Sao_Paulo")).plusDays(DIAS_PARA_RESPOSTA);
+
+        auditoriaService.registrar(usuario, acao,
+                detalhes + ". Protocolo " + protocolo + ", resposta até " + prazoResposta, ipOrigem, true);
+        return new SolicitacaoTitularResponse(protocolo, prazoResposta);
     }
 }
