@@ -1,6 +1,6 @@
 package tcc.ges.aprovamais.exception;
 
-// Exceção lançada quando algum recurso não é encontrado, tipo usuário, estágio, etc
+// Recurso não encontrado, como usuário ou estágio
 public class ResourceNotFoundException extends RuntimeException {
 
     // Construtor com mensagem livre, usado quando já se tem o texto pronto

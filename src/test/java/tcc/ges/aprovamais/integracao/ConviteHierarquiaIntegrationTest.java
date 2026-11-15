@@ -59,7 +59,7 @@ class ConviteHierarquiaIntegrationTest extends IntegracaoTestBase {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    // O email não é enviado de verdade nos testes
+    // O e-mail não é enviado de verdade nos testes
     @MockitoBean
     private EmailService emailService;
 

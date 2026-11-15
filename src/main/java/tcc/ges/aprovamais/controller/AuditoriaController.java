@@ -18,7 +18,7 @@ import tcc.ges.aprovamais.service.ConsultaAuditoriaService;
 
 import java.util.List;
 
-// Esse controller é quem expõe a consulta da auditoria, só para o Adm
+// Consulta da auditoria, só para o administrador
 @Tag(name = "Auditoria", description = "Consulta dos registros de auditoria pelo Administrador")
 @RestController
 @RequestMapping("/api/v1/admin/auditoria")
@@ -28,7 +28,7 @@ public class AuditoriaController {
 
     private final ConsultaAuditoriaService consultaAuditoriaService;
 
-    // Esse é o endpoint que lista os registros com os filtros da query string
+    // Lista os registros com os filtros da query string
     @Operation(summary = "Consulta a auditoria com filtros por e-mail, ação, resultado e período")
     @GetMapping
     public ResponseEntity<PaginaAuditoriaResponse> consultar(@Valid @ModelAttribute FiltroAuditoriaRequest filtro,
@@ -39,7 +39,7 @@ public class AuditoriaController {
 
     }
 
-    // Esse é o endpoint que devolve as ações já registradas, para montar o filtro da tela
+    // Devolve as ações já registradas, para montar o filtro da tela
     @Operation(summary = "Lista as ações que já aparecem na auditoria")
     @GetMapping("/acoes")
     public ResponseEntity<List<String>> listarAcoes() {

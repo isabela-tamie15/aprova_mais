@@ -13,9 +13,9 @@ import tcc.ges.aprovamais.service.ConsentimentoService;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 /*
-   Base dos testes de integração dos cadastros da coordenação. Já deixa o MockMvc
-   pronto e cria dois coordenadores: o "dono" dos dados de cada teste e um outro,
-   usado para conferir que um coordenador não mexe nos cursos do outro (RN21)
+   Base dos testes de integração dos cadastros da coordenação. Deixa o MockMvc pronto e cria dois
+   coordenadores, o dono dos dados de cada teste e um outro, para conferir que um
+   coordenador não mexe nos cursos do outro
 */
 abstract class CoordenacaoTestBase extends IntegracaoTestBase {
 

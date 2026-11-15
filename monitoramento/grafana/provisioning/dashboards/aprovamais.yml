@@ -1,0 +1,9 @@
+# Painéis carregados da pasta monitoramento/grafana/dashboards
+apiVersion: 1
+providers:
+  - name: "Aprova+"
+    folder: "Aprova+"
+    type: file
+    disableDeletion: true
+    options:
+      path: /var/lib/grafana/dashboards

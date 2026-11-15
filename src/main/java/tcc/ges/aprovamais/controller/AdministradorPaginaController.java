@@ -4,18 +4,18 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-// Esse controller é quem serve as paginas do Administrador. Os dados vêm da API e carregados com o Alpine no fronted
+// Páginas do administrador. Os dados vêm da API e são carregados com o Alpine
 @Controller
 @PreAuthorize("hasRole('ADMINISTRADOR')")
 public class AdministradorPaginaController {
 
-    // Esse é o endpoint que serve a tela de consulta da auditoria, que também é a página inicial do perfil
+    // Tela de consulta da auditoria, que também é a página inicial do perfil
     @GetMapping("/admin/auditoria")
     public String auditoria() {
         return "admin/auditoria";
     }
 
-    // Esse é o endpoint que serve a tela de convites do Administrador, que convida os coordenadores
+    // Tela em que o administrador convida os coordenadores
     @GetMapping("/admin/convites")
     public String convites() {
         return "admin/convites";

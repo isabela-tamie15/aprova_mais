@@ -18,7 +18,7 @@ import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 import java.util.Optional;
 
-// Esse service é quem fecha o fluxo de primeiro acesso, quando o convidado cria a senha e aceita os termos
+// Primeiro acesso, quando o convidado cria a senha e aceita os termos
 @Service
 @RequiredArgsConstructor
 public class PrimeiroAcessoService {
@@ -31,7 +31,7 @@ public class PrimeiroAcessoService {
     private final PreCadastroService preCadastroService;
     private final MatriculaRepository matriculaRepository;
 
-    // Esse é o método que conclui o cadastro quando o usuário define a senha e aceita os termos
+    // Conclui o cadastro com a senha definida e o aceite dos termos
     @Transactional
     public void concluirCadastro(String token, String senha, String ip) {
         Convite convite = conviteService.validarToken(token);
@@ -39,21 +39,13 @@ public class PrimeiroAcessoService {
         Usuario usuario = usuarioRepository.findByEmail(convite.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-        /*
-           Aqui acontece a virada de chave do usuário. Ele tava pendente,
-           inativo e com senha provisória, agora recebe a senha de verdade
-           que ele escolheu, aceita os termos e é ativado. Depois disso já
-           consegue logar normalmente
-        */
+        // A conta pendente recebe a senha escolhida, o aceite dos termos e é ativada
         usuario.setSenhaHash(passwordEncoder.encode(senha));
         consentimentoService.aplicarAceite(usuario);
         usuario.setPrimeiroAcesso(false);
         usuario.setAtivo(true);
 
-        /*
-           Aluno e orientador recebem os dados do pré-cadastro (nome e RGM ou matrícula institucional), no lugar dos valores provisórios
-           gravados no envio do convite
-        */
+        // Aluno e orientador recebem os dados do pré-cadastro no lugar dos valores provisórios do convite
         Optional<PreCadastro> preCadastro = preCadastroService.buscarPorEmail(convite.getEmail());
         if (preCadastro.isPresent()) {
             aplicarPreCadastro(usuario, preCadastro.get());
@@ -61,7 +53,7 @@ public class PrimeiroAcessoService {
 
         usuarioRepository.save(usuario);
 
-        // PPara aluno, a matrícula ATIVA é criada na turma do pré-cadastro
+        // Para o aluno, a matrícula ATIVA é criada na turma do pré-cadastro
         if (usuario instanceof Aluno aluno && preCadastro.isPresent() && preCadastro.get().getTurma() != null) {
             criarMatricula(aluno, preCadastro.get().getTurma(), ip);
         }
@@ -78,23 +70,14 @@ public class PrimeiroAcessoService {
         );
     }
 
-    // Esse é o método que registra a recusa, quando o convidado decide não criar a conta
+    // Registra a recusa do convite
     @Transactional
     public void recusarCadastro(String token, String ip) {
 
-        /*
-           A validação roda antes de tudo, então se o token tiver expirado
-           ou já usado, a recusa nem chega a ser registrada. Isso é de
-           propósito, porque não faz sentido marcar como recusado um convite
-           que já não era mais válido
-        */
+        // A validação vem antes, então um convite vencido ou já usado nem tem a recusa registrada
         Convite convite = conviteService.validarToken(token);
 
-        /*
-           Registra a recusa na auditoria com o e-mail do convite, não com
-           um usuário, porque nesse ponto a pessoa ainda não é um usuário
-           de fato. Por isso usa o registrarTentativa em vez do registrar
-        */
+        // A recusa fica na auditoria pelo e-mail do convite, porque a pessoa ainda não tem conta ativa
         auditoriaService.registrarTentativa(
                 convite.getEmail(),
                 "PRIMEIRO_ACESSO_RECUSADO",

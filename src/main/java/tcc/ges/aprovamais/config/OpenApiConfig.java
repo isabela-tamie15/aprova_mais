@@ -11,13 +11,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /*
-   Configuração geral da documentação da API (Swagger UI em /swagger-ui.html).
-   A autenticação do sistema usa o JWT no cookie HttpOnly "jwt". Quem já fez
-   login pela tela do sistema no mesmo navegador consegue testar os endpoints
-   direto pelo Swagger, porque o navegador envia o cookie sozinho. O esquema
-   Bearer fica disponível para testes com ferramentas como Postman
-   já que o JwtFilter também aceita o token no cabeçalho Authorization.
-   No perfil prod o Swagger fica desativado (application-prod.properties)
+   Documentação da API no Swagger UI (/swagger-ui.html). Quem já entrou pela tela do sistema no
+   mesmo navegador testa os endpoints direto, porque o navegador envia o cookie jwt sozinho.
+   O esquema Bearer serve para ferramentas como o Postman, já que o JwtFilter também aceita o
+   token no cabeçalho Authorization. No perfil prod o Swagger fica desativado
 */
 @Configuration
 public class OpenApiConfig {

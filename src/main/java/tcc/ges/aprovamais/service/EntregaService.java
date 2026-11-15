@@ -8,11 +8,13 @@ import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.EntregaDetalheResponse;
 import tcc.ges.aprovamais.dto.EntregaVersaoResponse;
 import tcc.ges.aprovamais.entity.*;
+import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.entity.enums.TipoArquivo;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.*;
 import tcc.ges.aprovamais.storage.ArmazenamentoArquivos;
@@ -47,7 +49,10 @@ public class EntregaService {
     }
 
 
-    // O aluno envia um arquivo para uma tarefa da trilha. Cada envio vira uma versão nova, com número igual ao maior anterior mais 1, e a entrega volta para ENVIADA, aparecendo no painel do orientador
+    /*
+       Envia um arquivo para uma tarefa da trilha. Cada envio vira uma versão nova, com o número da
+       anterior mais 1, e a entrega volta para ENVIADA no painel do orientador
+    */
     @Transactional
     public EntregaDetalheResponse enviar(String emailAluno, Long tarefaId, String nomeOriginal,
                                          byte[] conteudo, String comentario, String ipOrigem) {
@@ -59,7 +64,7 @@ public class EntregaService {
             throw new DadoInvalidoException("O comentário deve ter no máximo 1000 caracteres.");
         }
 
-        // O aluno já enviou essa tarefa antes? Se sim, usamos a mesma entrega; se não, criamos uma nova
+        // Reaproveita a entrega se a tarefa já foi enviada antes, ou cria uma nova
         Optional<Entrega> entregaExistente = entregaRepository.findByEstagioIdAndTarefaId(estagio.getId(), tarefa.getId());
         Entrega entrega;
         if (entregaExistente.isPresent()) {
@@ -69,9 +74,9 @@ public class EntregaService {
             entrega.setEstagio(estagio);
             entrega.setTarefa(tarefa);
         }
-        // CA03: com a entrega em análise ou já aprovada, não dá para mandar outra versão
+        // Com a entrega em análise ou já aprovada, não dá para mandar outra versão
         if (entrega.getStatus() != null && !podeEnviar(entrega.getStatus())) {
-            throw new IllegalStateException(entrega.getStatus() == StatusEntrega.APROVADA
+            throw new RegraNegocioException(entrega.getStatus() == StatusEntrega.APROVADA
                     ? "Esta tarefa já foi aprovada pelo orientador."
                     : "Esta tarefa já tem uma entrega aguardando a análise do orientador.");
         }
@@ -79,7 +84,7 @@ public class EntregaService {
         TipoArquivo tipoArquivo = ValidadorArquivoEntrega.validar(nomeOriginal, conteudo);
         String nomeArquivo = ValidadorArquivoEntrega.limparNome(nomeOriginal);
 
-        // Primeira entrega da tarefa é a versão 1; as próximas são a última versão mais 1 (RN55)
+        // A primeira entrega da tarefa é a versão 1, e as próximas são a última versão mais 1
         int numero = 1;
         if (entrega.getId() != null) {
             Optional<EntregaVersao> ultimaVersao = entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId());
@@ -92,10 +97,9 @@ public class EntregaService {
         // A chave é gerada aqui, sem nada do nome que o aluno mandou. O UUID faz com que dois envios nunca caiam no mesmo arquivo
         String chave = "entregas/estagio-" + estagio.getId() + "/tarefa-" + tarefa.getId()
                 + "/v" + numero + "-" + UUID.randomUUID() + "." + tipoArquivo.name().toLowerCase(Locale.ROOT);
-        armazenamentoArquivos.salvar(chave, conteudo, ValidadorArquivoEntrega.tipoConteudo(tipoArquivo));
 
         entrega.setStatus(StatusEntrega.ENVIADA);
-        Entrega salva = entregaRepository.save(entrega);
+        Entrega salva = entregaRepository.saveAndFlush(entrega);
 
         EntregaVersao versao = new EntregaVersao();
         versao.setEntrega(salva);
@@ -105,7 +109,14 @@ public class EntregaService {
         versao.setTipoArquivo(tipoArquivo);
         versao.setTamanhoBytes((long) conteudo.length);
         versao.setComentarioAluno(comentarioLimpo);
-        entregaVersaoRepository.save(versao);
+
+        /*
+           O saveAndFlush grava as linhas na hora. Se outro envio da mesma tarefa chegou ao mesmo tempo,
+           a restrição única falha aqui e a resposta é 409, antes de o arquivo ser gravado. Se a
+           gravação do arquivo falhar, a transação é desfeita e as linhas somem junto
+        */
+        entregaVersaoRepository.saveAndFlush(versao);
+        armazenamentoArquivos.salvar(chave, conteudo, ValidadorArquivoEntrega.tipoConteudo(tipoArquivo));
 
         auditoriaService.registrar(estagio.getMatricula().getAluno(), "ENTREGA_ENVIADA",
                 "Entrega id=" + salva.getId() + " da tarefa id=" + tarefa.getId() + ", versão " + numero,
@@ -125,20 +136,31 @@ public class EntregaService {
         return montarDetalhe(tarefa, entrega);
     }
 
-    // Download de uma versão pelo aluno, só das entregas dele
-    @Transactional(readOnly = true)
-    public ArquivoEntrega baixarDoAluno(String emailAluno, Long versaoId) {
+    // Download de uma versão pelo aluno, só das entregas dele, registrado na auditoria
+    @Transactional
+    public ArquivoEntrega baixarDoAluno(String emailAluno, Long versaoId, String ipOrigem) {
         EntregaVersao versao = entregaVersaoRepository.findByIdAndEntregaEstagioMatriculaAlunoEmail(versaoId, emailAluno)
                 .orElseThrow(() -> new ResourceNotFoundException("Arquivo não encontrado."));
-        return lerArquivo(versao);
+        ArquivoEntrega arquivo = lerArquivo(versao);
+        registrarDownload(versao.getEntrega().getEstagio().getMatricula().getAluno(), versao, ipOrigem);
+        return arquivo;
     }
 
-    // Download de uma versão pelo orientador, só das entregas dos alunos dele
-    @Transactional(readOnly = true)
-    public ArquivoEntrega baixarDoOrientador(String emailOrientador, Long versaoId) {
+    // Download de uma versão pelo orientador, só das entregas dos alunos dele, registrado na auditoria
+    @Transactional
+    public ArquivoEntrega baixarDoOrientador(String emailOrientador, Long versaoId, String ipOrigem) {
         EntregaVersao versao = entregaVersaoRepository.findByIdAndEntregaEstagioOrientadorEmail(versaoId, emailOrientador)
                 .orElseThrow(() -> new ResourceNotFoundException("Arquivo não encontrado."));
-        return lerArquivo(versao);
+        ArquivoEntrega arquivo = lerArquivo(versao);
+        registrarDownload(versao.getEntrega().getEstagio().getOrientador(), versao, ipOrigem);
+        return arquivo;
+    }
+
+    // Registra quem baixou, qual versão e de onde
+    private void registrarDownload(Usuario quemBaixou, EntregaVersao versao, String ipOrigem) {
+        auditoriaService.registrar(quemBaixou, "ARQUIVO_BAIXADO",
+                "Versão " + versao.getNumero() + " (id=" + versao.getId() + ") da entrega id="
+                        + versao.getEntrega().getId(), ipOrigem, true);
     }
 
     // Status da entrega de cada tarefa do estágio, para a trilha do aluno
@@ -158,7 +180,7 @@ public class EntregaService {
 
     // Monta a resposta com o histórico completo, igual para o aluno e para o orientador
     public EntregaDetalheResponse montarDetalhe(Tarefa tarefa, Entrega entrega) {
-        // Tarefa sem entrega ainda não tem versões; com entrega, listamos todas, da primeira para a última
+        // Tarefa sem entrega não tem versões. Com entrega, as versões vão da primeira para a última
         List<EntregaVersaoResponse> versoes = new ArrayList<>();
         if (entrega != null && entrega.getId() != null) {
             for (EntregaVersao versao : entregaVersaoRepository.findByEntregaIdOrderByNumeroAsc(entrega.getId())) {
@@ -214,7 +236,7 @@ public class EntregaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Estágio ativo não encontrado."));
     }
 
-    // A tarefa precisa ser da trilha do tipo do estágio do aluno, vindo de outra trilha vira 404
+    // A tarefa precisa ser da trilha do tipo do estágio do aluno. Tarefa de outra trilha vira 404
     private Tarefa buscarTarefaDaTrilha(Long tarefaId, Estagio estagio) {
         Tarefa tarefa = tarefaRepository.findById(tarefaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada na sua trilha."));

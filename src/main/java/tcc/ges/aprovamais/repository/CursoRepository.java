@@ -18,14 +18,16 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
     List<Curso> findByCoordenadorEmailOrderByNomeAsc(String emailCoordenador);
 
     /*
-       Busca o curso só se ele for do coordenador informado. É o que garante a RN21:
-       curso de outro coordenador volta vazio, e o service responde 404, igual a um id
-       que não existe
+       Busca o curso só se ele for do coordenador informado. Curso de outro coordenador volta vazio
+       e o service responde 404, igual a um id que não existe
     */
     Optional<Curso> findByIdAndCoordenadorEmail(Long id, String emailCoordenador);
 
-    // Confere se o código e-MEC já está em uso (RN19), no cadastro e na edição
+    // Confere se o código e-MEC já está em uso, no cadastro e na edição
     boolean existsByCodigoMec(String codigoMec);
 
     boolean existsByCodigoMecAndIdNot(String codigoMec, Long id);
+
+    // Coordenador com curso não pode se anonimizar
+    boolean existsByCoordenadorId(Long coordenadorId);
 }

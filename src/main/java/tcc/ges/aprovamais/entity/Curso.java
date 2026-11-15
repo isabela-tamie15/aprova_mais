@@ -27,9 +27,8 @@ public class Curso {
     private String codigoMec;
 
     /*
-       Coordenador responsável pelo curso (RN20). Quem cadastra o curso vira o
-       coordenador dele. Fica nulo nos cursos criados por script antes desse campo
-       existir, que precisam ser vinculados com o script de ajuste do banco
+       Coordenador responsável pelo curso, que é quem cadastra o curso. Fica nulo nos cursos criados
+       por script antes desse campo existir
     */
     @ManyToOne
     @JoinColumn(name = "coordenador_id")

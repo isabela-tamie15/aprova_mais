@@ -10,8 +10,9 @@ import java.time.OffsetDateTime;
 @Data
 @EntityListeners(AuditingEntityListener.class)
 @Entity
+// Cada turma tem um orientador só. A restrição única fica no turma_id, e o mesmo orientador pode ficar com várias turmas
 @Table(name = "orientadores_turmas",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"orientador_id", "turma_id"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_orientador_turma_turma", columnNames = {"turma_id"}))
 public class OrientadorTurma {
 
     @Id

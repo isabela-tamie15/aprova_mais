@@ -9,6 +9,7 @@ import tcc.ges.aprovamais.dto.CursoRequest;
 import tcc.ges.aprovamais.dto.CursoResponse;
 import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.Curso;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.CoordenadorRepository;
 import tcc.ges.aprovamais.repository.CursoRepository;
@@ -16,7 +17,7 @@ import tcc.ges.aprovamais.repository.CursoRepository;
 import java.util.ArrayList;
 import java.util.List;
 
-// Esse service é quem cuida do cadastro de cursos pelo coordenador (RF11)
+// Cadastro de cursos pelo coordenador
 @Service
 @RequiredArgsConstructor
 public class CursoService {
@@ -27,7 +28,7 @@ public class CursoService {
     private final CoordenadorRepository coordenadorRepository;
     private final AuditoriaService auditoriaService;
 
-    // Esse é o método que lista os cursos do coordenador logado, e só os dele (RN21)
+    // Lista só os cursos do coordenador logado
     @Transactional(readOnly = true)
     public List<CursoResponse> listarDoCoordenador(String emailCoordenador) {
         List<Curso> cursosDoCoordenador = cursoRepository.findByCoordenadorEmailOrderByNomeAsc(emailCoordenador);
@@ -40,17 +41,14 @@ public class CursoService {
         return respostas;
     }
 
-    /*
-       Esse é o método que cadastra um curso novo. Quem cadastra vira o
-       coordenador do curso (RN20), e o código e-MEC não pode repetir (RN19)
-    */
+    // Cadastra um curso novo. Quem cadastra vira o coordenador do curso, e o código e-MEC não pode repetir
     @Transactional
     public CursoResponse cadastrar(String emailCoordenador, CursoRequest request, String ipOrigem) {
         Coordenador coordenador = buscarCoordenador(emailCoordenador);
         String codigoMec = request.getCodigoMec().trim();
 
         if (cursoRepository.existsByCodigoMec(codigoMec)) {
-            throw new IllegalStateException("Já existe um curso com esse código e-MEC");
+            throw new RegraNegocioException("Já existe um curso com esse código e-MEC");
         }
 
         Curso curso = new Curso();
@@ -66,7 +64,7 @@ public class CursoService {
         return paraResponse(salvo);
     }
 
-    // Esse é o método que altera o nome ou o código de um curso do próprio coordenador
+    // Altera o nome ou o código de um curso do próprio coordenador
     @Transactional
     public CursoResponse atualizar(Long cursoId, String emailCoordenador, CursoRequest request, String ipOrigem) {
         Curso curso = buscarCursoDoCoordenador(cursoId, emailCoordenador);
@@ -74,7 +72,7 @@ public class CursoService {
 
         // Na edição, o próprio curso pode manter o código, por isso o IdNot
         if (cursoRepository.existsByCodigoMecAndIdNot(codigoMec, cursoId)) {
-            throw new IllegalStateException("Já existe um curso com esse código e-MEC");
+            throw new RegraNegocioException("Já existe um curso com esse código e-MEC");
         }
 
         curso.setNome(request.getNome().trim());
@@ -89,10 +87,9 @@ public class CursoService {
     }
 
     /*
-       Busca o curso só se ele for do coordenador logado. Os cadastros de turma,
-       tipo de estágio e trilha usam esse método antes de qualquer coisa, assim a
-       regra "só nos próprios cursos" (RN21) fica num lugar só. Curso de outro
-       coordenador recebe o mesmo 404 de um id que não existe
+       Busca o curso só se ele for do coordenador logado. Os cadastros de turma, tipo de estágio e
+       trilha passam por aqui, então a regra fica num lugar só. Curso de outro coordenador recebe
+       o mesmo 404 de um id que não existe
     */
     @Transactional(readOnly = true)
     public Curso buscarCursoDoCoordenador(Long cursoId, String emailCoordenador) {
@@ -104,7 +101,7 @@ public class CursoService {
                 });
     }
 
-    // Busca o coordenador logado. Se o token for de outro perfil, o SecurityConfig já barrou antes
+    // Busca o coordenador logado
     private Coordenador buscarCoordenador(String email) {
         return coordenadorRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Coordenador não encontrado"));

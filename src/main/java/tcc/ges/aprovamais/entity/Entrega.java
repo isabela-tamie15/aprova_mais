@@ -11,9 +11,9 @@ import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import java.time.OffsetDateTime;
 
 /*
-   Entrega de uma tarefa da trilha pelo aluno. Cada estágio tem no máximo uma entrega por tarefa, e os arquivos enviados ficam nas versões dela
-   (EntregaVersao).
-   O status é o da última versão pode ser ENVIADA, EM_REVISAO, APROVADA ou DEVOLVIDA
+   Entrega de uma tarefa da trilha pelo aluno. Cada estágio tem no máximo uma entrega por tarefa,
+   e os arquivos ficam nas versões dela. O status é o da última versão, que pode ser ENVIADA,
+   EM_REVISAO, APROVADA ou DEVOLVIDA
 */
 @Data
 @EntityListeners(AuditingEntityListener.class)
@@ -27,7 +27,7 @@ public class Entrega {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // A entrega pertence ao estágio, e não ao aluno: um estágio novo começa sem entregas (RN57)
+    // A entrega pertence ao estágio, e não ao aluno, então um estágio novo começa sem entregas
     @ManyToOne
     @JoinColumn(name = "estagio_id", nullable = false, updatable = false)
     @ToString.Exclude

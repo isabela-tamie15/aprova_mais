@@ -15,6 +15,7 @@ import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.Tarefa;
 import tcc.ges.aprovamais.entity.TipoEstagio;
 import tcc.ges.aprovamais.entity.Trilha;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
@@ -95,7 +96,7 @@ class TrilhaCoordenadorServiceTest {
         when(trilhaRepository.existsByTipoEstagioId(5L)).thenReturn(true);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> trilhaCoordenadorService.criar(EMAIL_COORDENADOR, trilhaRequest(), IP));
 
         // assert
@@ -143,7 +144,7 @@ class TrilhaCoordenadorServiceTest {
         when(tarefaRepository.existsByTrilhaIdAndOrdem(9L, 1)).thenReturn(true);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> trilhaCoordenadorService.adicionarTarefa(9L, EMAIL_COORDENADOR, tarefaRequest(1, ""), IP));
 
         // assert

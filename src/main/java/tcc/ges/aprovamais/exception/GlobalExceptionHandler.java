@@ -2,6 +2,7 @@ package tcc.ges.aprovamais.exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -14,13 +15,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// Esse handler centraliza o tratamento de exceções, é quem transforma os erros em respostas JSON padronizadas
+// Transforma as exceções em respostas JSON padronizadas
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -53,13 +55,14 @@ public class GlobalExceptionHandler {
         );
     }
 
-    // 401 credenciais inválidas
+    // 401 credenciais inválidas, com a mesma mensagem para e-mail sem cadastro, senha errada e conta bloqueada
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErroResposta> handleBadCredentials(BadCredentialsException excecao) {
         log.warn("[EXCEPTION] Credenciais inválidas: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(construirErro(HttpStatus.UNAUTHORIZED, "Credenciais inválidas."));
+                .body(construirErro(HttpStatus.UNAUTHORIZED,
+                        "E-mail ou senha inválidos. Depois de 5 tentativas erradas, o acesso fica bloqueado por 5 minutos."));
     }
 
     // 423 conta bloqueada ou desativada
@@ -87,11 +90,9 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException excecao) {
 
         /*
-           Cada campo com erro vira uma entrada no mapa "campos", o nome do
-           campo como chave e a mensagem como valor, para o frontend mostrar o
-           erro embaixo do campo certo. A "mensagem" traz o primeiro erro,
-           assim as telas que só leem dados.mensagem também mostram algo útil.
-           O LinkedHashMap mantém a ordem em que os erros foram encontrados
+           Cada campo com erro entra no mapa "campos", com o nome do campo e a mensagem, para a tela
+           mostrar o erro embaixo do campo certo. A "mensagem" traz o primeiro erro para as telas que
+           só leem dados.mensagem. O LinkedHashMap mantém a ordem em que os erros foram encontrados
         */
         Map<String, String> campos = new LinkedHashMap<>();
         for (FieldError fieldError : excecao.getBindingResult().getFieldErrors()) {
@@ -113,15 +114,15 @@ public class GlobalExceptionHandler {
     }
 
     /*
-       As validações cruzadas ficam em métodos isAlgumaCoisa (ex: isDataInicioDentroDoLimite),
-       e o erro chega com o nome desse método. Aqui troca pelo campo que o
-       usuário de fato preencheu, para a tela marcar o input certo
+       As validações cruzadas ficam em métodos isAlgumaCoisa, e o erro chega com o nome do método.
+       Aqui ele é trocado pelo campo que o usuário preencheu, para a tela marcar o campo certo
     */
     private String nomeDoCampo(String campo) {
         return switch (campo) {
             case "dataInicioDentroDoLimite" -> "dataInicio";
             case "cnpjComDigitosValidos" -> "cnpjEmpresa";
             case "senhasConferem" -> "confirmacaoSenha";
+            case "senhaDentroDoLimiteDoBcrypt" -> "senha";
             case "turmaInformadaParaAluno" -> "turmaId";
             case "perfilDePreCadastro" -> "perfil";
             case "nomeInformadoParaPerfilAdministrativo" -> "nome";
@@ -157,7 +158,7 @@ public class GlobalExceptionHandler {
                 .body(construirErro(HttpStatus.BAD_REQUEST, "Selecione um arquivo para enviar."));
     }
 
-    // 400 parâmetro inválido que não passa pelo @Valid (ex: CNPJ na URL)
+    // 400 parâmetro inválido que não passa pelo @Valid, como o CNPJ na URL
     @ExceptionHandler(DadoInvalidoException.class)
     public ResponseEntity<ErroResposta> handleDadoInvalido(DadoInvalidoException excecao) {
         log.warn("[EXCEPTION] Parâmetro inválido: {}", excecao.getMessage());
@@ -167,8 +168,8 @@ public class GlobalExceptionHandler {
     }
 
     // 409 regra de negócio violada (exemplo, estágio já pendente, já analisado etc)
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErroResposta> handleIllegalState(IllegalStateException excecao) {
+    @ExceptionHandler(RegraNegocioException.class)
+    public ResponseEntity<ErroResposta> handleRegraNegocio(RegraNegocioException excecao) {
         log.warn("[EXCEPTION] Regra de negócio violada: {}", excecao.getMessage());
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
@@ -176,11 +177,19 @@ public class GlobalExceptionHandler {
     }
 
     /*
-       403 acesso negado pelo @PreAuthorize, por exemplo um aluno abrindo uma página
-       da coordenação. Sem esse handler, a exceção caía no genérico lá embaixo e
-       virava 500. As rotas protegidas só pelo SecurityConfig já respondiam 403
-       antes de chegar aqui
+       409 restrição única do banco, como dois envios da mesma entrega ao mesmo tempo. A mensagem do
+       banco fica só no log, porque traz nomes de tabela e de coluna
     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErroResposta> handleIntegridade(DataIntegrityViolationException excecao) {
+        log.warn("[EXCEPTION] Restrição do banco violada: {}", excecao.getMostSpecificCause().getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(construirErro(HttpStatus.CONFLICT,
+                        "Esta operação conflita com outra feita ao mesmo tempo. Atualize a página e confira."));
+    }
+
+    // 403 acesso negado pelo @PreAuthorize, como um aluno abrindo uma página da coordenação
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErroResposta> handleAccessDenied(AccessDeniedException excecao) {
         log.warn("[EXCEPTION] Acesso negado: {}", excecao.getMessage());
@@ -198,15 +207,21 @@ public class GlobalExceptionHandler {
                 .body(construirErro(HttpStatus.NOT_FOUND, excecao.getMessage()));
     }
 
+    // 404 endereço que não existe
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErroResposta> handleRotaInexistente(NoResourceFoundException excecao) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(construirErro(HttpStatus.NOT_FOUND, "Endereço não encontrado."));
+    }
+
     // 500 erro genérico nao tratado
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroResposta> handleGeneric(Exception excecao) {
 
         /*
-           Esse é o último handler da cadeia, se cair aqui é porque alguma
-           coisa estourou e não foi tratada em nenhum outro lugar. Registra
-           o stack completo com log.error e devolve uma mensagem genérica
-           para o cliente, sem expor detalhes internos
+           Último handler da cadeia, para o que não foi tratado em nenhum outro lugar. Registra o stack
+           completo no log e devolve uma mensagem genérica, sem expor detalhes internos
         */
         log.error("[EXCEPTION] Erro inesperado: {}", excecao.getMessage(), excecao);
         return ResponseEntity

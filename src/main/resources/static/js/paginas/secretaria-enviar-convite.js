@@ -1,4 +1,4 @@
-// Script da página secretaria/enviar-convite.html, que antes ficava num <script> dentro dela
+// Página secretaria/enviar-convite.html
 
 function conviteForm() {
     return {

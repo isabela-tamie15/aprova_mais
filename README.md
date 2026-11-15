@@ -242,16 +242,11 @@ DB_URL=jdbc:postgresql://postgres:5432/dbaprovamais
 DB_USERNAME=usuario_aprovamais
 DB_PASSWORD=sua_senha
 
-MAIL_USERNAME=seu@email.com
-MAIL_PASSWORD=sua_senha_app
+# Mínimo de 32 bytes aleatórios (assinatura HMAC-SHA256 do JWT). Gere com: openssl rand -base64 48
+JWT_SECRET=<gere um valor aleatório>
 
-SSL_KEYSTORE_PASSWORD=senha123
-
-# Mínimo de 32 caracteres (assinatura HMAC-SHA256 do JWT)
-JWT_SECRET=aprova_mais_chave_secreta_super_longa_2026
-
-# Chave da criptografia AES: use um valor aleatório e longo
-ENCRYPTION_SECRET=troque_por_uma_chave_aleatoria_longa
+# Chave da criptografia AES, também com 32 bytes aleatórios ou mais. Gere com: openssl rand -base64 48
+ENCRYPTION_SECRET=<gere outro valor aleatório>
 
 RESEND_API_KEY=sua_chave_resend
 APP_URL=http://localhost:8080
@@ -265,8 +260,11 @@ REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_PASSWORD=
 
+# Obrigatório: dev na máquina local, prod no servidor. Sem ele, a aplicação não sobe
 SPRING_PROFILES_ACTIVE=dev
 ```
+
+A aplicação confere essas chaves ao subir: se faltar o perfil, ou se o JWT_SECRET ou o ENCRYPTION_SECRET tiverem menos de 32 bytes ou ainda estiverem com um valor de exemplo, ela para e o log diz qual variável corrigir.
 
 O arquivo .env está no .gitignore e nunca deve ser versionado. Alterar ENCRYPTION_SECRET depois que existirem dados cifrados torna esses dados ilegíveis.
 

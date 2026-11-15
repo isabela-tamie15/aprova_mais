@@ -1,4 +1,4 @@
-// Script da página orientador/historico.html: correções feitas pelo orientador com paginação
+// Página orientador/historico.html, com as correções feitas pelo orientador e paginação
 
 function historicoCorrecoes() {
     return {

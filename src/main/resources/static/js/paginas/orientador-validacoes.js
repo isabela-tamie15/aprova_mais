@@ -1,4 +1,4 @@
-// Script da página orientador/validacoes.html, que antes ficava num <script> dentro dela
+// Página orientador/validacoes.html
 
 function validacao(id) {
     return {

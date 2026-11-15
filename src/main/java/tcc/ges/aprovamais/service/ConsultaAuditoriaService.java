@@ -24,10 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-/*
-   Essa service é quem faz a consulta da auditoria pelo Adm
-   Ela vai ficar separada da AuditoriaService porque aquela só grava de forma assincrona, enquanto essa aqui só vai ler
-*/
+// Consulta da auditoria pelo administrador, separada da AuditoriaService, que só grava
 @Service
 @RequiredArgsConstructor
 public class ConsultaAuditoriaService {
@@ -45,7 +42,8 @@ public class ConsultaAuditoriaService {
        Lista os registros que batem com os filtros, do mais recente para o
        mais antigo, e registra a própria consulta na auditoria
     */
-    @Transactional(readOnly = true)
+    // Grava o registro de auditoria, então não é só leitura
+    @Transactional
     public PaginaAuditoriaResponse consultar(FiltroAuditoriaRequest filtro, String emailAdministrador, String ip) {
         PageRequest paginacao = PageRequest.of(filtro.getPagina(), filtro.getTamanho(),
                 Sort.by(Sort.Order.desc("criadoEm"), Sort.Order.desc("id")));

@@ -15,7 +15,9 @@ import tcc.ges.aprovamais.entity.Curso;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.Modalidade;
 import tcc.ges.aprovamais.entity.enums.Periodo;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.TurmaRepository;
 
 import java.time.LocalDate;
@@ -41,6 +43,9 @@ class TurmaServiceTest {
     private CursoService cursoService;
     @Mock
     private AuditoriaService auditoriaService;
+    // Sem vínculo cadastrado, o mock devolve vazio e a turma aparece sem orientador
+    @Mock
+    private OrientadorTurmaRepository orientadorTurmaRepository;
     @InjectMocks
     private TurmaService turmaService;
 
@@ -114,7 +119,7 @@ class TurmaServiceTest {
         when(turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCase(3L, "2026/2", "8B")).thenReturn(true);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> turmaService.cadastrar(EMAIL_COORDENADOR, request(3L, "8B"), IP));
 
         // assert
@@ -132,7 +137,7 @@ class TurmaServiceTest {
         when(turmaRepository.findByIdAndCursoCoordenadorEmail(20L, EMAIL_COORDENADOR)).thenReturn(Optional.of(turma));
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> turmaService.atualizar(20L, EMAIL_COORDENADOR, request(4L, "8B"), IP));
 
         // assert
@@ -143,7 +148,7 @@ class TurmaServiceTest {
     @Test
     @DisplayName("Edição grava a data de encerramento das entregas em uma turma antiga que estava sem ela (F2)")
     void deveGravarDataDeEncerramentoAoEditarTurmaAntiga() {
-        // arrange: turma cadastrada antes do campo existir, por isso sem a data
+        // Arrange: turma cadastrada sem a data de encerramento das entregas
         Turma turma = new Turma();
         turma.setId(20L);
         turma.setCurso(curso);

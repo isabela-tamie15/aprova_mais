@@ -1,13 +1,12 @@
 package tcc.ges.aprovamais.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +16,7 @@ import tcc.ges.aprovamais.dto.LoginRequest;
 import tcc.ges.aprovamais.dto.LoginResponse;
 import tcc.ges.aprovamais.dto.PreAutenticacaoRequest;
 import tcc.ges.aprovamais.dto.VerificacaoDoisFatoresRequest;
+import tcc.ges.aprovamais.security.CookieSessao;
 import tcc.ges.aprovamais.security.TokenRevogadoService;
 import tcc.ges.aprovamais.service.AuthService;
 
@@ -30,11 +30,9 @@ public class AuthController {
     private final AuthService authService;
     private final TokenRevogadoService tokenRevogadoService;
 
-    // Diz se a aplicação está rodando com SSL, usado para decidir se o cookie vai com Secure ou não
-    @Value("${server.ssl.enabled:false}")
-    private boolean sslEnabled;
+    private final CookieSessao cookieSessao;
 
-    // Esse é o endpoint que recebe o login e decide se o usuário já pode entrar ou se falta a segunda etapa
+    // Recebe o login e decide se o usuário já entra ou se falta a segunda etapa
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest requisicao,
@@ -44,13 +42,11 @@ public class AuthController {
         LoginResponse loginResponse = authService.login(requisicao, request);
 
         /*
-           Só grava o cookie se o login terminou de verdade, ou seja, sem 2fa
-           pendente e sem configuração obrigatória pendente. Quando falta etapa,
-           o token que vem no corpo é o de pré-autenticação, que nunca pode virar
-           cookie de sessão
+           O cookie só é gravado quando o login terminou. Com etapa pendente, o token do corpo é o de
+           pré-autenticação, que nunca vira cookie de sessão
         */
         if (!loginResponse.isRequer2FA() && !loginResponse.isRequerConfiguracao2FA()) {
-            adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
+            cookieSessao.gravar(respostaHttp, loginResponse.getToken());
             return ResponseEntity.ok(loginResponse.semToken());
         }
 
@@ -58,7 +54,7 @@ public class AuthController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    // Esse é o endpoint que confirma o código do 2fa e finaliza o login
+    // Confirma o código do 2FA e conclui o login
     @PostMapping("/2fa/verificar")
     public ResponseEntity<LoginResponse> verificarSegundoFator(
             @Valid @RequestBody VerificacaoDoisFatoresRequest requisicao,
@@ -68,12 +64,12 @@ public class AuthController {
         LoginResponse loginResponse = authService.verificarSegundoFator(
                 requisicao.getToken(), requisicao.getCodigo(), request.getRemoteAddr());
 
-        // Deu certo, então agora sim grava o cookie e devolve a resposta sem o token no corpo
-        adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
+        // Grava o cookie e devolve a resposta sem o token no corpo
+        cookieSessao.gravar(respostaHttp, loginResponse.getToken());
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
-    // Esse é o endpoint que inicia a configuração obrigatória de 2fa para quem ainda não tem
+    // Inicia a configuração obrigatória do 2FA para quem ainda não tem
     @PostMapping("/2fa/configuracao/iniciar")
     public ResponseEntity<ConfiguracaoDoisFatoresResponse> iniciarConfiguracaoObrigatoria(
             @Valid @RequestBody PreAutenticacaoRequest requisicao) {
@@ -81,7 +77,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.iniciarConfiguracaoObrigatoria(requisicao.getToken()));
     }
 
-    // Esse é o endpoint que confirma o código e finaliza a configuração obrigatória de 2fa
+    // Confirma o código e conclui a configuração obrigatória do 2FA
     @PostMapping("/2fa/configuracao/confirmar")
     public ResponseEntity<LoginResponse> confirmarConfiguracaoObrigatoria(
             @Valid @RequestBody VerificacaoDoisFatoresRequest requisicao,
@@ -92,11 +88,11 @@ public class AuthController {
                 requisicao.getToken(), requisicao.getCodigo(), request.getRemoteAddr());
 
         // Configurou certo, então já loga de vez e grava o cookie
-        adicionarCookieJwt(respostaHttp, loginResponse.getToken(), 28800);
+        cookieSessao.gravar(respostaHttp, loginResponse.getToken());
         return ResponseEntity.ok(loginResponse.semToken());
     }
 
-    // Esse é o endpoint de logout, ele apaga o cookie e registra a saída do usuário
+    // Logout, que apaga o cookie e registra a saída
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             HttpServletRequest request,
@@ -109,39 +105,14 @@ public class AuthController {
             tokenRevogadoService.revogar(cookieJwt.getValue());
         }
 
-        /*
-           Grava um cookie com valor vazio e Max-Age 0, que é a forma padrão
-           de dizer para o navegador apagar o cookie
-        */
-        adicionarCookieJwt(respostaHttp, "", 0);
+        // Pede ao navegador para apagar o cookie
+        cookieSessao.apagar(respostaHttp);
 
-        /*
-           Só registra no log se tiver alguém autenticado, porque o logout
-           pode ser chamado também por quem já tava deslogado
-        */
+        // Registra só quando há alguém autenticado, porque o logout também pode vir de quem já saiu
         if (authentication != null) {
             authService.registrarLogout(authentication.getName(), request.getRemoteAddr());
         }
 
         return ResponseEntity.ok().build();
-    }
-
-    // Esse é o auxiliar que monta e adiciona o cookie do JWT na resposta
-    private void adicionarCookieJwt(HttpServletResponse respostaHttp, String valorDoCookie, int segundosDeValidade) {
-
-        // Em produção com SSL, adiciona o Secure para o cookie só trafegar em HTTPS
-        String secure = sslEnabled ? "; Secure" : "";
-
-        /*
-           Monta na mão em vez de usar a classe Cookie do Java porque ela não
-           expõe o atributo SameSite. O HttpOnly impede leitura por JavaScript,
-           o Path=/ faz valer para toda aplicação e o SameSite=Strict evita
-           envio em requisições de outros sites
-        */
-        String cookie = String.format(
-                "jwt=%s; HttpOnly; Path=/; Max-Age=%d; SameSite=Strict%s",
-                valorDoCookie, segundosDeValidade, secure
-        );
-        respostaHttp.addHeader("Set-Cookie", cookie);
     }
 }

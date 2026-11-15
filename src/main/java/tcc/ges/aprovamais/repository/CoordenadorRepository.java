@@ -9,6 +9,6 @@ import java.util.Optional;
 @Repository
 public interface CoordenadorRepository extends JpaRepository<Coordenador, Long> {
 
-    // Busca o coordenador pelo e-mail do token, usado para saber quem está cadastrando
+    // Busca o coordenador pelo e-mail do token, para saber quem está cadastrando
     Optional<Coordenador> findByEmail(String email);
 }

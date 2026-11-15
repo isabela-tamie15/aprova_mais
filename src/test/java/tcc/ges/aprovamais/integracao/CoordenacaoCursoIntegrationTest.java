@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Testa o cadastro de cursos pela API, com o banco H2 do perfil de testes (RF11, RN19, RN20, RN21)
+// Testa o cadastro de cursos pela API, com o banco H2 do perfil de testes
 class CoordenacaoCursoIntegrationTest extends CoordenacaoTestBase {
 
     @Test

@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
 
-// Esse service é quem envia os e-mails transacionais do sistema, usando a API do Resend
+// E-mails transacionais do sistema, enviados pela API do Resend
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -22,26 +22,19 @@ public class EmailService {
     @Value("${resend.api-key}")
     private String apiKey;
 
-    /*
-       Remetente padrão do Resend. Como o domínio da UMC não está verificado
-       na conta, o Resend só permite enviar a partir do próprio domínio de
-       teste deles. Em produção isso vira algo tipo no-reply@aprova.com.br
-    */
-    private static final String REMETENTE = "Aprova+ <onboarding@resend.dev>";
+    // Remetente dos e-mails, da variável EMAIL_REMETENTE
+    @Value("${app.email.remetente}")
+    private String remetente;
 
-    // Esse é o método que envia o e-mail de convite para quem foi convidado
+    // Envia o e-mail de convite
     @Async
     public void enviarConvite(String destinatario, String nomeDestinatario, String linkConvite) {
         try {
-            /*
-               Cria um cliente novo do Resend a cada chamada. Como o método
-               roda em thread separada por causa do @Async, não dá para manter
-               uma instância única compartilhada com segurança
-            */
+            // Cria um cliente do Resend a cada chamada, porque o método roda em outra thread por causa do @Async
             Resend resend = new Resend(apiKey);
 
             CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(REMETENTE)
+                    .from(remetente)
                     .to(destinatario)
                     .subject("Convite de acesso - Aprova+")
                     .html(montarCorpoConvite(nomeDestinatario, linkConvite))
@@ -57,14 +50,14 @@ public class EmailService {
         }
     }
 
-    // Esse é o método que envia o e-mail de recuperação de senha
+    // Envia o e-mail de recuperação de senha
     @Async
     public void enviarRecuperacaoSenha(String destinatario, String nomeDestinatario, String linkRecuperacao) {
         try {
             Resend resend = new Resend(apiKey);
 
             CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(REMETENTE)
+                    .from(remetente)
                     .to(destinatario)
                     .subject("Recuperação de senha - Aprova+")
                     .html(montarCorpoRecuperacaoSenha(nomeDestinatario, linkRecuperacao))
@@ -80,8 +73,8 @@ public class EmailService {
     }
 
     /*
-       Avisa o aluno de que a entrega foi aprovada ou devolvida. O email
-       traz só o resultado e o link para a trilha, o feedback e a nota ficam no sistema, que exige login
+       Avisa o aluno de que a entrega foi aprovada ou devolvida. O e-mail traz só o resultado e o link,
+       e o feedback fica no sistema, que exige login
     */
     @Async
     public void enviarResultadoEntrega(String destinatario, String nomeDestinatario, String nomeTarefa,
@@ -89,7 +82,7 @@ public class EmailService {
         try {
             Resend resend = new Resend(apiKey);
             CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(REMETENTE)
+                    .from(remetente)
                     .to(destinatario)
                     .subject((aprovada ? "Entrega aprovada" : "Entrega devolvida para ajustes") + " - Aprova+")
                     .html(montarCorpoResultadoEntrega(nomeDestinatario, nomeTarefa, aprovada, linkTrilha))
@@ -102,10 +95,28 @@ public class EmailService {
     }
 
     /*
-       Monta o HTML do e-mail de convite. O estilo é todo inline porque
-       clientes de e-mail tipo Gmail e Outlook ignoram CSS externo, então
-       a única forma de garantir a aparência é colocar tudo direto nas tags
+       Avisa o aluno de que o orientador aprovou ou rejeitou o estágio. O e-mail traz só a decisão e o
+       link, e a justificativa fica no sistema, que exige login
     */
+    @Async
+    public void enviarResultadoValidacaoEstagio(String destinatario, String nomeDestinatario,
+                                                boolean aprovado, String linkEstagio) {
+        try {
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions email = CreateEmailOptions.builder()
+                    .from(remetente)
+                    .to(destinatario)
+                    .subject((aprovado ? "Estágio aprovado" : "Estágio rejeitado para ajustes") + " - Aprova+")
+                    .html(montarCorpoResultadoValidacao(nomeDestinatario, aprovado, linkEstagio))
+                    .build();
+            resend.emails().send(email);
+            log.info("[EMAIL] Resultado da validação do estágio enviado para: {}", destinatario);
+        } catch (ResendException | RuntimeException excecao) {
+            log.error("[EMAIL] Erro ao enviar resultado da validação para {}: {}", destinatario, excecao.getMessage(), excecao);
+        }
+    }
+
+    // Monta o HTML do e-mail de convite. O estilo fica inline porque Gmail e Outlook ignoram CSS externo
     private String montarCorpoConvite(String nomeDoDestinatario, String link) {
         return """
                 <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -128,7 +139,7 @@ public class EmailService {
                 """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), link);
     }
 
-    // O nome da tarefa vem do cadastro do coordenador, então passa pelo escape de HTML antes de entrar no corpo
+    // O nome da tarefa vem do cadastro do coordenador, então passa pelo escape de HTML
     private String montarCorpoResultadoEntrega(String nomeDoDestinatario, String tarefa, boolean aprovada, String link) {
         String textoDoResultado = aprovada
                 ? "foi <strong>aprovada</strong> pelo seu orientador."
@@ -148,6 +159,28 @@ public class EmailService {
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
                 """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), HtmlUtils.htmlEscape(tarefa), textoDoResultado, link);
+    }
+
+    // Mesmo modelo do resultado da entrega, com o texto da decisão do orientador sobre o estágio
+    private String montarCorpoResultadoValidacao(String nomeDoDestinatario, boolean aprovado, String link) {
+        String textoDoResultado = aprovado
+                ? "O seu estágio foi <strong>aprovado</strong> pelo orientador. A partir de agora a carga horária é contada e as tarefas da trilha ficam liberadas."
+                : "O seu estágio foi <strong>rejeitado para ajustes</strong>. Confira a justificativa do orientador no sistema, corrija os dados e envie novamente.";
+        return """
+                <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2B4ECC;">Seu estágio foi analisado</h2>
+                    <p>Olá, <strong>%s</strong>!</p>
+                    <p>%s</p>
+                    <a href="%s"
+                       style="display: inline-block; background: #2B4ECC; color: white;
+                              padding: 12px 24px; border-radius: 8px; text-decoration: none;
+                              font-weight: 600; margin: 16px 0;">
+                        Ver meu estágio
+                    </a>
+                    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
+                </div>
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), textoDoResultado, link);
     }
 
     // Mesma ideia do convite, mas com texto e prazo de expiração diferentes

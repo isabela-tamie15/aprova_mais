@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tcc.ges.aprovamais.service.ConsentimentoService;
 
-// Esse controller é quem recebe o aceite dos termos de consentimento do usuário logado
+// Aceite dos termos pelo usuário logado
 @Tag(name = "LGPD", description = "Aceite dos Termos de Uso e da Política de Privacidade")
 @RestController
 @RequestMapping("/api/v1/consentimento")
@@ -19,16 +19,12 @@ public class ConsentimentoController {
 
     private final ConsentimentoService consentimentoService;
 
-    // Esse é o endpoint que registra o aceite dos termos, junto com o IP de quem aceitou
+    // Registra o aceite dos termos com o IP de quem aceitou
     @PostMapping("/aceitar")
     public ResponseEntity<Void> aceitar(Authentication authentication,
                                         HttpServletRequest request) {
 
-        /*
-           E-mail vem do token e o IP da requisição. Os dois são guardados
-           na auditoria para servir de comprovação de que o usuário aceitou
-           os termos naquele momento
-        */
+        // O e-mail do token e o IP ficam na auditoria como comprovação do aceite naquele momento
         consentimentoService.registrarAceite(authentication.getName(), request.getRemoteAddr());
         return ResponseEntity.ok().build();
     }

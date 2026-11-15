@@ -53,7 +53,7 @@ class AutenticacaoIntegrationTest extends ApiIntegrationTestBase {
                 .retrieve()
                 .toBodilessEntity();
 
-        // Assert: o mesmo token, mesmo copiado antes do logout, não vale mais
+        // Assert: o mesmo token, copiado antes do logout, não vale mais
         assertThat(logout.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(consultarEstagio(token)).isEqualTo(HttpStatus.UNAUTHORIZED);
     }

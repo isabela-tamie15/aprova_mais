@@ -12,9 +12,9 @@ import tcc.ges.aprovamais.security.AesEncryptor;
 import java.time.OffsetDateTime;
 
 /*
-   Cada envio do aluno vira uma versão numerada e imutável.
-   Os campos do envio são updatable = false: nem o código consegue mudar o arquivo, o número ou o comentário de uma versão gravada. Os campos da avaliação começam vazios
-   e são preenchidos uma única vez, quando o orientador aprova ou devolve
+   Cada envio do aluno vira uma versão numerada e imutável. Os campos do envio são
+   updatable = false, e nem o código muda o arquivo, o número ou o comentário de uma versão
+   gravada. Os campos da avaliação são preenchidos uma vez só, quando o orientador aprova ou devolve
 */
 @Data
 @EntityListeners(AuditingEntityListener.class)

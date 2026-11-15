@@ -3,6 +3,7 @@ package tcc.ges.aprovamais.config;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -23,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,7 +36,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-// Essa config é quem define as regras de segurança da aplicação inteira, incluido as rotas permitidas
+// Regras de segurança da aplicação e rotas liberadas
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -43,7 +45,15 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    // Esse é o bean principal que monta a cadeia de filtros do Spring Security
+    // Porta em que a aplicação recebe HTTP (no Render, a da variável PORT)
+    @Value("${server.port:8080}")
+    private int portaHttp;
+
+    // Endereço público do sistema (APP_URL), aceito também no CORS
+    @Value("${app.url}")
+    private String appUrl;
+
+    // Monta a cadeia de filtros do Spring Security
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -52,10 +62,9 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 /*
-                   Desligamos a proteção CSRF padrão do Spring porque o cookie do login é SameSite=Strict
-                   (AuthController): o navegador não envia o cookie em requisições vindas de outros sites,
-                   e é isso que impede o ataque CSRF. O login por formulário e o login básico padrão
-                   também saem, porque a nossa tela de login é própria
+                   A proteção CSRF do Spring fica desligada porque o cookie do login é SameSite=Strict, e o
+                   navegador não envia esse cookie em requisições de outros sites. O login por formulário e
+                   o login básico também saem, porque a tela de login é própria
                 */
                 .csrf(csrf -> csrf.disable())
                 .formLogin(form -> form.disable())
@@ -67,11 +76,14 @@ public class SecurityConfig {
                 .exceptionHandling(excecoes -> excecoes
                         .authenticationEntryPoint(this::responderNaoAutenticado)
                 )
+                // O navegador não envia o endereço da página para outros sites (os links de convite e de recuperação levam o token na URL)
+                .headers(cabecalhos -> cabecalhos
+                        .referrerPolicy(politica -> politica.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                )
                 .authorizeHttpRequests(auth -> auth
                         /*
-                           Rotas públicas, que qualquer um acessa sem estar logado.
-                           Aqui entram login, telas de consentimento, arquivos estáticos
-                           e os endpoints de 2fa, que rodam antes do login terminar
+                           Rotas públicas, acessadas sem login. Entram o login, as telas de consentimento, os arquivos
+                           estáticos e os endpoints de 2FA, que rodam antes do login terminar
                         */
                         .requestMatchers(
                                 "/login",
@@ -97,13 +109,13 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/actuator/health"
+                                "/livez",
+                                "/readyz",
+                                // Respondem só na porta de gerenciamento (9090), usada pelo Prometheus
+                                "/actuator/health/**",
+                                "/actuator/prometheus"
                         ).permitAll()
-                        /*
-                           Aqui começa a proteção por perfil, cada rota só aceita
-                           quem tem o papel certo. O lgpd é o único que libera
-                           para vários perfis ao mesmo tempo
-                        */
+                        // Proteção por perfil. Cada rota só aceita o perfil certo, e a da LGPD aceita vários
                         .requestMatchers("/admin/**", "/api/v1/admin/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/v1/coordenador/**").hasRole("COORDENADOR")
                         .requestMatchers("/api/v1/orientador/**").hasRole("ORIENTADOR")
@@ -115,21 +127,28 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
-                // Coloca o filtro do JWT antes do filtro padrão de login por usuário e senha
+                // Filtro do JWT antes do filtro padrão de login por usuário e senha
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         /*
-           Só força HTTPS em produção. Em dev fica livre para rodar em HTTP,
-           senão atrapalharia o desenvolvimento local
+           Força HTTPS só em produção, para o desenvolvimento local rodar em HTTP. O /livez e o /readyz
+           ficam de fora porque o health check do Render chama por HTTP na rede interna
         */
         if (env.acceptsProfiles(Profiles.of("prod"))) {
-            http.requiresChannel(channel -> channel
-                    .anyRequest().requiresSecure()
+            http.redirectToHttps(https -> https
+                    .requestMatchers(requisicao -> !ehHealthCheck(requisicao))
             );
+            // Redireciona para a porta 443 do domínio público
+            http.portMapper(portas -> portas.http(portaHttp).mapsTo(443));
         }
         return http.build();
     }
 
+
+    private static boolean ehHealthCheck(HttpServletRequest requisicao) {
+        String caminho = requisicao.getRequestURI();
+        return caminho.equals("/livez") || caminho.equals("/readyz");
+    }
 
     private void responderNaoAutenticado(HttpServletRequest requisicao,
                                          HttpServletResponse resposta,
@@ -147,7 +166,7 @@ public class SecurityConfig {
                 OffsetDateTime.now(ZoneOffset.UTC)));
     }
 
-    // Esse é o provider que autentica de verdade, usando o UserDetailsService e o BCrypt
+    // Provider que autentica com o UserDetailsService e o BCrypt
     @Bean
     public AuthenticationProvider authenticationProvider(
             UserDetailsService userDetailsService) {
@@ -176,12 +195,13 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         /*
-           Só essas duas origens podem chamar a API. O allowCredentials é
+           Só essas origens podem chamar a API. O allowCredentials é
            necessário para que o cookie JWT seja enviado nas requisições
         */
         config.setAllowedOrigins(List.of(
                 "http://localhost:8080",
-                "https://localhost:8443"
+                "https://localhost:8443",
+                appUrl
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));

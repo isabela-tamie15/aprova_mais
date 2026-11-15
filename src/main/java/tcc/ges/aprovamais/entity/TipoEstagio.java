@@ -30,11 +30,11 @@ public class TipoEstagio {
     @Column
     private String descricao;
 
-    //Carga horária total exigida pelo curso nesse tipo
+    // Carga horária total exigida pelo curso nesse tipo
     @Column(name = "carga_horaria_necessaria", nullable = false)
     private BigDecimal cargaHorariaNecessaria;
 
-    //quantas horas por semana esse tipo abate
+    // Horas por semana que esse tipo abate
     @Column(name = "jornada_semanal", nullable = false)
     private BigDecimal jornadaSemanal;
 

@@ -17,11 +17,9 @@ import tcc.ges.aprovamais.service.ValidadorCnpj;
 import java.time.Duration;
 
 /*
-   Esse service consulta o CNPJ na BrasilAPI (https://brasilapi.com.br), que
-   repassa os dados públicos da Receita Federal.
-   A consulta nunca trava o cadastro por problema da API, se ela demorar mais
-   que o tempo limite ou cair, o resultado é INDISPONIVEL e o orientador
-   confere o CNPJ manualmente. Só o CNPJ que a Receita diz não existir é recusado
+   Consulta o CNPJ na BrasilAPI, que repassa os dados públicos da Receita Federal. Um problema da
+   API nunca trava o cadastro, e o resultado vira INDISPONIVEL para o orientador conferir o CNPJ.
+   Só o CNPJ que a Receita diz não existir é recusado
 */
 @Service
 public class ConsultaCnpjService {
@@ -38,7 +36,7 @@ public class ConsultaCnpjService {
         this(RestClient.builder().requestFactory(criarRequestFactory(timeoutConexaoMs, timeoutLeituraMs)), urlApi);
     }
 
-    // Construtor usado nos testes, que passam um builder ligado a um servidor falso
+    // Construtor dos testes, que passam um builder ligado a um servidor falso
     ConsultaCnpjService(RestClient.Builder builder, String urlApi) {
         this.restClient = builder.baseUrl(urlApi).build();
     }
@@ -80,7 +78,7 @@ public class ConsultaCnpjService {
         }
     }
 
-    // Nos logs aparece só o começo do CNPJ, o suficiente para investigar sem expor o número inteiro
+    // O log mostra só o começo do CNPJ, o suficiente para investigar sem expor o número inteiro
     private static String mascarar(String cnpj) {
         return cnpj.substring(0, 8) + "******";
     }

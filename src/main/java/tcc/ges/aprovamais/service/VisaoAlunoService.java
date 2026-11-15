@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /*
-   Visão consolidada do aluno para o orientador.
-   o progresso vem do EstagioService, e as tarefas, da trilha do tipo de estágio, com a entrega e as versões de cada uma
+   Visão consolidada do aluno para o orientador. O progresso vem do EstagioService, e as tarefas
+   vêm da trilha do tipo de estágio, com a entrega e as versões de cada uma
 */
 @Service
 @RequiredArgsConstructor
@@ -42,20 +42,17 @@ public class VisaoAlunoService {
     private final EntregaRepository entregaRepository;
     private final EntregaVersaoRepository entregaVersaoRepository;
 
-    /*
-       O estágio é buscado pelo id E pelo e-mail do orientador: estágio de outro orientador
-       vira 404, sem revelar que existe
-    */
+    // O estágio é buscado pelo id e pelo e-mail do orientador, e o de outro orientador vira 404
     @Transactional(readOnly = true)
     public VisaoAlunoResponse montar(String emailOrientador, Long estagioId) {
         Estagio estagio = estagioRepository.findByIdAndOrientadorEmail(estagioId, emailOrientador)
                 .orElseThrow(() -> new ResourceNotFoundException("Estágio não encontrado."));
-        // A visão consolidada só existe para estágio ATIVO; nos outros status respondemos 404, como antes
+        // A visão consolidada só existe para o estágio ATIVO, e nos outros status a resposta é 404
         if (estagio.getStatus() != StatusEstagio.ATIVO) {
             throw new ResourceNotFoundException("Estágio não encontrado.");
         }
 
-        // Progresso da F2 (horas, atividades e aviso de prazo) calculado só para este estágio
+        // Progresso com horas, atividades e aviso de prazo deste estágio
         EstagioResponse progresso = estagioService.montarProgresso(estagio);
 
         // Tarefas da trilha do tipo de estágio. Sem trilha, a lista fica vazia

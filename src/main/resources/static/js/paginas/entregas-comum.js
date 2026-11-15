@@ -27,7 +27,7 @@ function classeStatusEntrega(status) {
     return CLASSES_STATUS_ENTREGA[status] || 'bg-secondary';
 }
 
-// A API devolve a data com fuso (2026-11-02T19:30:00-03:00); a tela mostra 02/11/2026 19:30
+// A API devolve a data com fuso, como 2026-11-02T19:30:00-03:00, e a tela mostra 02/11/2026 19:30
 function formatarDataHoraEntrega(valor) {
     if (!valor) {
         return '';
@@ -45,7 +45,7 @@ function formatarTamanhoArquivo(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + ' MB';
 }
 
-// Lê a mensagem de erro da API; erro 500 vira uma mensagem genérica
+// Lê a mensagem de erro da API. O erro 500 vira uma mensagem genérica
 async function mensagemErroApi(resposta, padrao) {
     if (resposta.status >= 500) {
         return { mensagem: 'Erro interno no servidor. Tente novamente.', campos: {} };

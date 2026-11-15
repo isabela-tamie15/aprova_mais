@@ -20,11 +20,9 @@ import java.util.Base64;
 import java.util.Optional;
 
 /*
-   Esse service é quem cuida da recuperação de senha (RF09). O fluxo tem duas partes:
-   o pedido, que manda um link por e-mail, e a redefinição, que troca a senha.
-   O token do link é aleatório, vale por pouco tempo (30 minutos por padrão) e uma
-   única vez, e o banco só guarda o hash dele, igual ao token de pré-autenticação
-   do 2FA. Assim, quem ler o banco não consegue montar um link válido
+   Recuperação de senha, em duas partes. O pedido manda um link por e-mail e a redefinição troca
+   a senha. O token do link é aleatório, vale por pouco tempo e uma vez só, e o banco guarda só
+   o hash dele
 */
 @Service
 @RequiredArgsConstructor
@@ -52,11 +50,8 @@ public class RecuperacaoSenhaService {
     private long validadeMinutos;
 
     /*
-       Esse é o método do pedido de recuperação. Ele não devolve nada de propósito:
-       a tela mostra sempre a mesma mensagem, exista ou não a conta (RN10), senão
-       daria para descobrir quais e-mails têm cadastro. Só conta ativa e que já
-       concluiu o primeiro acesso recebe o link; quem ainda tem convite pendente
-       usa o link do convite
+       Pedido de recuperação. A tela mostra sempre a mesma mensagem, exista ou não a conta, para não
+       revelar quais e-mails têm cadastro. Só a conta ativa que já fez o primeiro acesso recebe o link
     */
     @Transactional
     public void solicitar(String email, String ipOrigem) {
@@ -69,7 +64,7 @@ public class RecuperacaoSenhaService {
         boolean jaFezPrimeiroAcesso = contaExiste && !Boolean.TRUE.equals(usuarioDoEmail.get().getPrimeiroAcesso());
 
         if (!contaAtiva || !jaFezPrimeiroAcesso) {
-            // A resposta para a tela é a mesma nos dois casos: não revelamos se o e-mail tem conta
+            // A resposta é a mesma nos dois casos, para não revelar se o e-mail tem conta
             auditoriaService.registrarTentativa(emailNormalizado, "RECUPERACAO_SENHA_SOLICITADA",
                     "Pedido de recuperação para e-mail sem conta ativa", ipOrigem);
             return;
@@ -99,9 +94,8 @@ public class RecuperacaoSenhaService {
     }
 
     /*
-       Esse é o método que troca a senha. Depois disso o token é apagado, então o
-       mesmo link não funciona de novo (CA02). Também zera as tentativas de login
-       erradas, porque quem abriu o link provou que tem acesso ao e-mail
+       Troca a senha e apaga o token, então o mesmo link não funciona de novo. Também zera as tentativas
+       erradas de login, porque quem abriu o link provou que tem acesso ao e-mail
     */
     @Transactional
     public void redefinir(String token, String novaSenha, String ipOrigem) {
@@ -113,6 +107,9 @@ public class RecuperacaoSenhaService {
         usuario.setExpiracaoTokenRecuperacao(null);
         usuario.setTokenPreAutenticacao(null);
         usuario.setExpiracaoPreAutenticacao(null);
+
+        // Encerra as sessões abertas com a senha antiga
+        usuario.encerrarSessoes();
         usuarioRepository.save(usuario);
         bloqueioContaService.limparFalhas(usuario);
 
@@ -123,7 +120,7 @@ public class RecuperacaoSenhaService {
 
     // métodos auxiliares
 
-    // Token válido: existe, não expirou e a conta continua ativa. Qualquer falha devolve vazio, sem dizer o motivo
+    // Token válido existe, não expirou e a conta continua ativa. Qualquer falha devolve vazio, sem dizer o motivo
     private Optional<Usuario> buscarPorTokenValido(String token) {
         if (token == null || token.isBlank() || token.length() > 200) {
             return Optional.empty();
@@ -144,7 +141,7 @@ public class RecuperacaoSenhaService {
         return Optional.of(usuario);
     }
 
-    // O token atual ainda está no começo da validade, ou seja, foi gerado há menos de 2 minutos
+    // O token atual foi gerado há menos de 2 minutos
     private boolean pedidoRecente(Usuario usuario) {
         OffsetDateTime expiracao = usuario.getExpiracaoTokenRecuperacao();
         return usuario.getTokenRecuperacao() != null && expiracao != null

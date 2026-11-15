@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.entity.Convite;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,22 @@ public interface ConviteRepository extends JpaRepository<Convite, Long> {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @Query("UPDATE Convite c SET c.status = :status WHERE c.id = :id")
     int atualizarStatus(@Param("id") Long id, @Param("status") StatusConvite status);
+
+    // Marca como EXPIRADO todo convite PENDENTE que passou da validade, para liberar um convite novo para o mesmo e-mail
+    @Modifying
+    @Query("UPDATE Convite c SET c.status = tcc.ges.aprovamais.entity.enums.StatusConvite.EXPIRADO "
+            + "WHERE c.status = tcc.ges.aprovamais.entity.enums.StatusConvite.PENDENTE AND c.expiracaoToken < :agora")
+    int expirarVencidos(@Param("agora") OffsetDateTime agora);
+
+    // Mesma coisa, só para os convites de um e-mail, usada antes de enviar um convite novo para ele
+    @Modifying
+    @Query("UPDATE Convite c SET c.status = tcc.ges.aprovamais.entity.enums.StatusConvite.EXPIRADO "
+            + "WHERE c.email = :email AND c.status = tcc.ges.aprovamais.entity.enums.StatusConvite.PENDENTE "
+            + "AND c.expiracaoToken < :agora")
+    int expirarVencidosDoEmail(@Param("email") String email, @Param("agora") OffsetDateTime agora);
+
+    // Troca o e-mail nos convites da pessoa anonimizada
+    @Modifying
+    @Query("UPDATE Convite c SET c.email = :emailNovo WHERE c.email = :emailAntigo")
+    int trocarEmail(@Param("emailAntigo") String emailAntigo, @Param("emailNovo") String emailNovo);
 }

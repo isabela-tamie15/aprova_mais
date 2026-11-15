@@ -119,6 +119,10 @@ class ValidacaoFormulariosTest {
         assertTrue(camposComErro(primeiroAcesso("abc123", "abc123")).contains("senha"));
         String longa = "a1".repeat(37);
         assertTrue(camposComErro(primeiroAcesso(longa, longa)).contains("senha"));
+
+        // 41 caracteres, mas 81 bytes: cada "é" ocupa 2 bytes
+        String comAcentos = "é".repeat(40) + "1";
+        assertTrue(camposComErro(primeiroAcesso(comAcentos, comAcentos)).contains("senhaDentroDoLimiteDoBcrypt"));
     }
 
     @Test

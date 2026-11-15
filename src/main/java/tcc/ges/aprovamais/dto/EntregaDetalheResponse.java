@@ -19,7 +19,7 @@ public class EntregaDetalheResponse {
     // PENDENTE (nada enviado), ENVIADA, EM_REVISAO, APROVADA ou DEVOLVIDA
     private final String status;
 
-    // Se o aluno pode mandar um arquivo agora: sem entrega ou com a última versão devolvida (RN56)
+    // Se o aluno pode mandar um arquivo agora, ou seja, sem entrega ou com a última versão devolvida
     private final boolean podeEnviar;
 
     private final List<EntregaVersaoResponse> versoes;

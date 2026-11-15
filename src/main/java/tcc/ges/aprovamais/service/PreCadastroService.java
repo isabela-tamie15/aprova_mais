@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.ConviteRepository;
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-// Essa service é quem cuida da lista de pré-cadastro mantida pelo coordenador
+// Lista de pré-cadastro mantida pelo coordenador
 @Service
 @RequiredArgsConstructor
 public class PreCadastroService {
@@ -47,7 +48,7 @@ public class PreCadastroService {
     private final ConviteRepository conviteRepository;
     private final AuditoriaService auditoriaService;
 
-    // Esse é o método que lista os pré-cadastros do coordenador logado
+    // Lista os pré-cadastros do coordenador logado
     @Transactional(readOnly = true)
     public List<PreCadastroResponse> listarDoCoordenador(String emailCoordenador) {
         List<PreCadastro> preCadastros = preCadastroRepository.findByCoordenadorEmailOrderByNomeAsc(emailCoordenador);
@@ -61,8 +62,8 @@ public class PreCadastroService {
     }
 
     /*
-       Esse é o método que autoriza uma pessoa a receber convite. O e-mail e o
-       identificador não podem repetir, e a turma do aluno tem que ser de um curso do próprio coordenador (RN21)
+       Autoriza uma pessoa a receber convite. O e-mail e o identificador não podem repetir, e a turma do
+       aluno precisa ser de um curso do próprio coordenador
     */
     @Transactional
     public PreCadastroResponse cadastrar(String emailCoordenador, PreCadastroRequest request, String ipOrigem) {
@@ -71,10 +72,10 @@ public class PreCadastroService {
         String identificador = request.getIdentificadorInstitucional().trim();
 
         if (preCadastroRepository.existsByEmailIgnoreCase(email)) {
-            throw new IllegalStateException("Este e-mail já está no pré-cadastro");
+            throw new RegraNegocioException("Este e-mail já está no pré-cadastro");
         }
         if (preCadastroRepository.existsByIdentificadorInstitucionalIgnoreCase(identificador)) {
-            throw new IllegalStateException("Este RGM ou matrícula institucional já está no pré-cadastro");
+            throw new RegraNegocioException("Este RGM ou matrícula institucional já está no pré-cadastro");
         }
         validarContaInexistente(email);
         validarIdentificadorLivre(request.getPerfil(), identificador);
@@ -92,8 +93,9 @@ public class PreCadastroService {
     }
 
     /*
-       Esse é o método que altera um pré-cadastro do coordenador logado. Depois que a pessoa concluiu o cadastro, os dados já estão na conta dela e não
-       mudam mais por aqui. Com convite pendente, o e-mail não pode mudar, senão o link enviado deixaria de corresponder ao pré-cadastro
+       Altera um pré-cadastro do coordenador logado. Depois que a pessoa concluiu o cadastro, os dados
+       não mudam mais por aqui. Com convite pendente o e-mail não pode mudar, para o link enviado
+       continuar valendo
     */
     @Transactional
     public PreCadastroResponse atualizar(Long id, String emailCoordenador, PreCadastroRequest request, String ipOrigem) {
@@ -103,17 +105,17 @@ public class PreCadastroService {
         String identificador = request.getIdentificadorInstitucional().trim();
 
         if (SITUACAO_CADASTRO_CONCLUIDO.equals(situacao(preCadastro.getEmail()))) {
-            throw new IllegalStateException("Esta pessoa já concluiu o cadastro, e o pré-cadastro não pode mais ser alterado");
+            throw new RegraNegocioException("Esta pessoa já concluiu o cadastro, e o pré-cadastro não pode mais ser alterado");
         }
         boolean emailMudou = !email.equalsIgnoreCase(preCadastro.getEmail());
         if (emailMudou && conviteRepository.existsByEmailAndStatus(preCadastro.getEmail(), StatusConvite.PENDENTE)) {
-            throw new IllegalStateException("Há um convite pendente para o e-mail atual; o e-mail não pode ser trocado");
+            throw new RegraNegocioException("Há um convite pendente para o e-mail atual; o e-mail não pode ser trocado");
         }
         if (preCadastroRepository.existsByEmailIgnoreCaseAndIdNot(email, id)) {
-            throw new IllegalStateException("Este e-mail já está no pré-cadastro");
+            throw new RegraNegocioException("Este e-mail já está no pré-cadastro");
         }
         if (preCadastroRepository.existsByIdentificadorInstitucionalIgnoreCaseAndIdNot(identificador, id)) {
-            throw new IllegalStateException("Este RGM ou matrícula institucional já está no pré-cadastro");
+            throw new RegraNegocioException("Este RGM ou matrícula institucional já está no pré-cadastro");
         }
         if (emailMudou) {
             validarContaInexistente(email);
@@ -133,7 +135,7 @@ public class PreCadastroService {
         return paraResponse(salvo);
     }
 
-    // Esse é usado pelo convite e pelo aceite para achar a pessoa autorizada
+    // Busca a pessoa autorizada, usado no convite e no aceite
     @Transactional(readOnly = true)
     public Optional<PreCadastro> buscarPorEmail(String email) {
         if (email == null) {
@@ -163,7 +165,7 @@ public class PreCadastroService {
     private void validarContaInexistente(String email) {
         Optional<Usuario> usuario = usuarioRepository.findByEmail(email);
         if (usuario.isPresent() && !Boolean.TRUE.equals(usuario.get().getPrimeiroAcesso())) {
-            throw new IllegalStateException("Já existe uma conta com este e-mail");
+            throw new RegraNegocioException("Já existe uma conta com este e-mail");
         }
     }
 
@@ -173,7 +175,7 @@ public class PreCadastroService {
                 ? alunoRepository.existsByRgm(identificador)
                 : orientadorRepository.existsByMatriculaInstitucional(identificador);
         if (emUso) {
-            throw new IllegalStateException("Este RGM ou matrícula institucional já pertence a uma conta");
+            throw new RegraNegocioException("Este RGM ou matrícula institucional já pertence a uma conta");
         }
     }
 

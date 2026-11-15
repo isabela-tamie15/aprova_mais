@@ -16,4 +16,8 @@ public class TurmaResponse {
     private final String periodo;
     private final String modalidade;
     private final LocalDate dataEncerramentoEntregas;
+
+    // Orientador da turma. Fica nulo enquanto o coordenador não atribui
+    private final Long orientadorId;
+    private final String nomeOrientador;
 }

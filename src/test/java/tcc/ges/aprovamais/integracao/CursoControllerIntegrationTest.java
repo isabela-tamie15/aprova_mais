@@ -16,9 +16,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /*
-   Testes de integração do CursoController (/api/v1/coordenador/cursos) por
-   HTTP real. Cobre os três endpoints (listar, cadastrar, alterar), os erros
-   de validação, de unicidade e de posse do curso (RN21), e a segurança da rota
+   Testes de integração do CursoController por HTTP real. Cobrem listar, cadastrar e alterar,
+   os erros de validação e de unicidade, a posse do curso e a segurança da rota
 */
 class CursoControllerIntegrationTest extends ApiIntegrationTestBase {
 
@@ -122,7 +121,7 @@ class CursoControllerIntegrationTest extends ApiIntegrationTestBase {
         assertThat(id).isNotNull();
         assertThat(resposta.getBody().get("nome")).isEqualTo("Engenharia de Software " + codigo);
         assertThat(resposta.getBody().get("codigoMec")).isEqualTo("ES-" + codigo);
-        // Persistiu e ficou vinculado ao coordenador que cadastrou (RN20)
+        // Persistiu e ficou vinculado ao coordenador que cadastrou
         assertThat(cursoRepository.findByIdAndCoordenadorEmail(id, emailCoordenador)).isPresent();
     }
 
@@ -202,7 +201,7 @@ class CursoControllerIntegrationTest extends ApiIntegrationTestBase {
                 .retrieve()
                 .toEntity(MAPA);
 
-        // Assert: mesmo 404 de um id inexistente (RN21), e o curso continua como estava
+        // Assert: mesmo 404 de um id inexistente, e o curso continua como estava
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(resposta.getBody().get("mensagem")).isEqualTo("Curso não encontrado");
         assertThat(cursoRepository.findById(idAlheio)).get()

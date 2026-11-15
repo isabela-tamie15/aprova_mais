@@ -1,4 +1,4 @@
-// Script da página coordenador/tipos-estagio.html: lista, cadastra e altera os tipos de estágio de um curso
+// Página coordenador/tipos-estagio.html, que lista, cadastra e altera os tipos de estágio de um curso
 
 function tiposEstagioPagina() {
     return {
@@ -36,7 +36,7 @@ function tiposEstagioPagina() {
             }
         },
 
-        // Quantas semanas o tipo leva para cumprir a carga, a mesma conta da CalculadoraCargaHoraria
+        // Semanas para cumprir a carga, a mesma conta da CalculadoraCargaHoraria
         semanas(tipo) {
             const carga = Number(tipo.cargaHorariaNecessaria);
             const jornada = Number(tipo.jornadaSemanal);

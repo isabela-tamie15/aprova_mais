@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Testa o perfil Administrador (RF01) e a consulta da auditoria (RF46) pela API
+// Testa o perfil Administrador e a consulta da auditoria pela API
 class AuditoriaAdministradorIntegrationTest extends IntegracaoTestBase {
 
     private static final String EMAIL_ADMIN = "admin@teste.com";
@@ -57,7 +57,7 @@ class AuditoriaAdministradorIntegrationTest extends IntegracaoTestBase {
         administrador.setPrimeiroAcesso(false);
         entityManager.persist(administrador);
 
-        // Os registros são gravados direto, porque a AuditoriaService é mock nos testes
+        // Os registros são gravados direto no repositório
         registrar("orientador@teste.com", PerfilAuditoria.ORIENTADOR, "ESTAGIO_REJEITADO", true);
         registrar("orientador@teste.com", PerfilAuditoria.ORIENTADOR, "ESTAGIO_APROVADO", true);
         registrar("outro.orientador@teste.com", PerfilAuditoria.ORIENTADOR, "ESTAGIO_REJEITADO", true);

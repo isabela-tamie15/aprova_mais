@@ -69,9 +69,9 @@ class CalculadoraCargaHorariaTest {
 
     }
 
-    // F2: horas restantes, dias até o encerramento das entregas e aviso de prazo
+    // Horas restantes, dias até o encerramento das entregas e aviso de prazo
 
-    // Data de encerramento das entregas usada nos exemplos do plano da F2
+    // Data de encerramento das entregas usada nos exemplos
     private static final LocalDate ENCERRAMENTO_ENTREGAS = LocalDate.of(2026, 6, 15);
 
     @Test
@@ -145,13 +145,13 @@ class CalculadoraCargaHorariaTest {
 
     }
 
-    // RF22: semanas contadas, usadas no cálculo da carga horária
+    // Semanas contadas, usadas no cálculo da carga horária
 
     @Test
     @DisplayName("Três semanas completas desde o início contam 3 semanas, e a semana incompleta não conta")
     void deveContarSomenteSemanasCompletas() {
 
-        // INICIO é 02/03/2026: 23/03 fecha a terceira semana, 22/03 ainda está nela
+        // O início é 02/03/2026. O dia 23/03 fecha a terceira semana e o dia 22/03 ainda está nela
         assertEquals(3, CalculadoraCargaHoraria.calcularSemanasContadas(INICIO, LocalDate.of(2026, 3, 23)));
         assertEquals(2, CalculadoraCargaHoraria.calcularSemanasContadas(INICIO, LocalDate.of(2026, 3, 22)));
 

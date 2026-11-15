@@ -15,7 +15,7 @@ import tcc.ges.aprovamais.service.TrilhaCoordenadorService;
 
 import java.util.Optional;
 
-// Esse controller recebe as requisições do coordenador para montar as trilhas e as tarefas dos tipos de estágio
+// Montagem das trilhas e tarefas dos tipos de estágio pelo coordenador
 @Tag(name = "Cadastros da coordenação", description = "Cursos, turmas, tipos de estágio e trilhas do coordenador")
 @RestController
 @RequestMapping("/api/v1/coordenador/trilhas")
@@ -24,20 +24,20 @@ public class TrilhaCoordenadorController {
 
     private final TrilhaCoordenadorService trilhaCoordenadorService;
 
-    // Esse é o endpoint que devolve a trilha de um tipo de estágio, ou 204 se o tipo ainda não tem trilha
+    // Devolve a trilha de um tipo de estágio, ou 204 quando o tipo ainda não tem trilha
     @GetMapping
     public ResponseEntity<TrilhaDetalheResponse> buscarPorTipo(@RequestParam Long tipoEstagioId,
                                                                Authentication authentication) {
         Optional<TrilhaDetalheResponse> trilha = trilhaCoordenadorService.buscarPorTipo(tipoEstagioId, authentication.getName());
 
-        // Tipo de estágio sem trilha ainda: respondemos 204 (sem conteúdo), e a tela mostra "criar trilha"
+        // Tipo sem trilha responde 204, e a tela mostra a opção de criar a trilha
         if (trilha.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(trilha.get());
     }
 
-    // Esse é o endpoint que cria a trilha de um tipo de estágio (o tipo que já tem trilha volta 409)
+    // Cria a trilha de um tipo de estágio. O tipo que já tem trilha volta 409
     @PostMapping
     public ResponseEntity<TrilhaDetalheResponse> criar(@Valid @RequestBody TrilhaRequest request,
                                                        Authentication authentication,
@@ -47,7 +47,7 @@ public class TrilhaCoordenadorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(criada);
     }
 
-    // Esse é o endpoint que altera o nome e a descrição da trilha
+    // Altera o nome e a descrição da trilha
     @PutMapping("/{id}")
     public ResponseEntity<TrilhaDetalheResponse> atualizar(@PathVariable Long id,
                                                            @Valid @RequestBody TrilhaRequest request,
@@ -57,7 +57,7 @@ public class TrilhaCoordenadorController {
                 id, authentication.getName(), request, httpRequest.getRemoteAddr()));
     }
 
-    // Esse é o endpoint que adiciona uma tarefa na trilha e devolve a trilha atualizada
+    // Adiciona uma tarefa na trilha e devolve a trilha atualizada
     @PostMapping("/{id}/tarefas")
     public ResponseEntity<TrilhaDetalheResponse> adicionarTarefa(@PathVariable Long id,
                                                                  @Valid @RequestBody TarefaRequest request,
@@ -68,7 +68,7 @@ public class TrilhaCoordenadorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(trilha);
     }
 
-    // Esse é o endpoint que altera uma tarefa e devolve a trilha atualizada
+    // Altera uma tarefa e devolve a trilha atualizada
     @PutMapping("/tarefas/{tarefaId}")
     public ResponseEntity<TrilhaDetalheResponse> atualizarTarefa(@PathVariable Long tarefaId,
                                                                  @Valid @RequestBody TarefaRequest request,
@@ -78,7 +78,7 @@ public class TrilhaCoordenadorController {
                 tarefaId, authentication.getName(), request, httpRequest.getRemoteAddr()));
     }
 
-    // Esse é o endpoint que remove uma tarefa da trilha
+    // Remove uma tarefa da trilha
     @DeleteMapping("/tarefas/{tarefaId}")
     public ResponseEntity<Void> removerTarefa(@PathVariable Long tarefaId,
                                               Authentication authentication,

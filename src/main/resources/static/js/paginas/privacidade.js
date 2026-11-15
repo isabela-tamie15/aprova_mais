@@ -1,11 +1,16 @@
-// Script da página privacidade.html, que antes ficava escrito dentro dos botões
+// Página privacidade.html
 
 function direitosDoTitular() {
     return {
-        // Direito escolhido no select: 'acesso', 'correcao' ou 'exclusao'
+        // Direito escolhido no select, que pode ser acesso, correcao ou exclusao
         direito: '',
 
-        // Acesso e correção: registramos o pedido na auditoria e abrimos o e-mail para a secretaria
+        // A senha é sempre pedida, e o código para quem usa a verificação em duas etapas
+        senha: '',
+        codigo: '',
+        erro: '',
+
+        // Acesso e correção registram o pedido na auditoria e abrem o e-mail para a secretaria
         async enviarSolicitacao() {
             let endereco = '/api/v1/lgpd/solicitar-correcao';
             let assuntoDoEmail = 'Aprova%2B%20-%20Solicitação%20de%20Correção%20de%20Dados';
@@ -23,21 +28,35 @@ function direitosDoTitular() {
             window.open('mailto:secretaria@umc.br?subject=' + assuntoDoEmail);
         },
 
-        // Exclusão: anonimizamos os dados e encerramos a sessão
+        // Exclusão anonimiza os dados e encerra a sessão
         async anonimizarMeusDados() {
             const confirmou = confirm('Confirma a anonimização dos seus dados pessoais? Esta ação não pode ser desfeita.');
             if (!confirmou) {
                 return;
             }
 
+            this.erro = '';
             try {
-                const resposta = await fetch('/api/v1/lgpd/meus-dados', { method: 'DELETE', credentials: 'include' });
+                const resposta = await fetch('/api/v1/lgpd/meus-dados', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senha: this.senha, codigo: this.codigo })
+                });
                 if (!resposta.ok) {
-                    alert('Erro ao processar. Tente novamente.');
+                    // Senha ou código errado, conta bloqueada e casos não permitidos trazem a mensagem do servidor
+                    let dados = {};
+                    try {
+                        dados = await resposta.json();
+                    } catch (erroDeLeitura) {
+                        dados = {};
+                    }
+                    this.codigo = '';
+                    this.erro = dados.mensagem || 'Erro ao processar. Tente novamente.';
                     return;
                 }
             } catch (erro) {
-                alert('Erro ao processar. Tente novamente.');
+                this.erro = 'Não foi possível conectar ao servidor.';
                 return;
             }
 

@@ -23,7 +23,7 @@ public class ContaInicialRunner implements ApplicationRunner {
 
     private final ContaInicialService contaInicialService;
 
-    //Todos vêm do application.properties e o : no final significa que se a propriedade não existir, o valor padrão é vazio.
+    // Os valores vêm do application.properties e ficam vazios quando a propriedade não existe
     @Value("${app.admin-inicial.email:}")
     private String emailAdministrador;
 
@@ -42,7 +42,7 @@ public class ContaInicialRunner implements ApplicationRunner {
     @Value("${app.secretaria-inicial.nome:}")
     private String nomeSecretaria;
 
-    // Esse é o método que o spring chama automaticamente quando a aplicação termina de subir
+    // Chamado pelo Spring quando a aplicação termina de subir
     @Override
     public void run(ApplicationArguments args) {
         /*

@@ -1,4 +1,4 @@
-// Script da página aluno/estagio.html, que antes ficava num <script> dentro dela
+// Página aluno/estagio.html
 
 function estagioForm() {
     return {
@@ -30,7 +30,7 @@ function estagioForm() {
             if (dataInicio) this.form.dataInicio = dataInicio;
 
             if (tipoEstagioNome) {
-                // Procuramos na lista o tipo de estágio com o mesmo nome e marcamos ele no formulário
+                // Marca no formulário o tipo de estágio com o mesmo nome
                 for (const tipoEstagio of this.tipos) {
                     if (tipoEstagio.nome === tipoEstagioNome) {
                         this.form.tipoEstagioId = tipoEstagio.id;
@@ -63,23 +63,22 @@ function estagioForm() {
                     .replace(/[./-]+$/, '');
         },
 
-        // Mesma conta do ValidadorCnpj do backend: cada caractere vale o código ASCII menos 48
+        // Mesma conta do ValidadorCnpj do backend, em que cada caractere vale o código ASCII menos 48
         cnpjValido(valor) {
             // Tira pontos, barra, traço e espaços e deixa as letras maiúsculas
             const cnpjSemPontuacao = valor.toUpperCase().replace(/[.\-\/\s]/g, '');
 
-            // Formato: 12 letras ou números e 2 dígitos no final
+            // 12 letras ou números e 2 dígitos no final
             const formatoValido = /^[0-9A-Z]{12}[0-9]{2}$/.test(cnpjSemPontuacao);
-            // Todos os caracteres iguais (ex.: 00000000000000) passam na conta dos dígitos, então recusamos antes
+            // CNPJ com todos os caracteres iguais passa na conta dos dígitos e é recusado antes
             const todosIguais = /^(.)\1+$/.test(cnpjSemPontuacao);
             if (!formatoValido || todosIguais) {
                 return false;
             }
 
             /*
-               Calcula um dígito verificador (mesma conta do ValidadorCnpj do backend):
-               soma cada caractere vezes o seu peso e usa o resto da divisão por 11.
-               Cada caractere vale o código ASCII menos 48: '0' vale 0, '9' vale 9 e 'A' vale 17
+               Calcula um dígito verificador como o ValidadorCnpj. Soma cada caractere vezes o seu peso e usa o
+               resto da divisão por 11, com cada caractere valendo o código ASCII menos 48
             */
             function calcularDigito(pesos) {
                 let soma = 0;
@@ -102,9 +101,8 @@ function estagioForm() {
         },
 
         /*
-           Consulta o CNPJ quando o aluno sai do campo. Se a Receita conhecer,
-           preenche o nome da empresa (se ainda estiver vazio) e mostra a situação.
-           Se a consulta falhar, só avisa: o cadastro continua e o orientador confere
+           Consulta o CNPJ quando o aluno sai do campo. Se a Receita conhecer, preenche o nome da empresa
+           que estiver vazio e mostra a situação. Se a consulta falhar, só avisa, e o orientador confere
         */
         async consultarCnpj() {
             this.avisoCnpj = '';
@@ -149,7 +147,7 @@ function estagioForm() {
             }
         },
 
-        // Mesmo limite do backend: a data de início pode ir no máximo 1 ano para frente
+        // A data de início pode ir no máximo 1 ano para a frente, como no backend
         dataMaxima() {
             const dataLimite = new Date();
             dataLimite.setFullYear(dataLimite.getFullYear() + 1);
@@ -158,10 +156,7 @@ function estagioForm() {
                     .toISOString().slice(0, 10);
         },
 
-        /*
-           Validação na tela, para avisar antes de enviar. O backend valida
-           tudo de novo, porque essa parte pode ser contornada chamando a API direto
-        */
+        // Avisa antes de enviar. O backend valida tudo de novo
         validar() {
             const erros = {};
             const nome = this.form.nomeEmpresa.trim();
@@ -216,7 +211,7 @@ function estagioForm() {
                     } catch (erroDeLeitura) {
                         dados = {};
                     }
-                    // Erro de validação do backend: marca cada campo com a mensagem dele
+                    // Erro de validação do backend marca cada campo com a mensagem dele
                     if (dados.campos) {
                         this.erros = dados.campos;
                     }

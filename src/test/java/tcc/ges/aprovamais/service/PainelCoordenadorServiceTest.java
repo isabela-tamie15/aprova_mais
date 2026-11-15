@@ -85,8 +85,8 @@ class PainelCoordenadorServiceTest {
     }
 
     /*
-       Estágio do tipo Estagiário. Por padrão, a data prevista de conclusão fica bem antes de hoje,
-       ou seja, as horas fecham no prazo; os testes de horas trocam essa data
+       Estágio do tipo Estagiário. Por padrão a data prevista de conclusão fica bem antes de hoje,
+       ou seja, as horas fecham no prazo. Os testes de horas trocam essa data
     */
     private Estagio estagio(Turma turma, StatusEstagio status, Orientador orientador) {
         Matricula matricula = new Matricula();
@@ -111,7 +111,7 @@ class PainelCoordenadorServiceTest {
         return entrega;
     }
 
-    // Lista com o mesmo id repetido. Exemplo: repetir(7, 3) = [7, 7, 7], ou seja, 3 tarefas do tipo 7
+    // Lista com o mesmo id repetido. Por exemplo, repetir(7, 3) devolve [7, 7, 7], que são 3 tarefas do tipo 7
     private List<Long> repetir(Long id, int vezes) {
         return new ArrayList<>(Collections.nCopies(vezes, id));
     }
@@ -127,7 +127,7 @@ class PainelCoordenadorServiceTest {
                 .thenReturn(entregasAguardando);
     }
 
-    // ---------- CA01: cartões 1, 2 e 3 ----------
+    // ---------- Cartões 1, 2 e 3 ----------
 
     @Test
     @DisplayName("CA01: cartões 1, 2 e 3 contam os estágios sem orientador, aguardando validação e em andamento")
@@ -191,7 +191,7 @@ class PainelCoordenadorServiceTest {
         assertEquals(60.0, linhas.get(1).getPercentualBarra());
     }
 
-    // ---------- CA03: cartão 4 ----------
+    // ---------- Cartão 4 ----------
 
     @Test
     @DisplayName("CA03: cartão 4 conta só as turmas com estágio ATIVO e sem data de encerramento das entregas")
@@ -214,7 +214,7 @@ class PainelCoordenadorServiceTest {
         assertEquals(1, painel.getTurmasSemDataEncerramento());
     }
 
-    // ---------- CA04: cartão 5 ----------
+    // ---------- Cartão 5 ----------
 
     @Test
     @DisplayName("CA04: cartão 5 conta as entregas ENVIADA ou EM_REVISAO, as mesmas do painel do orientador")
@@ -234,7 +234,7 @@ class PainelCoordenadorServiceTest {
         verify(painelCoordenadorRepository).listarEntregasDosCursos(EMAIL, CorrecaoService.AGUARDANDO_ANALISE);
     }
 
-    // ---------- CA05 a CA08: cartão 6 ----------
+    // ---------- Cartão 6 ----------
 
     @Test
     @DisplayName("CA05: cartão 6, linha 'com tarefas pendentes' quando só falta aprovar tarefa")
@@ -337,7 +337,7 @@ class PainelCoordenadorServiceTest {
     @Test
     @DisplayName("CA08: fora da reta final (mais de 30 dias) e trilha sem tarefas não entram no cartão 6")
     void naoDeveContarForaDaRetaFinalNemTrilhaSemTarefas() {
-        // arrange: a 8B tem pendência, mas faltam 31 dias; a 6A está na reta final, mas a trilha não tem tarefas
+        // Arrange: a 8B tem pendência, mas faltam 31 dias, e a 6A está na reta final, mas a trilha não tem tarefas
         Turma longe = turma(1L, "8B", engenharia, hoje.plusDays(31));
         Turma perto = turma(3L, "6A", sistemas, hoje.plusDays(5));
         Estagio estagioLonge = estagio(longe, StatusEstagio.ATIVO, carlos);
@@ -352,7 +352,7 @@ class PainelCoordenadorServiceTest {
         assertEquals(0, painel.getEstagiosRetaFinal());
     }
 
-    // ---------- CA09: gráfico 2 ----------
+    // ---------- Gráfico 2 ----------
 
     @Test
     @DisplayName("CA09: gráfico 2 separa por turma, com o orientador, do maior para o menor")
@@ -386,7 +386,7 @@ class PainelCoordenadorServiceTest {
         assertEquals(20.0, linhas.get(2).getPercentualBarra());
     }
 
-    // ---------- CA10: gráfico 3 ----------
+    // ---------- Gráfico 3 ----------
 
     @Test
     @DisplayName("CA10: gráfico 3 coloca cada turma na faixa certa e a soma das barras é igual ao cartão 6")
@@ -409,7 +409,7 @@ class PainelCoordenadorServiceTest {
         PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
         List<PainelCoordenadorResponse.PrazoTurma> linhas = painel.getPrazoPorTurma();
 
-        // assert: 8B e 8A empatam com 2, e a 8B vem antes porque tem mais dias
+        // Assert: 8B e 8A empatam com 2, e a 8B vem antes porque tem mais dias
         assertEquals(4, linhas.size());
         assertEquals("8B", linhas.get(0).getTurma());
         assertEquals(CalculadoraCargaHoraria.AVISO_AMARELO, linhas.get(0).getFaixa());
@@ -436,7 +436,7 @@ class PainelCoordenadorServiceTest {
         assertEquals("venceu há 1 dia", PainelCoordenadorService.textoPrazo(-1));
     }
 
-    // ---------- CA11: coordenador sem cursos ----------
+    // ---------- Coordenador sem cursos ----------
 
     @Test
     @DisplayName("CA11: coordenador sem cursos recebe tudo 0 e listas vazias, sem erro")
@@ -459,7 +459,7 @@ class PainelCoordenadorServiceTest {
         assertTrue(painel.getPrazoPorTurma().isEmpty());
     }
 
-    // ---------- CA13: curso de outro coordenador ----------
+    // ---------- Curso de outro coordenador ----------
 
     @Test
     @DisplayName("CA13: curso de outro coordenador responde 404 e o banco nem é consultado")
@@ -473,7 +473,7 @@ class PainelCoordenadorServiceTest {
         verifyNoInteractions(painelCoordenadorRepository);
     }
 
-    // ---------- CA14: um curso só ----------
+    // ---------- Um curso só ----------
 
     @Test
     @DisplayName("CA14: com um curso escolhido, os números são só daquele curso")

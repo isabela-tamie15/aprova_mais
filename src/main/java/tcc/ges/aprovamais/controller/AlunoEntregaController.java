@@ -15,7 +15,7 @@ import tcc.ges.aprovamais.service.EntregaService;
 
 import java.io.IOException;
 
-// Entregas das tarefas da trilha pelo aluno (F5: RF33 e RF34)
+// Entregas das tarefas da trilha pelo aluno
 @Tag(name = "Entregas do aluno", description = "Envio de arquivos para as tarefas da trilha e histórico de versões")
 @RestController
 @RequestMapping("/api/v1/aluno")
@@ -25,10 +25,7 @@ public class AlunoEntregaController {
 
     private final EntregaService entregaService;
 
-    /*
-       Envia um arquivo para a tarefa. Cada envio cria uma versão nova. O e-mail
-       do aluno vem do token, então ninguém envia no lugar de outro aluno
-    */
+    // Envia um arquivo para a tarefa, e cada envio cria uma versão nova. O e-mail vem do token, então ninguém envia no lugar de outro aluno
     @Operation(summary = "Enviar a entrega de uma tarefa (RF33)")
     @PostMapping(value = "/tarefas/{tarefaId}/entregas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<EntregaDetalheResponse> enviar(@PathVariable Long tarefaId,
@@ -49,7 +46,9 @@ public class AlunoEntregaController {
 
     @Operation(summary = "Baixar o arquivo de uma versão da entrega")
     @GetMapping("/entregas/versoes/{versaoId}/arquivo")
-    public ResponseEntity<byte[]> baixar(@PathVariable Long versaoId, Authentication authentication) {
-        return ArquivoDownload.resposta(entregaService.baixarDoAluno(authentication.getName(), versaoId));
+    public ResponseEntity<byte[]> baixar(@PathVariable Long versaoId, Authentication authentication,
+                                         HttpServletRequest httpRequest) {
+        return ArquivoDownload.resposta(entregaService.baixarDoAluno(
+                authentication.getName(), versaoId, httpRequest.getRemoteAddr()));
     }
 }

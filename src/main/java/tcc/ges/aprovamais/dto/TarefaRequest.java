@@ -18,13 +18,13 @@ public class TarefaRequest {
     @Size(max = 255, message = "A descrição deve ter no máximo 255 caracteres")
     private String descricao;
 
-    // Posição da tarefa na trilha, na ordem em que o aluno vê (RN33)
+    // Posição da tarefa na trilha, na ordem em que o aluno vê
     @NotNull(message = "Informe a ordem da tarefa")
     @Min(value = 1, message = "A ordem deve ser no mínimo 1")
     @Max(value = 99, message = "A ordem deve ser no máximo 99")
     private Integer ordem;
 
-    // Link opcional do material de apoio. Vazio é aceito; preenchido, precisa ser um endereço web
+    // Link opcional do material de apoio. Quando preenchido, precisa ser um endereço web
     @Size(max = 500, message = "O link deve ter no máximo 500 caracteres")
     @Pattern(regexp = "^$|^https?://\\S+$", message = "O link deve começar com http:// ou https://")
     private String linkApoio;

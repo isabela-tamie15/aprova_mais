@@ -21,17 +21,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /*
-   Dashboard do coordenador com o banco de verdade (H2). Aqui conferimos que as consultas do
-   PainelCoordenadorRepository funcionam, que um coordenador só vê os próprios cursos (RN21)
-   e a segurança da rota (403 para outro perfil e 404 para curso de outro coordenador).
+   Dashboard do coordenador com o banco H2. Confere as consultas do PainelCoordenadorRepository,
+   que o coordenador só vê os próprios cursos e a segurança da rota.
 
-   Cenário montado antes de cada teste:
-   - Engenharia (do coordenador), turma 8B, encerramento das entregas daqui a 15 dias:
-     1 estágio ATIVO com 1 de 2 tarefas aprovada e 1 enviada, e 1 estágio PENDENTE com orientador;
-   - Sistemas (do coordenador), turma 6A, sem data de encerramento:
-     1 estágio PENDENTE sem orientador e 1 estágio ATIVO com uma entrega DEVOLVIDA;
-   - curso do outro coordenador, turma 9C: 1 estágio ATIVO com entrega EM_REVISAO e 1 PENDENTE sem orientador.
-     Nada dele pode aparecer nos números do coordenador
+   Cenário montado antes de cada teste
+   - Engenharia, turma 8B, entregas encerrando daqui a 15 dias, com 1 estágio ATIVO (1 de 2
+     tarefas aprovada e 1 enviada) e 1 estágio PENDENTE com orientador
+   - Sistemas, turma 6A, sem data de encerramento, com 1 estágio PENDENTE sem orientador e
+     1 estágio ATIVO com uma entrega DEVOLVIDA
+   - Curso do outro coordenador, turma 9C, com 1 estágio ATIVO com entrega EM_REVISAO e 1
+     PENDENTE sem orientador. Nada dele pode aparecer nos números do coordenador
 */
 class CoordenacaoPainelIntegrationTest extends CoordenacaoTestBase {
 

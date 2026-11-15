@@ -64,7 +64,6 @@ class EntregaIntegrationTest extends CoordenacaoTestBase {
         entityManager.flush();
     }
 
-    // RF33
 
     @Test
     @DisplayName("Aluno envia o arquivo da tarefa e a entrega fica ENVIADA na versão 1 (RF33)")
@@ -127,7 +126,6 @@ class EntregaIntegrationTest extends CoordenacaoTestBase {
                 .andExpect(jsonPath("$.tarefas[0].totalVersoes").value(1));
     }
 
-    // RF35 e RF36
 
     @Test
     @DisplayName("O painel mostra só as entregas dos alunos do orientador (RF35, RN17)")
@@ -190,7 +188,7 @@ class EntregaIntegrationTest extends CoordenacaoTestBase {
                 .andExpect(jsonPath("$.versoes[0].feedback").value("Falta a assinatura do supervisor."))
                 .andExpect(jsonPath("$.versoes[1].numero").value(2));
 
-        // CA02 do RF36: ao abrir a versão 2, o orientador vê a versão 1 com o feedback dado
+        // Ao abrir a versão 2, o orientador vê a versão 1 com o feedback dado
         abrir(entregaId)
                 .andExpect(jsonPath("$.versoes", hasSize(2)))
                 .andExpect(jsonPath("$.versoes[0].feedback").value("Falta a assinatura do supervisor."));

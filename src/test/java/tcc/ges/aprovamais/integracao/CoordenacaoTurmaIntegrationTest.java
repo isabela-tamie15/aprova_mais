@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Testa o cadastro de turmas pela API (RF12, RN21, RN22)
+// Testa o cadastro de turmas pela API
 class CoordenacaoTurmaIntegrationTest extends CoordenacaoTestBase {
 
     private Curso curso;

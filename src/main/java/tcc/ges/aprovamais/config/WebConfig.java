@@ -13,9 +13,8 @@ public class WebConfig implements WebMvcConfigurer {
     private final ConsentimentoInterceptor consentimentoInterceptor;
 
     /*
-       O consentimento vale para as telas de cada perfil. Ficam de fora a
-       própria página de consentimento, os termos, a política e a API (as
-       telas chamam a API depois de passar por aqui)
+       O consentimento vale para as telas de cada perfil. Ficam de fora a própria página de
+       consentimento, os termos, a política e a API, que tem a conferência no JwtFilter
     */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

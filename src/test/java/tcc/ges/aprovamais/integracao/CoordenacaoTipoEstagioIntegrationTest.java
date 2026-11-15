@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Testa o cadastro de tipos de estágio pela API (RF14, RN30, RN31)
+// Testa o cadastro de tipos de estágio pela API
 class CoordenacaoTipoEstagioIntegrationTest extends CoordenacaoTestBase {
 
     private Curso curso;

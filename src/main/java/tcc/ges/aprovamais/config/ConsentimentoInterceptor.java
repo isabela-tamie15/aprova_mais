@@ -14,10 +14,9 @@ import tcc.ges.aprovamais.service.ConsentimentoService;
 import java.io.IOException;
 
 /*
-   LGPD: quem ainda não aceitou a versão atual dos termos é levado à página de
-   consentimento antes de abrir qualquer tela do sistema. Vale quando os termos
-   mudam de versão e para as contas criadas pela inicialização (administrador e
-   secretaria inicial), que não passam pelo primeiro acesso
+   Leva para a página de consentimento quem ainda não aceitou a versão atual dos termos, antes de
+   abrir qualquer tela. Vale quando os termos mudam de versão e para as contas iniciais, que não
+   passam pelo primeiro acesso
 */
 @Component
 @RequiredArgsConstructor

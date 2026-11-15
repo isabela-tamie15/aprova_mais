@@ -25,14 +25,27 @@ public interface EstagioRepository extends JpaRepository<Estagio, Long> {
     // Busca estágio por matrícula e status, útil para pegar o ativo de um aluno
     Optional<Estagio> findByMatriculaIdAndStatus(Long matriculaId, StatusEstagio status);
 
-    // Lista estágios de um orientador filtrando por vários status, usado na tela de validações
-    List<Estagio> findByOrientadorEmailAndStatusIn(String email, List<StatusEstagio> statuses);
+    /*
+       Estágios do orientador para a tela de validações, do alterado há mais tempo para o mais recente,
+       e no empate pelo menor id
+    */
+    List<Estagio> findByOrientadorEmailAndStatusInOrderByAlteradoEmAscIdAsc(String email, List<StatusEstagio> statuses);
+
+    // Estágios do orientador para a tela de acompanhamento, do cadastrado há mais tempo para o mais recente
+    List<Estagio> findByOrientadorEmailAndStatusInOrderByIdAsc(String email, List<StatusEstagio> statuses);
 
     /*
-       Esse aqui é o mais importante da segurança, busca o estágio pelo id
-       E pelo e-mail do orientador juntos. Assim o orientador só consegue
-       achar estágios que pertencem a ele, mesmo que tente passar o id de
-       outro estágio na URL
+       Busca o estágio pelo id e pelo e-mail do orientador juntos. Assim o orientador só acha
+       os próprios estágios, mesmo que passe o id de outro na URL
     */
     Optional<Estagio> findByIdAndOrientadorEmail(Long id, String email);
+
+    // Estágios das matrículas de uma turma nesses status, usado para passar os estágios em aberto ao novo orientador
+    List<Estagio> findByMatriculaTurmaIdAndStatusIn(Long turmaId, Collection<StatusEstagio> statuses);
+
+    // Estágios de um aluno nesses status, usado na anonimização
+    List<Estagio> findByMatriculaAlunoIdAndStatusIn(Long alunoId, Collection<StatusEstagio> statuses);
+
+    // Estágios de um orientador nesses status, usado na anonimização
+    List<Estagio> findByOrientadorIdAndStatusIn(Long orientadorId, Collection<StatusEstagio> statuses);
 }

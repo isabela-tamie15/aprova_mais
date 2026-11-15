@@ -17,7 +17,7 @@ public class EntregaVersaoResponse {
     private final String comentarioAluno;
     private final OffsetDateTime enviadaEm;
 
-    // Avaliação: resultado APROVADA ou DEVOLVIDA; tudo nulo enquanto a versão não foi avaliada
+    // Resultado da avaliação, APROVADA ou DEVOLVIDA. Fica tudo nulo enquanto a versão não foi avaliada
     private final String resultado;
     private final String feedback;
     private final String nomeAvaliador;

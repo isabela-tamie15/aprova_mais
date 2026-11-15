@@ -6,11 +6,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 /*
-   Hash SHA-256 dos tokens. Nós usamos este mesmo método em quatro lugares:
-   convite (ConviteService), recuperação de senha (RecuperacaoSenhaService),
-   login com 2fa (DoisFatoresService) e logout (TokenRevogadoService).
-   O banco guarda só o hash: quem lê o banco, um backup ou um log de consulta
-   não consegue montar o link e entrar no lugar da pessoa
+   Hash SHA-256 dos tokens de convite, de recuperação de senha, de pré-autenticação do 2FA e de
+   logout. O banco guarda só o hash, então quem lê o banco ou um backup não consegue montar um link válido
 */
 public final class HashToken {
 

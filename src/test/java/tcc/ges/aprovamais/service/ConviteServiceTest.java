@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,6 +24,7 @@ import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
@@ -39,11 +41,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// Testa o envio de convites pela hierarquia de perfis e pelo pré-cadastro (RF03, RN01, RN05, RN06, RN07)
+// Testa o envio de convites pela hierarquia de perfis e pelo pré-cadastro
 @ExtendWith(MockitoExtension.class)
 class ConviteServiceTest {
 
@@ -146,6 +149,21 @@ class ConviteServiceTest {
     }
 
     @Test
+    @DisplayName("Convite vencido do e-mail vira EXPIRADO antes da conferência do pendente, liberando um convite novo")
+    void deveExpirarConviteVencidoAntesDeConferirOPendente() {
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
+        when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
+        when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.empty());
+
+        conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP);
+
+        InOrder ordem = inOrder(conviteRepository);
+        ordem.verify(conviteRepository).expirarVencidosDoEmail(eq(EMAIL_DESTINO), any(OffsetDateTime.class));
+        ordem.verify(conviteRepository).existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE);
+    }
+
+    @Test
     @DisplayName("CA02: secretaria não pode convidar coordenador (RN01)")
     void secretariaNaoConvidaCoordenador() {
         when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
@@ -230,7 +248,7 @@ class ConviteServiceTest {
         when(preCadastroService.buscarPorEmail(EMAIL_DESTINO)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO)));
         when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(true);
 
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
 
         assertEquals("Já existe um convite pendente para o email: " + EMAIL_DESTINO, excecao.getMessage());
@@ -250,7 +268,7 @@ class ConviteServiceTest {
         when(conviteRepository.existsByEmailAndStatus(EMAIL_DESTINO, StatusConvite.PENDENTE)).thenReturn(false);
         when(usuarioRepository.findByEmail(EMAIL_DESTINO)).thenReturn(Optional.of(ativo));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(RegraNegocioException.class,
                 () -> conviteService.enviarConvite(EMAIL_DESTINO, PerfilDestino.ALUNO, null, EMAIL_SECRETARIA, IP));
 
         verify(conviteRepository, never()).save(any());
@@ -286,7 +304,7 @@ class ConviteServiceTest {
         convite.setExpiracaoToken(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1));
         when(conviteRepository.findByTokenConvite(HashToken.sha256("token-vencido"))).thenReturn(Optional.of(convite));
 
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
                 () -> conviteService.validarToken("token-vencido"));
 
         assertEquals("Este convite expirou. Solicite um novo convite a quem enviou", excecao.getMessage());

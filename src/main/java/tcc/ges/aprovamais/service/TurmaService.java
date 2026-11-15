@@ -8,15 +8,22 @@ import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.TurmaRequest;
 import tcc.ges.aprovamais.dto.TurmaResponse;
 import tcc.ges.aprovamais.entity.Curso;
+import tcc.ges.aprovamais.entity.Orientador;
+import tcc.ges.aprovamais.entity.OrientadorTurma;
 import tcc.ges.aprovamais.entity.Turma;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
 import tcc.ges.aprovamais.repository.TurmaRepository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
-// Esse service é quem cuida do cadastro de turmas pelo coordenador (RF12, RN22)
+// Cadastro de turmas pelo coordenador
 @Service
 @RequiredArgsConstructor
 public class TurmaService {
@@ -26,26 +33,29 @@ public class TurmaService {
     private final TurmaRepository turmaRepository;
     private final CursoService cursoService;
     private final AuditoriaService auditoriaService;
+    private final OrientadorTurmaRepository orientadorTurmaRepository;
 
-    // Esse é o método que lista as turmas de um curso, desde que o curso seja do coordenador logado
+    // Lista as turmas de um curso do coordenador logado
     @Transactional(readOnly = true)
     public List<TurmaResponse> listar(Long cursoId, String emailCoordenador) {
         Curso curso = cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
         List<Turma> turmasDoCurso = turmaRepository.findByCursoIdOrderBySemestreDescIdentificadorAsc(curso.getId());
 
+        // Orientador de cada turma do curso, buscado numa consulta só e guardado pelo id da turma
+        Map<Long, Orientador> orientadorPorIdDaTurma = new HashMap<>();
+        for (OrientadorTurma vinculo : orientadorTurmaRepository.findByTurmaCursoId(curso.getId())) {
+            orientadorPorIdDaTurma.put(vinculo.getTurma().getId(), vinculo.getOrientador());
+        }
+
         // Transforma cada turma do banco na resposta que vai para a tela
         List<TurmaResponse> respostas = new ArrayList<>();
         for (Turma turma : turmasDoCurso) {
-            respostas.add(paraResponse(turma));
+            respostas.add(paraResponse(turma, orientadorPorIdDaTurma.get(turma.getId())));
         }
         return respostas;
     }
 
-    /*
-       Esse é o método que cadastra uma turma num curso do coordenador. Curso de
-       outro coordenador cai no 404 do CursoService (RN21), e não pode haver duas
-       turmas com o mesmo identificador no mesmo semestre do curso
-    */
+    // Cadastra uma turma num curso do coordenador. Não pode haver duas turmas com o mesmo identificador no mesmo semestre
     @Transactional
     public TurmaResponse cadastrar(String emailCoordenador, TurmaRequest request, String ipOrigem) {
         Curso curso = cursoService.buscarCursoDoCoordenador(request.getCursoId(), emailCoordenador);
@@ -53,7 +63,7 @@ public class TurmaService {
 
         if (turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCase(
                 curso.getId(), request.getSemestre(), identificador)) {
-            throw new IllegalStateException("Já existe a turma " + identificador + " neste semestre do curso");
+            throw new RegraNegocioException("Já existe a turma " + identificador + " neste semestre do curso");
         }
 
         Turma turma = new Turma();
@@ -66,26 +76,24 @@ public class TurmaService {
                         + ") no curso id=" + curso.getId(), ipOrigem, true);
         log.info("[TURMA] Turma {} cadastrada no curso {} por {}", salva.getId(), curso.getId(), emailCoordenador);
 
-        return paraResponse(salva);
+        // Turma recém-criada ainda não tem orientador
+        return paraResponse(salva, null);
     }
 
-    /*
-       Esse é o método que altera uma turma. A turma não muda de curso: isso
-       levaria junto as matrículas e o orientador, então é recusado
-    */
+    // Altera uma turma. A turma não muda de curso, porque isso levaria junto as matrículas e o orientador
     @Transactional
     public TurmaResponse atualizar(Long turmaId, String emailCoordenador, TurmaRequest request, String ipOrigem) {
         Turma turma = turmaRepository.findByIdAndCursoCoordenadorEmail(turmaId, emailCoordenador)
                 .orElseThrow(() -> new ResourceNotFoundException("Turma não encontrada"));
 
         if (!turma.getCurso().getId().equals(request.getCursoId())) {
-            throw new IllegalStateException("Uma turma não pode mudar de curso");
+            throw new RegraNegocioException("Uma turma não pode mudar de curso");
         }
 
         String identificador = normalizarIdentificador(request.getIdentificador());
         if (turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCaseAndIdNot(
                 turma.getCurso().getId(), request.getSemestre(), identificador, turmaId)) {
-            throw new IllegalStateException("Já existe a turma " + identificador + " neste semestre do curso");
+            throw new RegraNegocioException("Já existe a turma " + identificador + " neste semestre do curso");
         }
 
         preencher(turma, request, identificador);
@@ -95,7 +103,12 @@ public class TurmaService {
                 "Turma id=" + turmaId + " alterada", ipOrigem, true);
         log.info("[TURMA] Turma {} alterada por {}", turmaId, emailCoordenador);
 
-        return paraResponse(salva);
+        Optional<OrientadorTurma> vinculo = orientadorTurmaRepository.findByTurmaId(turmaId);
+        Orientador orientador = null;
+        if (vinculo.isPresent()) {
+            orientador = vinculo.get().getOrientador();
+        }
+        return paraResponse(salva, orientador);
     }
 
     private void preencher(Turma turma, TurmaRequest request, String identificador) {
@@ -104,7 +117,7 @@ public class TurmaService {
         turma.setPeriodo(request.getPeriodo());
         turma.setModalidade(request.getModalidade());
 
-        // Data em que as entregas do semestre fecham, usada no aviso de prazo da F2
+        // Data em que as entregas do semestre fecham, usada no aviso de prazo
         turma.setDataEncerramentoEntregas(request.getDataEncerramentoEntregas());
     }
 
@@ -113,7 +126,8 @@ public class TurmaService {
         return identificador.trim().toUpperCase(Locale.ROOT);
     }
 
-    private TurmaResponse paraResponse(Turma turma) {
+    // O orientador pode vir null, quando a turma ainda não tem orientador atribuído
+    TurmaResponse paraResponse(Turma turma, Orientador orientador) {
         return TurmaResponse.builder()
                 .id(turma.getId())
                 .cursoId(turma.getCurso().getId())
@@ -123,6 +137,8 @@ public class TurmaService {
                 .periodo(turma.getPeriodo().name())
                 .modalidade(turma.getModalidade().name())
                 .dataEncerramentoEntregas(turma.getDataEncerramentoEntregas())
+                .orientadorId(orientador != null ? orientador.getId() : null)
+                .nomeOrientador(orientador != null ? orientador.getNome() : null)
                 .build();
     }
 }

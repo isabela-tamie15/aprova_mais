@@ -1,4 +1,4 @@
-// Script da página coordenador/pre-cadastros.html: lista, inclui e altera o pré-cadastro
+// Página coordenador/pre-cadastros.html, que lista, inclui e altera o pré-cadastro
 
 function formularioVazio(cursoId) {
     return { id: null, nome: '', email: '', perfil: '', identificadorInstitucional: '', cursoId: cursoId, turmaId: '' };
@@ -26,10 +26,7 @@ function preCadastrosPagina() {
             CADASTRO_CONCLUIDO: 'bg-success'
         },
 
-        /*
-           O Alpine chama o init() sozinho. Carrega os cursos, as turmas de cada curso
-           (para o select e para achar o curso de uma turma na edição) e a lista
-        */
+        // Chamado pelo Alpine ao abrir a tela. Carrega os cursos, as turmas de cada curso e a lista
         async init() {
             this.cursos = await carregarCursosDoCoordenador();
             for (const curso of this.cursos) {
@@ -109,7 +106,7 @@ function preCadastrosPagina() {
             } else if (!/^[0-9A-Za-z.-]+$/.test(identificador)) {
                 erros.identificadorInstitucional = 'Use apenas letras, números, ponto e hífen.';
             }
-            // CA01 do RF02: aluno sem turma é recusado
+            // Aluno sem turma é recusado
             if (this.form.perfil === 'ALUNO' && !this.form.turmaId) {
                 erros.turmaId = 'Escolha a turma do aluno.';
             }

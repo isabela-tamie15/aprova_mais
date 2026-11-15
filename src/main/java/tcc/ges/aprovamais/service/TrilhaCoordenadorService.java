@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.entity.Coordenador;
 import tcc.ges.aprovamais.entity.Tarefa;
 import tcc.ges.aprovamais.entity.TipoEstagio;
 import tcc.ges.aprovamais.entity.Trilha;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.EntregaRepository;
 import tcc.ges.aprovamais.repository.TarefaRepository;
@@ -24,10 +25,8 @@ import java.util.List;
 import java.util.Optional;
 
 /*
-   Esse service é quem monta as trilhas e as tarefas pelo coordenador (RF15, RN32,
-   RN33). A trilha que o aluno vê continua no TrilhaService; aqui fica só o lado
-   da coordenação. Toda busca já filtra pelo coordenador logado, então trilha ou
-   tarefa de curso de outro coordenador recebe 404 (RN21)
+   Montagem das trilhas e tarefas pelo coordenador. A trilha vista pelo aluno fica no TrilhaService.
+   Toda busca filtra pelo coordenador logado, e a trilha de outro coordenador recebe 404
 */
 @Service
 @RequiredArgsConstructor
@@ -41,7 +40,7 @@ public class TrilhaCoordenadorService {
     private final AuditoriaService auditoriaService;
     private final EntregaRepository entregaRepository;
 
-    // Esse é o método que busca a trilha de um tipo. Vazio quer dizer que o tipo ainda não tem trilha
+    // Busca a trilha de um tipo. Vazio quer dizer que o tipo ainda não tem trilha
     @Transactional(readOnly = true)
     public Optional<TrilhaDetalheResponse> buscarPorTipo(Long tipoEstagioId, String emailCoordenador) {
         TipoEstagio tipoEstagio = buscarTipoDoCoordenador(tipoEstagioId, emailCoordenador);
@@ -52,13 +51,13 @@ public class TrilhaCoordenadorService {
         return Optional.of(paraResponse(trilhaDoTipo.get()));
     }
 
-    // Esse é o método que cria a trilha de um tipo de estágio. Cada tipo tem no máximo uma (RN32)
+    // Cria a trilha de um tipo de estágio. Cada tipo tem no máximo uma
     @Transactional
     public TrilhaDetalheResponse criar(String emailCoordenador, TrilhaRequest request, String ipOrigem) {
         TipoEstagio tipoEstagio = buscarTipoDoCoordenador(request.getTipoEstagioId(), emailCoordenador);
 
         if (trilhaRepository.existsByTipoEstagioId(tipoEstagio.getId())) {
-            throw new IllegalStateException("Este tipo de estágio já tem uma trilha");
+            throw new RegraNegocioException("Este tipo de estágio já tem uma trilha");
         }
 
         Trilha trilha = new Trilha();
@@ -73,14 +72,14 @@ public class TrilhaCoordenadorService {
         return paraResponse(salva);
     }
 
-    // Esse é o método que altera o nome e a descrição da trilha. A trilha não troca de tipo
+    // Altera o nome e a descrição da trilha. A trilha não troca de tipo
     @Transactional
     public TrilhaDetalheResponse atualizar(Long trilhaId, String emailCoordenador, TrilhaRequest request,
                                            String ipOrigem) {
         Trilha trilha = buscarTrilhaDoCoordenador(trilhaId, emailCoordenador);
 
         if (!trilha.getTipoEstagio().getId().equals(request.getTipoEstagioId())) {
-            throw new IllegalStateException("Uma trilha não pode mudar de tipo de estágio");
+            throw new RegraNegocioException("Uma trilha não pode mudar de tipo de estágio");
         }
 
         trilha.setNome(request.getNome().trim());
@@ -91,14 +90,14 @@ public class TrilhaCoordenadorService {
         return paraResponse(salva);
     }
 
-    // Esse é o método que adiciona uma tarefa na trilha, numa posição que ainda esteja livre (RN33)
+    // Adiciona uma tarefa na trilha, numa posição ainda livre
     @Transactional
     public TrilhaDetalheResponse adicionarTarefa(Long trilhaId, String emailCoordenador, TarefaRequest request,
                                                  String ipOrigem) {
         Trilha trilha = buscarTrilhaDoCoordenador(trilhaId, emailCoordenador);
 
         if (tarefaRepository.existsByTrilhaIdAndOrdem(trilhaId, request.getOrdem())) {
-            throw new IllegalStateException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
+            throw new RegraNegocioException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
         }
 
         Tarefa tarefa = new Tarefa();
@@ -111,7 +110,7 @@ public class TrilhaCoordenadorService {
         return paraResponse(trilha);
     }
 
-    // Esse é o método que altera uma tarefa, inclusive a posição dela na trilha
+    // Altera uma tarefa, inclusive a posição dela na trilha
     @Transactional
     public TrilhaDetalheResponse atualizarTarefa(Long tarefaId, String emailCoordenador, TarefaRequest request,
                                                  String ipOrigem) {
@@ -119,7 +118,7 @@ public class TrilhaCoordenadorService {
         Trilha trilha = tarefa.getTrilha();
 
         if (tarefaRepository.existsByTrilhaIdAndOrdemAndIdNot(trilha.getId(), request.getOrdem(), tarefaId)) {
-            throw new IllegalStateException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
+            throw new RegraNegocioException("Já existe uma tarefa na posição " + request.getOrdem() + " desta trilha");
         }
 
         preencher(tarefa, request);
@@ -129,17 +128,14 @@ public class TrilhaCoordenadorService {
         return paraResponse(trilha);
     }
 
-    /*
-       Remove uma tarefa da trilha. Tarefa que já tem entrega de aluno não pode
-       sair, senão o histórico do aluno perde a referência (RN56)
-    */
+    // Remove uma tarefa da trilha. A tarefa que já tem entrega de aluno não pode sair, para o histórico do aluno não perder a referência
     @Transactional
     public void removerTarefa(Long tarefaId, String emailCoordenador, String ipOrigem) {
         Tarefa tarefa = buscarTarefaDoCoordenador(tarefaId, emailCoordenador);
         TipoEstagio tipoEstagio = tarefa.getTrilha().getTipoEstagio();
 
         if (entregaRepository.existsByTarefaId(tarefa.getId())) {
-            throw new IllegalStateException("Esta tarefa já tem entregas de alunos e não pode ser removida.");
+            throw new RegraNegocioException("Esta tarefa já tem entregas de alunos e não pode ser removida.");
         }
         tarefaRepository.delete(tarefa);
 

@@ -2,11 +2,7 @@
    Aprova+ - Funções Alpine.js
    ============================================= */
 
-/*
-   Desenha o QR Code do 2fa dentro do elemento passado. A geração roda
-   toda no navegador com o qrcodejs, o segredo não vai para nenhum
-   serviço externo
-*/
+// Desenha o QR Code do 2FA no elemento informado. O qrcodejs roda no navegador, então o segredo não sai para nenhum serviço externo
 function desenharQrCode(elemento, texto) {
     elemento.innerHTML = '';
     new QRCode(elemento, {
@@ -32,11 +28,9 @@ function mensagemDeErro(resposta, dados, mensagemPadrao) {
 }
 
 /*
-   Componente Alpine do formulário de login. Passa por até três etapas,
-   primeiro credenciais, depois código do 2fa para quem já tem ativado,
-   e por último configuração com QR Code para quem tem perfil que exige
-   mas ainda não configurou. O token de pré-autenticação fica só na
-   memória, nunca vai para localStorage
+   Formulário de login, em até três etapas. Primeiro as credenciais, depois o código do 2FA para
+   quem já tem, e por último a configuração com QR Code para o perfil que exige e ainda não
+   configurou. O token de pré-autenticação fica só na memória, nunca no localStorage
 */
 function loginForm() {
     return {
@@ -49,7 +43,7 @@ function loginForm() {
         erro: '',
         carregando: false,
 
-        // Esse é o passo 1, envia email e senha e decide para onde ir depois
+        // Envia e-mail e senha e decide a próxima etapa
         async entrar() {
             this.erro = '';
             this.carregando = true;
@@ -58,11 +52,7 @@ function loginForm() {
                 const resposta = await fetch('/api/v1/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    /*
-                       O credentials include faz o navegador mandar o cookie
-                       JWT automaticamente nas próximas requisições. Funciona
-                       porque o backend usa HttpOnly com SameSite=Strict
-                    */
+                    // Faz o navegador guardar e mandar o cookie JWT nas próximas requisições
                     credentials: 'include',
                     body: JSON.stringify({
                         email: this.email,
@@ -70,11 +60,7 @@ function loginForm() {
                     })
                 });
 
-                /*
-                   O catch vazio serve para quando o backend devolve resposta
-                   sem corpo, tipo 204 ou um 401 sem body. Sem isso o .json()
-                   estouraria exceção
-                */
+                // Lê o corpo da resposta como JSON. Resposta vazia ou que não é JSON fica como um objeto vazio
                 // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
                 let dados = {};
                 try {
@@ -93,7 +79,7 @@ function loginForm() {
                     this.preAuthToken = dados.token;
                     this.senha = '';
                     this.etapa = 'codigo';
-                    // O $nextTick espera a tela atualizar e só depois roda o que está dentro de () =>
+                    // Espera a tela atualizar antes de focar o campo
                     this.$nextTick(() => this.$refs.campoCodigo.focus());
                     return;
                 }
@@ -116,7 +102,7 @@ function loginForm() {
             }
         },
 
-        // Esse é o passo da configuração obrigatória, busca o QR Code e o segredo no backend
+        // Configuração obrigatória, que busca o QR Code e o segredo no backend
         async iniciarConfiguracao() {
             const resposta = await fetch('/api/v1/auth/2fa/configuracao/iniciar', {
                 method: 'POST',
@@ -141,7 +127,7 @@ function loginForm() {
             this.segredo = dados.segredo;
             this.etapa = 'configuracao';
 
-            // O $nextTick espera o DOM atualizar antes de desenhar o QR Code
+            // Espera a tela atualizar antes de desenhar o QR Code
             this.$nextTick(() => desenharQrCode(this.$refs.qrcode, dados.otpauthUri));
         },
 
@@ -172,22 +158,14 @@ function loginForm() {
                 if (!resposta.ok) {
                     this.codigo = '';
 
-                    /*
-                       Conta bloqueada por excesso de tentativas, então
-                       reinicia o fluxo todo, a pessoa precisa esperar
-                       o tempo de bloqueio e logar de novo
-                    */
+                    // Conta bloqueada por excesso de tentativas reinicia o fluxo, e a pessoa espera o tempo do bloqueio
                     if (resposta.status === 423) {
                         this.reiniciar();
                         this.erro = mensagemDeErro(resposta, dados, '');
                         return;
                     }
 
-                    /*
-                       401 é código errado OU token de pré-autenticação expirado,
-                       o backend responde genérico para não dar pista, então a
-                       mensagem cobre os dois casos
-                    */
+                    // O 401 vale para código errado e para token de pré-autenticação expirado, então a mensagem cobre os dois
                     this.erro = resposta.status === 401
                         ? 'Código inválido ou verificação expirada. Se o problema persistir, volte e faça login novamente.'
                         : mensagemDeErro(resposta, dados, 'Não foi possível verificar o código.');
@@ -213,11 +191,7 @@ function loginForm() {
             this.erro = '';
         },
 
-        /*
-           Manda para o endpoint /inicio em vez de decidir aqui para onde ir.
-           Assim o mapeamento de perfil para página inicial fica em um só
-           lugar, no backend, sem duplicar essa regra no frontend
-        */
+        // O /inicio decide a página inicial de cada perfil, e essa regra fica só no backend
         redirecionar() {
             window.location.href = '/inicio';
         }
@@ -226,10 +200,8 @@ function loginForm() {
 
 
 /*
-   Componente Alpine da tela de segurança da conta. Deixa o usuário
-   ativar o 2fa (gerando QR Code e confirmando o primeiro código) e,
-   para os perfis em que ele é opcional, desativar mediante um código
-   válido. As regras de perfil e limite de tentativas ficam no backend
+   Tela de segurança da conta. Ativa o 2FA com o QR Code e o primeiro código e, nos perfis em que
+   ele é opcional, desativa com um código válido. As regras ficam no backend
 */
 function segurancaConta() {
     return {
@@ -287,7 +259,7 @@ function segurancaConta() {
                 }
                 this.segredo = dados.segredo;
                 this.modo = 'ativando';
-                // O $nextTick espera a tela atualizar e só depois roda o que está dentro de () =>
+                // Espera a tela atualizar antes de desenhar o QR Code
                 this.$nextTick(() => desenharQrCode(this.$refs.qrcode, dados.otpauthUri));
             } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';

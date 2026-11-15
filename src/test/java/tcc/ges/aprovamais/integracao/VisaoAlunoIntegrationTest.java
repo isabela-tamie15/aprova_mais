@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Visão consolidada do aluno para o orientador (RF37), com o banco H2 do perfil de testes
+// Visão consolidada do aluno para o orientador, com o banco H2 do perfil de testes
 class VisaoAlunoIntegrationTest extends CoordenacaoTestBase {
 
     private static final String EMAIL_OUTRO_ORIENTADOR = "outro.orientador@teste.com";

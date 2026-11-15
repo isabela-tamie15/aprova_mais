@@ -1,11 +1,11 @@
 package tcc.ges.aprovamais.dto;
 
 /*
-   Resultado da consulta do CNPJ na BrasilAPI.
-   ENCONTRADO: a Receita conhece o CNPJ, vem a razão social e a situação cadastral.
-   NAO_ENCONTRADO: o CNPJ tem dígitos certos, mas não existe na Receita.
-   INDISPONIVEL: a API demorou, caiu ou respondeu algo inesperado. Nesse caso
-   o cadastro segue e o orientador confere o CNPJ manualmente no termo de compromisso
+   Resultado da consulta do CNPJ na BrasilAPI
+   - ENCONTRADO quando a Receita conhece o CNPJ, com a razão social e a situação cadastral
+   - NAO_ENCONTRADO quando os dígitos estão certos, mas o CNPJ não existe na Receita
+   - INDISPONIVEL quando a API demorou, caiu ou respondeu algo inesperado. O cadastro segue
+     e o orientador confere o CNPJ no termo de compromisso
 */
 public record ConsultaCnpjResponse(Status status, String razaoSocial, String nomeFantasia, String situacao) {
 

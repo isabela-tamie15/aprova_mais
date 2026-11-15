@@ -6,4 +6,7 @@ import tcc.ges.aprovamais.entity.Secretaria;
 
 @Repository
 public interface SecretariaRepository extends JpaRepository<Secretaria, Long> {
+
+    // Quantas secretarias têm conta ativa
+    long countByAtivoTrue();
 }

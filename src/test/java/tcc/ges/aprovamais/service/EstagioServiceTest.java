@@ -27,8 +27,10 @@ import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.external.ConsultaCnpjService;
+import tcc.ges.aprovamais.external.EmailService;
 import tcc.ges.aprovamais.repository.AlunoRepository;
 import tcc.ges.aprovamais.repository.EntregaRepository;
 import tcc.ges.aprovamais.repository.EstagioRepository;
@@ -89,6 +91,8 @@ class EstagioServiceTest {
     private TarefaRepository tarefaRepository;
     @Mock
     private EntregaRepository entregaRepository;
+    @Mock
+    private EmailService emailService;
     @InjectMocks
     private EstagioService estagioService;
     private Aluno aluno;
@@ -138,9 +142,9 @@ class EstagioServiceTest {
         tipoEstagio.setJornadaSemanal(new BigDecimal("30"));
 
         /*
-           F2: por padrão a trilha do tipo tem 1 tarefa e o aluno não tem entrega aprovada,
-           então existe pendência e os testes do aviso de prazo continuam valendo do jeito que estão.
-           lenient porque nem todo teste chega a montar a resposta de um estágio ATIVO
+           Por padrão a trilha do tipo tem 1 tarefa e o aluno não tem entrega aprovada, então existe
+           pendência e os testes do aviso de prazo continuam valendo. O lenient é porque nem todo
+           teste monta a resposta de um estágio ATIVO
         */
         trilha = new Trilha();
         trilha.setId(6L);
@@ -177,13 +181,18 @@ class EstagioServiceTest {
 
 
 
+    // O controller consulta a BrasilAPI antes de chamar o service, então o teste pega o resultado do mock
+    private ConsultaCnpjResponse consultarCnpj() {
+        return consultaCnpjService.consultar("11222333000181");
+    }
+
     private void prepararCadastro(Estagio estagioExistente) {
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
         when(tipoEstagioRepository.findByIdAndCursoId(tipoEstagio.getId(), curso.getId())).thenReturn(Optional.of(tipoEstagio));
         when(estagioRepository.findFirstByMatriculaIdAndStatusInOrderByIdDesc(matricula.getId(), EstagioService.STATUS_EM_ABERTO))
                 .thenReturn(Optional.ofNullable(estagioExistente));
-        // lenient porque nos testes que barram antes a consulta nem chega a acontecer
+        // Lenient porque, nos testes que barram antes, a consulta nem acontece
         lenient().when(consultaCnpjService.consultar("11222333000181"))
                 .thenReturn(ConsultaCnpjResponse.encontrado("EMPRESA NOVA LTDA", null, "ATIVA"));
     }
@@ -210,6 +219,8 @@ class EstagioServiceTest {
         assertEquals(StatusEstagio.ATIVO, estagio.getStatus());
         assertNull(resposta.getJustificativaRejeicao());
         verify(auditoriaService).registrar(eq(orientador), eq("ESTAGIO_APROVADO"), anyString(), eq(IP), eq(true));
+        // O aluno recebe o aviso da aprovação por e-mail
+        verify(emailService).enviarResultadoValidacaoEstagio(eq(EMAIL_ALUNO), anyString(), eq(true), anyString());
 
     }
 
@@ -220,7 +231,7 @@ class EstagioServiceTest {
         prepararCadastro(criarEstagio(StatusEstagio.PENDENTE));
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class, () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class, () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("Já existe uma solicitação aguardando aprovação do orientador", excecao.getMessage());verify(estagioRepository, never()).save(any());
@@ -249,14 +260,13 @@ class EstagioServiceTest {
         Estagio rejeitado = criarEstagio(StatusEstagio.REJEITADO);
         rejeitado.setJustificativaRejeicao("Documentação incompleta");
         prepararCadastro(rejeitado);
-        when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
+        when(orientadorTurmaRepository.findByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
         when(estagioRepository.save(rejeitado)).then(returnsFirstArg());
         when(estagioRepository.findById(ESTAGIO_ID)).thenReturn(Optional.of(rejeitado));
 
 
         // act
-        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(
-                EMAIL_ALUNO, criarRequest(), IP);
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP);
 
 
         // assert
@@ -273,7 +283,7 @@ class EstagioServiceTest {
     void deveCongelarCargaEJornadaDoTipoNoCadastro() {
         // arrange
         prepararCadastro(null);
-        when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
+        when(orientadorTurmaRepository.findByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
         ArgumentCaptor<Estagio> captor = ArgumentCaptor.forClass(Estagio.class);
         when(estagioRepository.save(captor.capture())).thenAnswer(inv -> {
             Estagio salvo = inv.getArgument(0);
@@ -283,7 +293,7 @@ class EstagioServiceTest {
         when(estagioRepository.findById(ESTAGIO_ID)).thenAnswer(inv -> Optional.of(captor.getValue()));
 
         // act
-        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP);
 
         // assert: 270h com 30h semanais são 9 semanas a partir de 01/10/2026
         Estagio salvo = captor.getValue();
@@ -292,7 +302,7 @@ class EstagioServiceTest {
         assertEquals(LocalDate.of(2026, 12, 3), salvo.getDataPrevistaConclusao());
         assertEquals(LocalDate.of(2026, 12, 3), resposta.getDataPrevistaConclusao());
 
-        // mudar o tipo depois não mexe no estágio já cadastrado
+        // Mudar o tipo depois não mexe no estágio já cadastrado
         tipoEstagio.setCargaHorariaNecessaria(new BigDecimal("300"));
         tipoEstagio.setJornadaSemanal(new BigDecimal("20"));
         assertEquals(new BigDecimal("270"), salvo.getCargaHorariaNecessaria());
@@ -307,8 +317,8 @@ class EstagioServiceTest {
         prepararCadastro(null);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("Este tipo de estágio está sem jornada semanal cadastrada. Procure a coordenação",
@@ -337,14 +347,14 @@ class EstagioServiceTest {
     @Test
     @DisplayName("Tipo de estágio de outro curso é tratado como inexistente no cadastro")
     void deveBloquearCadastroComTipoDeOutroCurso() {
-        // arrange: a busca filtrada pelo curso do aluno não acha o tipo
+        // Arrange: a busca filtrada pelo curso do aluno não acha o tipo
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(matriculaRepository.findFirstByAlunoIdAndStatus(aluno.getId(), StatusMatricula.ATIVA)).thenReturn(Optional.of(matricula));
         when(tipoEstagioRepository.findByIdAndCursoId(tipoEstagio.getId(), curso.getId())).thenReturn(Optional.empty());
 
         // act
         ResourceNotFoundException excecao = assertThrows(ResourceNotFoundException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("Perfil de estágio não encontrado", excecao.getMessage());
@@ -375,6 +385,9 @@ class EstagioServiceTest {
         assertEquals(orientador, rejeicao.getOrientador());
         assertTrue(aprovacao.getAprovado());
         assertNull(aprovacao.getJustificativa());
+        // Um e-mail para cada decisão, primeiro o da rejeição e depois o da aprovação
+        verify(emailService).enviarResultadoValidacaoEstagio(eq(EMAIL_ALUNO), anyString(), eq(false), anyString());
+        verify(emailService).enviarResultadoValidacaoEstagio(eq(EMAIL_ALUNO), anyString(), eq(true), anyString());
     }
 
     @Test
@@ -404,8 +417,8 @@ class EstagioServiceTest {
         prepararCadastro(ativo);
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertTrue(excecao.getMessage().contains("troca de modalidade"));
@@ -420,7 +433,7 @@ class EstagioServiceTest {
         // arrange
         prepararCadastro(null);
         when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.indisponivel());
-        when(orientadorTurmaRepository.findFirstByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
+        when(orientadorTurmaRepository.findByTurmaId(matricula.getTurma().getId())).thenReturn(Optional.empty());
         ArgumentCaptor<Estagio> captor = ArgumentCaptor.forClass(Estagio.class);
         when(estagioRepository.save(captor.capture())).thenAnswer(inv -> {
             Estagio salvo = inv.getArgument(0);
@@ -430,7 +443,7 @@ class EstagioServiceTest {
         when(estagioRepository.findById(ESTAGIO_ID)).thenAnswer(inv -> Optional.of(captor.getValue()));
 
         // act
-        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP);
+        EstagioResponse resposta = estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP);
 
         // assert CNPJ gravado sem pontuação, situação vazia para o orientador conferir
         assertEquals("11222333000181", captor.getValue().getCnpjEmpresa());
@@ -446,15 +459,15 @@ class EstagioServiceTest {
         when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.naoEncontrado());
 
         // act
-        IllegalStateException excecao = assertThrows(IllegalStateException.class,
-                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), IP));
+        RegraNegocioException excecao = assertThrows(RegraNegocioException.class,
+                () -> estagioService.cadastrarOuAtualizarEstagio(EMAIL_ALUNO, criarRequest(), consultarCnpj(), IP));
 
         // assert
         assertEquals("CNPJ não encontrado na Receita Federal. Confira o número digitado", excecao.getMessage());
         verify(estagioRepository, never()).save(any());
     }
 
-    // F2: horas restantes, data de encerramento das entregas e aviso de prazo
+    // Horas restantes, data de encerramento das entregas e aviso de prazo
 
     // Prepara a consulta do aluno devolvendo o estágio informado como o estágio em aberto da matrícula
     private void prepararConsultaDoAluno(Estagio estagio) {
@@ -538,7 +551,7 @@ class EstagioServiceTest {
         // arrange
         Estagio estagio = criarEstagio(StatusEstagio.ATIVO);
         matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(20));
-        when(estagioRepository.findByOrientadorEmailAndStatusIn(EMAIL_ORIENTADOR, List.of(StatusEstagio.ATIVO)))
+        when(estagioRepository.findByOrientadorEmailAndStatusInOrderByIdAsc(EMAIL_ORIENTADOR, List.of(StatusEstagio.ATIVO)))
                 .thenReturn(List.of(estagio));
 
         // act
@@ -550,7 +563,7 @@ class EstagioServiceTest {
         assertEquals(CalculadoraCargaHoraria.AVISO_AMARELO, ativos.get(0).getAvisoPrazo());
     }
 
-    // F2: atividades da trilha aprovadas e restantes, e o aviso de prazo só enquanto houver pendência
+    // Atividades da trilha aprovadas e restantes, e o aviso de prazo só enquanto houver pendência
 
     // Monta a quantidade informada de tarefas da trilha, na ordem 1, 2, 3...
     private List<Tarefa> criarTarefas(int quantidade) {
