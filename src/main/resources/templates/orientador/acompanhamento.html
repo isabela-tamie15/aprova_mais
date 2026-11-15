@@ -98,6 +98,46 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Finalização do estágio: conclusão quando os critérios estão cumpridos, ou reprovação com observação -->
+            <div class="card p-4 mt-4">
+                <h5 class="mb-3">Finalização do estágio</h5>
+                <div class="alert alert-danger py-2" x-show="erroFinalizacao" x-text="erroFinalizacao" x-cloak></div>
+
+                <template x-if="visao.progresso.podeConcluir">
+                    <div class="mb-3">
+                        <p class="mb-2">A carga horária foi cumprida e todas as tarefas da trilha estão aprovadas.</p>
+                        <button class="btn btn-success" x-show="!confirmandoConclusao" @click="confirmandoConclusao = true">
+                            Concluir estágio
+                        </button>
+                        <div x-show="confirmandoConclusao" x-cloak>
+                            <p class="small text-muted mb-2">Depois de concluído, o estágio não volta a nenhum outro status.</p>
+                            <button class="btn btn-success me-2" :disabled="processando" @click="concluir()">Confirmar conclusão</button>
+                            <button class="btn btn-outline-secondary" :disabled="processando" @click="confirmandoConclusao = false">Cancelar</button>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="!visao.progresso.podeConcluir">
+                    <p class="text-muted mb-3">
+                        A conclusão fica disponível quando a carga horária exigida for cumprida e todas as tarefas da trilha estiverem aprovadas.
+                    </p>
+                </template>
+
+                <div class="border-top pt-3">
+                    <button class="btn btn-outline-danger" x-show="!confirmandoReprovacao" @click="confirmandoReprovacao = true">
+                        Reprovar estágio
+                    </button>
+                    <div x-show="confirmandoReprovacao" x-cloak>
+                        <label class="form-label" for="observacaoReprovacao">Observação da reprovação</label>
+                        <textarea id="observacaoReprovacao" class="form-control mb-1" rows="3" maxlength="1000"
+                                  x-model="observacao"></textarea>
+                        <div class="form-text mb-2" x-text="observacao.length + '/1000'"></div>
+                        <p class="small text-muted mb-2">O estágio será encerrado por reprovação, e o aluno poderá cadastrar um novo.</p>
+                        <button class="btn btn-danger me-2" :disabled="processando" @click="reprovar()">Confirmar reprovação</button>
+                        <button class="btn btn-outline-secondary" :disabled="processando" @click="confirmandoReprovacao = false">Cancelar</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </template>
 </div>

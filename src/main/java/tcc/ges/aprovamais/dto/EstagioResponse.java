@@ -38,4 +38,11 @@ public class EstagioResponse {
     private final Long atividadesAprovadas;
     private final Long atividadesTotal;
     private final Long atividadesRestantes;
+
+    // Verdadeiro quando a carga exigida foi cumprida e todas as tarefas da trilha estão aprovadas. Só vem no estágio ATIVO
+    private final Boolean podeConcluir;
+
+    // Data e observação da conclusão ou do encerramento
+    private final LocalDate dataFinalizacao;
+    private final String observacaoEncerramento;
 }

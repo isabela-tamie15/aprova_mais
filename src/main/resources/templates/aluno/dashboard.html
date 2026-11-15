@@ -18,7 +18,16 @@
 <div class="container">
     <h4 class="mb-4">Bem-vindo ao Aprova+</h4>
 
-    <div th:if="${estagio == null}" class="card p-4 text-center">
+    <div th:if="${estagio == null and estagioConcluido != null}" class="card p-4 text-center">
+        <span class="badge bg-primary align-self-center mb-2">Concluído</span>
+        <p class="mb-1">Seu estágio foi concluído
+            <span th:if="${estagioConcluido.dataFinalizacao}"
+                  th:text="${'em ' + #temporals.format(estagioConcluido.dataFinalizacao, 'dd/MM/yyyy')}"></span>.
+        </p>
+        <p class="text-muted mb-0" th:text="${estagioConcluido.nomeTipoEstagio + ' - ' + estagioConcluido.nomeEmpresa}"></p>
+    </div>
+
+    <div th:if="${estagio == null and estagioConcluido == null}" class="card p-4 text-center">
         <p class="text-muted">Você não possui um estágio em andamento.</p>
         <a href="/estagio" class="btn btn-primary mt-2">Cadastrar estágio</a>
     </div>
@@ -158,9 +167,19 @@
                 <span th:if="${anterior.status == 'ENCERRADO'}" class="badge bg-secondary me-2">Encerrado</span>
                 <span th:text="${anterior.nomeTipoEstagio + ' - ' + anterior.nomeEmpresa}"></span>
                 <span class="text-muted">desde <span th:text="${#temporals.format(anterior.dataInicio, 'dd/MM/yyyy')}"></span></span>
+                <span class="text-muted" th:if="${anterior.dataFinalizacao}">
+                    até <span th:text="${#temporals.format(anterior.dataFinalizacao, 'dd/MM/yyyy')}"></span>
+                </span>
                 <div th:if="${anterior.motivoEncerramento}" class="small text-muted mt-1">
-                    Motivo: <span th:text="${anterior.motivoEncerramento}"></span>
+                    Motivo: <span th:switch="${anterior.motivoEncerramento}">
+                        <span th:case="'REPROVACAO'">Reprovação</span>
+                        <span th:case="'DESLIGAMENTO'">Desligamento</span>
+                        <span th:case="'TROCA_MODALIDADE'">Troca de modalidade</span>
+                        <span th:case="'TRANCAMENTO'">Trancamento</span>
+                    </span>
                 </div>
+                <div th:if="${anterior.observacaoEncerramento}" class="small mt-1" style="white-space: pre-line;"
+                     th:text="${anterior.observacaoEncerramento}"></div>
             </li>
         </ul>
     </div>

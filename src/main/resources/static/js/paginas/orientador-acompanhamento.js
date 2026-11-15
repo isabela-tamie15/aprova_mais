@@ -5,6 +5,11 @@ function acompanhamentoAluno(estagioId) {
         visao: null,
         carregando: true,
         erro: '',
+        erroFinalizacao: '',
+        observacao: '',
+        processando: false,
+        confirmandoConclusao: false,
+        confirmandoReprovacao: false,
 
         nomeStatus: nomeStatusEntrega,
         classeStatus: classeStatusEntrega,
@@ -22,6 +27,43 @@ function acompanhamentoAluno(estagioId) {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregando = false;
+            }
+        },
+
+        async concluir() {
+            await this.finalizar(`/api/v1/orientador/estagios/${estagioId}/concluir`, null, 'Não foi possível concluir o estágio.');
+        },
+
+        async reprovar() {
+            if (!this.observacao.trim()) {
+                this.erroFinalizacao = 'Informe a observação da reprovação.';
+                return;
+            }
+            await this.finalizar(`/api/v1/orientador/estagios/${estagioId}/reprovar`,
+                { observacao: this.observacao.trim() }, 'Não foi possível reprovar o estágio.');
+        },
+
+        // Envia a finalização e volta para a lista de estágios, porque o estágio deixa de estar ativo
+        async finalizar(url, corpo, mensagemPadrao) {
+            this.erroFinalizacao = '';
+            this.processando = true;
+            try {
+                const opcoes = { method: 'POST', credentials: 'include', headers: {} };
+                if (corpo) {
+                    opcoes.headers['Content-Type'] = 'application/json';
+                    opcoes.body = JSON.stringify(corpo);
+                }
+                const resposta = await fetch(url, opcoes);
+                if (resposta.ok) {
+                    window.location.href = '/orientador/validacoes';
+                    return;
+                }
+                const dados = await mensagemErroApi(resposta, mensagemPadrao);
+                this.erroFinalizacao = dados.campos.observacao || dados.mensagem;
+            } catch (erro) {
+                this.erroFinalizacao = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.processando = false;
             }
         },
 

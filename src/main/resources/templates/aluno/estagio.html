@@ -39,7 +39,12 @@
         <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
     </div>
 
-    <div th:if="${estagio == null or estagio.status == 'REJEITADO'}" x-data="estagioForm()" x-init="init()" th:attr="data-nome-empresa=${estagio != null ? estagio.nomeEmpresa : ''},data-data-inicio=${estagio != null ? estagio.dataInicio : ''},data-cnpj-empresa=${estagio != null ? estagio.cnpjEmpresa : ''}, data-tipo-estagio-nome=${estagio != null ? estagio.nomeTipoEstagio : ''}">
+    <div th:if="${estagio == null and estagioConcluido != null}" class="card p-4 mb-4">
+        <h5 class="card-title mb-2">Estágio concluído</h5>
+        <p class="mb-0">O estágio desta matrícula já foi concluído, então não é possível cadastrar outro.</p>
+    </div>
+
+    <div th:if="${(estagio == null and estagioConcluido == null) or (estagio != null and estagio.status == 'REJEITADO')}" x-data="estagioForm()" x-init="init()" th:attr="data-nome-empresa=${estagio != null ? estagio.nomeEmpresa : ''},data-data-inicio=${estagio != null ? estagio.dataInicio : ''},data-cnpj-empresa=${estagio != null ? estagio.cnpjEmpresa : ''}, data-tipo-estagio-nome=${estagio != null ? estagio.nomeTipoEstagio : ''}">
 
         <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="alert alert-danger mb-4">
             <strong>Estágio rejeitado.</strong>

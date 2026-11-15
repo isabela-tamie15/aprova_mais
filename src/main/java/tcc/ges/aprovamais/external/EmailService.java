@@ -116,6 +116,25 @@ public class EmailService {
         }
     }
 
+    // Avisa o aluno de que o estágio foi concluído ou encerrado. A observação de quem encerrou fica no sistema
+    @Async
+    public void enviarFinalizacaoEstagio(String destinatario, String nomeDestinatario,
+                                         boolean concluido, String linkEstagio) {
+        try {
+            Resend resend = new Resend(apiKey);
+            CreateEmailOptions email = CreateEmailOptions.builder()
+                    .from(remetente)
+                    .to(destinatario)
+                    .subject((concluido ? "Estágio concluído" : "Estágio encerrado") + " - Aprova+")
+                    .html(montarCorpoFinalizacaoEstagio(nomeDestinatario, concluido, linkEstagio))
+                    .build();
+            resend.emails().send(email);
+            log.info("[EMAIL] Finalização do estágio enviada para: {}", destinatario);
+        } catch (ResendException | RuntimeException excecao) {
+            log.error("[EMAIL] Erro ao enviar a finalização do estágio para {}: {}", destinatario, excecao.getMessage(), excecao);
+        }
+    }
+
     // Monta o HTML do e-mail de convite. O estilo fica inline porque Gmail e Outlook ignoram CSS externo
     private String montarCorpoConvite(String nomeDoDestinatario, String link) {
         return """
@@ -169,6 +188,27 @@ public class EmailService {
         return """
                 <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2B4ECC;">Seu estágio foi analisado</h2>
+                    <p>Olá, <strong>%s</strong>!</p>
+                    <p>%s</p>
+                    <a href="%s"
+                       style="display: inline-block; background: #2B4ECC; color: white;
+                              padding: 12px 24px; border-radius: 8px; text-decoration: none;
+                              font-weight: 600; margin: 16px 0;">
+                        Ver meu estágio
+                    </a>
+                    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+                    <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
+                </div>
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), textoDoResultado, link);
+    }
+
+    private String montarCorpoFinalizacaoEstagio(String nomeDoDestinatario, boolean concluido, String link) {
+        String textoDoResultado = concluido
+                ? "O seu estágio foi <strong>concluído</strong>. A carga horária e as tarefas da trilha foram cumpridas e aprovadas pelo orientador."
+                : "O seu estágio foi <strong>encerrado</strong>. Confira o motivo e a observação no sistema. Se for o caso, você pode cadastrar um novo estágio.";
+        return """
+                <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2B4ECC;">Atualização do seu estágio</h2>
                     <p>Olá, <strong>%s</strong>!</p>
                     <p>%s</p>
                     <a href="%s"

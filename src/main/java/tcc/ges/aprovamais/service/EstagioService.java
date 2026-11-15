@@ -165,6 +165,10 @@ public class EstagioService {
             estagio = estagioExistente.get();
             validarReenvio(estagio);
         } else {
+            // Depois da conclusão, a matrícula não recebe outro estágio
+            if (estagioRepository.existsByMatriculaIdAndStatus(matricula.getId(), StatusEstagio.CONCLUIDO)) {
+                throw new RegraNegocioException("Seu estágio desta matrícula já foi concluído");
+            }
             estagio = new Estagio();
             estagio.setMatricula(matricula);
         }
@@ -502,6 +506,7 @@ public class EstagioService {
         Long atividadesTotal = null;
         Long atividadesAprovadas = null;
         Long atividadesRestantes = null;
+        Boolean podeConcluir = null;
         if (estagio.getStatus() == StatusEstagio.ATIVO) {
             // Sem trilha, o aluno ainda não tem tarefas
             atividadesTotal = 0L;
@@ -522,6 +527,9 @@ public class EstagioService {
             if (!PendenciasEstagio.temPendencia(atividadesTotal, atividadesAprovadas)) {
                 avisoPrazo = null;
             }
+
+            podeConcluir = PendenciasEstagio.podeConcluir(calcularCargaCumprida(estagio),
+                    estagio.getCargaHorariaNecessaria(), atividadesTotal, atividadesAprovadas);
         }
 
         // Semanas usadas no cálculo da carga horária, só no estágio ATIVO
@@ -573,6 +581,9 @@ public class EstagioService {
                 .atividadesAprovadas(atividadesAprovadas)
                 .atividadesTotal(atividadesTotal)
                 .atividadesRestantes(atividadesRestantes)
+                .podeConcluir(podeConcluir)
+                .dataFinalizacao(estagio.getDataFinalizacao())
+                .observacaoEncerramento(estagio.getObservacaoEncerramento())
                 .build();
     }
 }
