@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
@@ -17,6 +18,7 @@ import java.util.Base64;
 // Cifra os atributos marcados antes de salvar no banco e decifra ao ler
 @Converter(autoApply = false)
 @Component
+@DependsOn("validadorConfiguracao")
 public class AesEncryptor implements AttributeConverter<String, String> {
 
     private static final String ALGORITMO = "AES/GCM/NoPadding";

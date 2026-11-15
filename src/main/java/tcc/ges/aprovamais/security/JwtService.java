@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 // Gera e valida os tokens JWT da autenticação
 @Service
+@DependsOn("validadorConfiguracao")
 public class JwtService {
 
     private static final String CLAIM_PERFIL = "perfil";
