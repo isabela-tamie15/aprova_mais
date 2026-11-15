@@ -9,6 +9,9 @@ services:
     env_file:
       - .env
     environment:
+      # Dentro do Docker, o Redis é sempre o contêiner redis, na porta 6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       # No perfil prod, o Redis vem do REDIS_URL
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
     depends_on:
@@ -76,7 +79,7 @@ services:
     container_name: aprovamais-grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_SENHA}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_SENHA:?Defina GRAFANA_SENHA no .env}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - ./monitoramento/grafana/provisioning:/etc/grafana/provisioning:ro
