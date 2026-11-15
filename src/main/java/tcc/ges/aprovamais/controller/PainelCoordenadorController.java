@@ -28,7 +28,7 @@ public class PainelCoordenadorController {
     private final PainelCoordenadorService painelCoordenadorService;
 
     // O cursoId é opcional: sem ele, o painel mostra todos os cursos do coordenador logado
-    @Operation(summary = "Consultar os números do dashboard do coordenador (RF50)")
+    @Operation(summary = "Consultar os números do dashboard do coordenador (Seção 6.11)")
     @GetMapping
     public ResponseEntity<PainelCoordenadorResponse> consultar(@RequestParam(required = false) Long cursoId,
                                                                Authentication authentication) {
