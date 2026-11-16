@@ -1,5 +1,9 @@
 // Página redefinir-senha.html, que troca a senha com o token do link do e-mail
 
+// Guarda o token e o tira da barra de endereço, para ele não ficar no histórico do navegador
+const TOKEN_REDEFINICAO = new URLSearchParams(window.location.search).get('token');
+window.history.replaceState(null, '', window.location.pathname);
+
 function redefinirSenhaForm() {
     return {
         senha: '',
@@ -27,14 +31,13 @@ function redefinirSenhaForm() {
                 return;
             }
 
-            const token = new URLSearchParams(window.location.search).get('token');
             this.enviando = true;
             try {
                 const resposta = await fetch('/api/v1/auth/recuperacao/redefinir', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        token: token,
+                        token: TOKEN_REDEFINICAO,
                         senha: this.senha,
                         confirmacaoSenha: this.confirmacaoSenha
                     })

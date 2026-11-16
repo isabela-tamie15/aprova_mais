@@ -213,7 +213,7 @@ function trilhasPagina() {
         },
 
         async removerTarefa(tarefa) {
-            if (!confirm('Remover a tarefa "' + tarefa.nome + '" da trilha?')) {
+            if (!await confirmarAcao('Remover a tarefa "' + tarefa.nome + '" da trilha?', 'Remover', true)) {
                 return;
             }
             this.limparMensagens();
@@ -226,7 +226,7 @@ function trilhasPagina() {
             this.sucesso = 'Tarefa removida.';
         },
 
-        // ---------- critérios do checklist (F6) ----------
+        // ---------- critérios do checklist ----------
 
         async abrirCriterios(tarefa) {
             this.limparMensagens();
@@ -321,7 +321,7 @@ function trilhasPagina() {
 
         // O critério já usado em uma correção não é apagado: ele sai das próximas correções e fica no histórico
         async removerCriterio(criterio) {
-            if (!confirm('Remover o critério "' + criterio.descricao + '"? As correções já feitas não mudam.')) {
+            if (!await confirmarAcao('Remover o critério "' + criterio.descricao + '"? As correções já feitas não mudam.', 'Remover', true)) {
                 return;
             }
             this.limparMensagens();

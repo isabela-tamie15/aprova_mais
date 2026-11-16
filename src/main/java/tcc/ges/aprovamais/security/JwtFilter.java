@@ -138,12 +138,13 @@ public class JwtFilter extends OncePerRequestFilter {
         return true;
     }
 
+    // O campo consentimentoPendente avisa as páginas para levar o usuário à tela de aceite
     private void responderSemConsentimento(HttpServletResponse resposta) throws IOException {
         resposta.setStatus(HttpServletResponse.SC_FORBIDDEN);
         resposta.setContentType(MediaType.APPLICATION_JSON_VALUE);
         resposta.setCharacterEncoding(StandardCharsets.UTF_8.name());
         resposta.getWriter().write(String.format(
-                "{\"status\":403,\"erro\":\"Forbidden\",\"mensagem\":\"%s\",\"timestamp\":\"%s\"}",
+                "{\"status\":403,\"erro\":\"Forbidden\",\"mensagem\":\"%s\",\"consentimentoPendente\":true,\"timestamp\":\"%s\"}",
                 "Aceite os termos de uso e a política de privacidade para continuar.",
                 OffsetDateTime.now(ZoneOffset.UTC)));
     }

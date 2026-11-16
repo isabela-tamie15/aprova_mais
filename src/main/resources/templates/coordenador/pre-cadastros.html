@@ -12,7 +12,7 @@
 
 <div th:replace="~{fragments/navbar-coordenador :: navbar('pre-cadastros')}"></div>
 
-<!-- RF02: lista das pessoas autorizadas a receber convite da Secretaria -->
+<!-- Lista das pessoas autorizadas a receber convite da Secretaria -->
 <div class="container" x-data="preCadastrosPagina()" style="max-width: 1000px;">
     <h4 class="fw-bold mb-1">Pré-cadastro</h4>
     <p class="text-muted mb-4">Só quem está nesta lista pode receber o convite da Secretaria para criar a conta.</p>
@@ -64,7 +64,7 @@
                                maxlength="50" :class="{ 'is-invalid': erros.identificadorInstitucional }">
                         <div class="invalid-feedback" x-text="erros.identificadorInstitucional"></div>
                     </div>
-                    <!-- Para orientador a turma fica vazia (passo 3 do RF02) -->
+                    <!-- Para orientador a turma fica vazia -->
                     <div class="col-md-3" x-show="form.perfil === 'ALUNO'">
                         <label class="form-label" for="curso">Curso</label>
                         <select id="curso" class="form-select" x-model="form.cursoId" @change="form.turmaId = ''">

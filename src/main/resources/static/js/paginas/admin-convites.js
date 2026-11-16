@@ -1,10 +1,12 @@
-// Script da página admin/convites.html, convida coordenadores e lista os convites enviados
+// Script das páginas de convites do administrador e da coordenação, que enviam o convite e listam os convites enviados
 
 const NOMES_PERFIL_CONVITE = { COORDENADOR: 'Coordenador', SECRETARIA: 'Secretaria', ORIENTADOR: 'Orientador', ALUNO: 'Aluno' };
 const NOMES_STATUS_CONVITE = { PENDENTE: 'Pendente', ACEITO: 'Aceito', RECUSADO: 'Recusado', EXPIRADO: 'Expirado' };
 
-function convitesAdmin() {
+// O administrador convida coordenadores, e o coordenador convida secretarias
+function convitesAdmin(perfil = 'COORDENADOR') {
     return {
+        perfil: perfil,
         form: { nome: '', emailDestino: '' },
         convites: [],
         carregando: true,
@@ -65,7 +67,7 @@ function convitesAdmin() {
                     body: JSON.stringify({
                         nome: this.form.nome.trim(),
                         emailDestino: this.form.emailDestino.trim(),
-                        perfil: 'COORDENADOR'
+                        perfil: this.perfil
                     })
                 });
                 if (!resposta.ok) {
@@ -86,7 +88,7 @@ function convitesAdmin() {
                     }
                     return;
                 }
-                this.sucesso = 'Convite enviado. O link vale por 24 horas.';
+                this.sucesso = 'Convite enviado. O e-mail informa até quando o link vale.';
                 this.form = { nome: '', emailDestino: '' };
                 await this.carregar();
             } catch (erro) {

@@ -7,14 +7,7 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <div>
-        <a href="/aluno/solicitacoes" class="btn btn-outline-light btn-sm me-2">Solicitações</a>
-        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
-    </div>
-</nav>
+<div th:replace="~{fragments/navbar-aluno :: navbar('painel')}"></div>
 
 <div class="container">
     <h4 class="mb-4">Bem-vindo ao Aprova+</h4>
@@ -36,7 +29,7 @@
     <div th:if="${estagio != null and estagio.status == 'PENDENTE'}" class="card p-4">
         <h5 class="card-title mb-3">Meu Estágio</h5>
         <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
-        <!-- Mesmos nomes e mesma ordem da F2 (estágio ativo), para a tela não mudar de nome quando o estágio for aprovado -->
+        <!-- Mesmos nomes e mesma ordem do estágio ativo, para a tela não mudar de nome quando o estágio for aprovado -->
         <p><strong>Prof. orientador:</strong>
             <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
             <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
@@ -76,7 +69,7 @@
         <!-- Faixa de status larga, com a mesma altura do botão "Ver minha trilha de tarefas" do painel do aluno -->
         <div class="bg-success border border-success text-white text-center rounded fw-semibold mb-4" style="padding: .375rem .75rem;">Ativo</div>
 
-        <!-- F2: informações em duas colunas para ocupar a tela: à esquerda os dados do estágio, à direita a carga e as entregas -->
+        <!-- Informações em duas colunas para ocupar a tela: à esquerda os dados do estágio, à direita a carga e as entregas -->
         <div class="row">
             <div class="col-md-6">
                 <p><strong>Prof. orientador:</strong>
@@ -111,7 +104,7 @@
                         <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaRestante, 1, 0) + 'h'}"></span>
                     </p>
                     <!--
-                       RF22: cálculo da carga, com a conta feita pelo sistema (semanas completas vezes a jornada).
+                       Cálculo da carga, com a conta feita pelo sistema (semanas completas vezes a jornada).
                        Depois de atingir a carga total, as semanas param nas semanas necessárias (o service limita)
                     -->
                     <p th:if="${estagio.semanasContadas != null and estagio.jornadaSemanal != null}"><strong>Cálculo da carga horária:</strong>
@@ -129,12 +122,12 @@
                        th:text="${'Não contam os ' + estagio.diasSuspensos + ' dias em que o estágio ficou suspenso por trancamento.'}"></p>
                 </div>
 
-                <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
+                <!-- Atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
                 <p th:if="${estagio.atividadesTotal != null and estagio.atividadesTotal > 0}"><strong>Atividades da trilha:</strong>
                     <span th:text="${estagio.atividadesAprovadas + (estagio.atividadesAprovadas == 1 ? ' atividade aprovada' : ' atividades aprovadas') + ', '
                             + estagio.atividadesRestantes + (estagio.atividadesRestantes == 1 ? ' atividade restante' : ' atividades restantes')}"></span>
                 </p>
-                <!-- F2: data em que as entregas do semestre fecham, informada pelo coordenador na turma -->
+                <!-- Data em que as entregas do semestre fecham, informada pelo coordenador na turma -->
                 <p th:if="${estagio.dataEncerramentoEntregas}"><strong>Encerramento das entregas:</strong>
                     <span th:text="${#temporals.format(estagio.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
                 </p>
@@ -143,8 +136,8 @@
                 </p>
 
                 <!--
-                   F2: aviso de prazo, só enquanto houver atividade sem aprovação. O nome do aviso fica na primeira linha (d-block) e os dias na linha de baixo. Amarelo de 30 a 11 dias antes,
-                   vermelho a partir de 10 dias e no último dia, e roxo depois da data. Depois da data os dias vêm
+                   Aviso de prazo, só enquanto houver atividade sem aprovação. O nome do aviso fica na primeira linha (d-block) e os dias na linha de baixo. Amarelo e vermelho conforme os dias definidos
+                   nas configurações do sistema, vermelho também no último dia, e roxo depois da data. Depois da data os dias vêm
                    negativos do Java, por isso só tiramos o sinal para exibir
                 -->
                 <div th:if="${estagio.avisoPrazo == 'AMARELO'}" class="alert alert-warning mb-3" role="alert">
@@ -173,7 +166,7 @@
         <a href="/aluno/trilha" class="btn btn-primary mt-2">Ver minha trilha de tarefas</a>
     </div>
 
-    <!-- Estágios anteriores da matrícula, concluídos ou encerrados (RN36) -->
+    <!-- Estágios anteriores da matrícula, concluídos ou encerrados -->
     <div th:if="${estagiosAnteriores != null and !#lists.isEmpty(estagiosAnteriores)}" class="card p-4 mt-3">
         <h6 class="card-title mb-3">Estágios anteriores</h6>
         <ul class="list-group list-group-flush">
@@ -199,7 +192,7 @@
         </ul>
     </div>
 
-    <!-- Histórico das decisões do orientador (RF22) -->
+    <!-- Histórico das decisões do orientador -->
     <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="card p-4 mt-3">
         <h6 class="card-title mb-3">Histórico de validações</h6>
         <ul class="list-group list-group-flush">

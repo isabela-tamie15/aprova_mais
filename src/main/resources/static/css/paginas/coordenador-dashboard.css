@@ -245,7 +245,7 @@
 .painel-coordenador .cor-aguardando     { background-color: #5b9bfd; color: #0a2a66; }
 .painel-coordenador .cor-andamento      { background-color: #0a4fbf; color: #fff; }
 
-/* Cores do gráfico 3: as mesmas faixas do aviso de prazo da F2 */
+/* Cores do gráfico 3: as mesmas faixas do aviso de prazo */
 .painel-coordenador .faixa-AMARELO    { background-color: #c98a00; }
 .painel-coordenador .faixa-VERMELHO   { background-color: #e35d6a; }
 .painel-coordenador .faixa-ULTIMO_DIA { background-color: #a3172b; }

@@ -30,7 +30,7 @@
                 <span th:if="${estagio.status == 'REJEITADO'}" class="badge bg-danger">Rejeitado</span>
             </div>
 
-            <!-- Mesmos nomes e mesma ordem da F2 (estágio ativo, mais abaixo nesta página) -->
+            <!-- Mesmos nomes e mesma ordem do estágio ativo, mais abaixo nesta página -->
             <p><strong>Tipo de estágio:</strong>
                 <span th:text="${estagio.nomeTipoEstagio + (estagio.jornadaSemanal != null
                         ? ' (' + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
@@ -103,7 +103,7 @@
         </div>
     </div>
 
-    <!-- F2: estágios ATIVO do orientador, com as horas e o aviso de prazo de cada aluno -->
+    <!-- Estágios ATIVO do orientador, com as horas e o aviso de prazo de cada aluno -->
     <h4 class="mt-5 mb-4">Estágios ativos</h4>
 
     <div th:if="${estagiosAtivos == null or #lists.isEmpty(estagiosAtivos)}" class="card p-4 text-center">
@@ -117,7 +117,7 @@
             <!-- Faixa de status larga, com a mesma altura do botão "Ver minha trilha de tarefas" do painel do aluno -->
             <div class="bg-success border border-success text-white text-center rounded fw-semibold mb-4" style="padding: .375rem .75rem;">Ativo</div>
 
-            <!-- F2: informações em duas colunas para ocupar a tela: à esquerda os dados do estágio, à direita a carga e as entregas -->
+            <!-- Informações em duas colunas para ocupar a tela: à esquerda os dados do estágio, à direita a carga e as entregas -->
             <div class="row">
                 <div class="col-md-6">
                     <p><strong>Prof. orientador:</strong>
@@ -152,7 +152,7 @@
                             <span th:text="${#numbers.formatDecimal(ativo.cargaHorariaRestante, 1, 0) + 'h'}"></span>
                         </p>
                         <!--
-                           RF22: cálculo da carga, com a conta feita pelo sistema (semanas completas vezes a jornada).
+                           Cálculo da carga, com a conta feita pelo sistema (semanas completas vezes a jornada).
                            Depois de atingir a carga total, as semanas param nas semanas necessárias (o service limita)
                         -->
                         <p th:if="${ativo.semanasContadas != null and ativo.jornadaSemanal != null}"><strong>Cálculo da carga horária:</strong>
@@ -170,12 +170,12 @@
                            th:text="${'Não contam os ' + ativo.diasSuspensos + ' dias em que o estágio ficou suspenso por trancamento.'}"></p>
                     </div>
 
-                    <!-- F2: atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
+                    <!-- Atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
                     <p th:if="${ativo.atividadesTotal != null and ativo.atividadesTotal > 0}"><strong>Atividades da trilha:</strong>
                         <span th:text="${ativo.atividadesAprovadas + (ativo.atividadesAprovadas == 1 ? ' atividade aprovada' : ' atividades aprovadas') + ', '
                                 + ativo.atividadesRestantes + (ativo.atividadesRestantes == 1 ? ' atividade restante' : ' atividades restantes')}"></span>
                     </p>
-                    <!-- F2: data em que as entregas do semestre fecham, informada pelo coordenador na turma -->
+                    <!-- Data em que as entregas do semestre fecham, informada pelo coordenador na turma -->
                     <p th:if="${ativo.dataEncerramentoEntregas}"><strong>Encerramento das entregas:</strong>
                         <span th:text="${#temporals.format(ativo.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
                     </p>
@@ -184,8 +184,8 @@
                     </p>
 
                     <!--
-                       F2: aviso de prazo, só enquanto houver atividade sem aprovação. O nome do aviso fica na primeira linha (d-block) e os dias na linha de baixo. Amarelo de 30 a 11 dias antes,
-                       vermelho a partir de 10 dias e no último dia, e roxo depois da data. Depois da data os dias vêm
+                       Aviso de prazo, só enquanto houver atividade sem aprovação. O nome do aviso fica na primeira linha (d-block) e os dias na linha de baixo. Amarelo e vermelho conforme os dias definidos
+                       nas configurações do sistema, vermelho também no último dia, e roxo depois da data. Depois da data os dias vêm
                        negativos do Java, por isso só tiramos o sinal para exibir
                     -->
                     <div th:if="${ativo.avisoPrazo == 'AMARELO'}" class="alert alert-warning mb-0" role="alert">
@@ -211,7 +211,7 @@
                 </div>
             </div>
 
-            <!-- RF37: visão consolidada do aluno, com as tarefas, as versões e o último feedback -->
+            <!-- Visão consolidada do aluno, com as tarefas, as versões e o último feedback -->
             <div class="text-end mt-3">
                 <a th:href="@{/orientador/acompanhamento/{id}(id=${ativo.id})}" class="btn btn-outline-primary btn-sm">Ver acompanhamento</a>
             </div>

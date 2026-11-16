@@ -20,9 +20,13 @@ function mensagemDeErro(resposta, dados, mensagemPadrao) {
     if (resposta.status >= 500) {
         return 'Erro interno no servidor. Tente novamente em instantes.';
     }
-    // 423 é conta bloqueada, então mostra a mensagem específica do backend
+    // Conta bloqueada traz a mensagem do backend, com o tempo que falta para o desbloqueio
     if (resposta.status === 423) {
         return dados.mensagem || 'Conta bloqueada. Tente novamente em alguns minutos.';
+    }
+    // Limite de requisições por endereço IP
+    if (resposta.status === 429) {
+        return 'Muitas tentativas em pouco tempo. Aguarde um minuto e tente novamente.';
     }
     return dados.mensagem || mensagemPadrao;
 }
@@ -60,7 +64,6 @@ function loginForm() {
                     })
                 });
 
-                // Lê o corpo da resposta como JSON. Resposta vazia ou que não é JSON fica como um objeto vazio
                 // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
                 let dados = {};
                 try {

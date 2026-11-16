@@ -12,7 +12,7 @@
 
 <div th:replace="~{fragments/navbar-orientador :: navbar('correcoes')}"></div>
 
-<!-- Painel de correção centralizado (F4, RF35): entregas dos alunos do orientador, das mais antigas para as mais recentes -->
+<!-- Painel de correção centralizado: entregas dos alunos do orientador, das mais antigas para as mais recentes -->
 <div class="container pb-5" x-data="painelCorrecao()" x-init="carregar()">
     <h4 class="mb-1">Painel de correção</h4>
     <p class="total-aguardando mb-4" x-cloak x-show="painel"
