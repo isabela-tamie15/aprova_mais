@@ -23,4 +23,7 @@ public class EntregaDetalheResponse {
     private final boolean podeEnviar;
 
     private final List<EntregaVersaoResponse> versoes;
+
+    // Critérios ativos da tarefa, para o orientador preencher o checklist. Vazio na tela do aluno
+    private final List<CriterioChecklistResponse> criterios;
 }

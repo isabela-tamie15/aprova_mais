@@ -50,6 +50,7 @@ public class CorrecaoService {
     private final EntregaService entregaService;
     private final AuditoriaService auditoriaService;
     private final EmailService emailService;
+    private final ChecklistService checklistService;
 
     @Value("${app.url}")
     private String appUrl;
@@ -176,7 +177,8 @@ public class CorrecaoService {
 
     /*
        Abre a entrega para o orientador. A entrega ENVIADA passa a EM_REVISAO, para o aluno saber que
-       ela está sendo analisada. Devolve o histórico completo, com o feedback das versões anteriores
+       ela está sendo analisada. Devolve o histórico completo, com o feedback das versões anteriores,
+       e os critérios ativos da tarefa, para o orientador preencher o checklist
     */
     @Transactional
     public EntregaDetalheResponse abrir(String emailOrientador, Long entregaId) {
@@ -186,11 +188,13 @@ public class CorrecaoService {
             entregaRepository.save(entrega);
             log.info("[CORREÇÃO] Entrega {} em revisão por {}", entregaId, emailOrientador);
         }
-        return entregaService.montarDetalhe(entrega.getTarefa(), entrega);
+        List<CriterioChecklistResponse> criteriosParaAvaliar =
+                checklistService.listarCriteriosAtivos(entrega.getTarefa().getId());
+        return entregaService.montarDetalhe(entrega.getTarefa(), entrega, criteriosParaAvaliar);
     }
 
 
-    //Aprova ou devolve a última versão, gravando o feedback nela
+    // Aprova ou devolve a última versão, gravando nela o feedback e o checklist de critérios
     @Transactional
     public EntregaDetalheResponse avaliar(String emailOrientador, Long entregaId,
                                           AvaliacaoEntregaRequest request, String ipOrigem) {
@@ -208,6 +212,10 @@ public class CorrecaoService {
         if (!aprovar && feedback == null) {
             throw new DadoInvalidoException("Escreva o feedback para o aluno saber o que corrigir.");
         }
+
+        // Checklist da tarefa: confere se todos os critérios foram marcados e grava as respostas na versão.
+        // Com algum critério insuficiente, a aprovação é recusada aqui e nada é gravado
+        checklistService.gravarRespostas(versao, entrega.getTarefa(), request.getRespostas(), aprovar);
 
         versao.setResultado(aprovar ? StatusEntrega.APROVADA : StatusEntrega.DEVOLVIDA);
         versao.setFeedback(feedback);

@@ -121,6 +121,7 @@
                     <span x-show="!tarefa.linkApoio" class="text-muted">-</span>
                   </td>
                   <td class="text-end text-nowrap">
+                    <button class="btn btn-sm btn-outline-secondary" @click="abrirCriterios(tarefa)">Critérios</button>
                     <button class="btn btn-sm btn-outline-primary" @click="editarTarefa(tarefa)">Editar</button>
                     <button class="btn btn-sm btn-outline-danger" @click="removerTarefa(tarefa)">Remover</button>
                   </td>
@@ -129,6 +130,73 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        <!-- Checklist de critérios da tarefa escolhida (F6), usado pelo orientador na correção -->
+        <div class="card p-4 mb-4" x-show="tarefaDosCriterios" x-ref="painelCriterios">
+          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+              <h5 class="card-title mb-1" x-text="tituloCriterios()"></h5>
+              <p class="text-muted small mb-0">
+                Na correção, o orientador marca cada critério como suficiente ou insuficiente.
+                Com algum insuficiente, a entrega só pode ser devolvida.
+              </p>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @click="fecharCriterios()">Fechar</button>
+          </div>
+
+          <p class="text-muted" x-show="criterios.length === 0">
+            Esta tarefa ainda não tem critérios. Sem critérios, ela é corrigida só com a decisão e o feedback.
+          </p>
+          <div class="table-responsive" x-show="criterios.length > 0">
+            <table class="table table-hover align-middle">
+              <thead>
+              <tr>
+                <th style="width: 70px;">Ordem</th>
+                <th>Critério</th>
+                <th class="text-end">Ações</th>
+              </tr>
+              </thead>
+              <tbody>
+              <template x-for="criterio in criterios" :key="criterio.id">
+                <tr>
+                  <td class="text-center" x-text="criterio.ordem"></td>
+                  <td x-text="criterio.descricao"></td>
+                  <td class="text-end text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary" @click="editarCriterio(criterio)">Editar</button>
+                    <button class="btn btn-sm btn-outline-danger" @click="removerCriterio(criterio)">Remover</button>
+                  </td>
+                </tr>
+              </template>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Formulário: adiciona um critério ou altera o critério escolhido -->
+          <form @submit.prevent="salvarCriterio()" novalidate>
+            <h6 class="fw-semibold" x-text="formCriterio.id ? 'Alterar critério' : 'Novo critério'"></h6>
+            <div class="row g-3">
+              <div class="col-md-2">
+                <label class="form-label" for="ordemCriterio">Ordem</label>
+                <input id="ordemCriterio" type="number" class="form-control" x-model="formCriterio.ordem"
+                       min="1" max="99" :class="{ 'is-invalid': errosCriterio.ordem }">
+                <div class="invalid-feedback" x-text="errosCriterio.ordem"></div>
+              </div>
+              <div class="col-md-10">
+                <label class="form-label" for="descricaoCriterio">Descrição do critério</label>
+                <input id="descricaoCriterio" type="text" class="form-control" x-model="formCriterio.descricao"
+                       placeholder="Assinatura do supervisor" maxlength="200"
+                       :class="{ 'is-invalid': errosCriterio.descricao }">
+                <div class="invalid-feedback" x-text="errosCriterio.descricao"></div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button type="submit" class="btn btn-primary" :disabled="salvando"
+                      x-text="formCriterio.id ? 'Salvar alterações' : 'Adicionar critério'"></button>
+              <button type="button" class="btn btn-outline-secondary" x-show="formCriterio.id"
+                      @click="cancelarCriterio()">Cancelar</button>
+            </div>
+          </form>
         </div>
 
         <!-- Formulário: adiciona uma tarefa ou altera a tarefa escolhida -->

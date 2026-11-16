@@ -65,7 +65,32 @@
             <!-- Formulário de avaliação, só enquanto a entrega aguarda análise -->
             <form class="card p-4 mb-4" x-show="aguardando()" @submit.prevent novalidate>
                 <h5 class="fw-semibold mb-3">Avaliação</h5>
-                <!-- O checklist de critérios da F6 entra aqui, antes do feedback -->
+
+                <!-- Checklist de critérios da tarefa (F6). Só aparece quando o coordenador cadastrou critérios -->
+                <div class="mb-4" x-show="detalhe.criterios.length > 0">
+                    <h6 class="fw-semibold mb-1">Checklist de critérios</h6>
+                    <p class="form-text mt-0">Marque cada critério. Com algum insuficiente, a entrega só pode ser devolvida.</p>
+                    <template x-for="criterio in detalhe.criterios" :key="criterio.id">
+                        <div class="border rounded p-3 mb-2">
+                            <div class="fw-semibold mb-2" x-text="criterio.ordem + '. ' + criterio.descricao"></div>
+                            <div class="d-flex gap-4 mb-2">
+                                <label class="form-check">
+                                    <input type="radio" class="form-check-input" value="SUFICIENTE"
+                                           :name="'resultado-' + criterio.id" x-model="respostas[criterio.id].resultado">
+                                    <span class="form-check-label">Suficiente</span>
+                                </label>
+                                <label class="form-check">
+                                    <input type="radio" class="form-check-input" value="INSUFICIENTE"
+                                           :name="'resultado-' + criterio.id" x-model="respostas[criterio.id].resultado">
+                                    <span class="form-check-label">Insuficiente</span>
+                                </label>
+                            </div>
+                            <input type="text" class="form-control form-control-sm" maxlength="1000"
+                                   placeholder="Observação (opcional)" x-model="respostas[criterio.id].observacao">
+                        </div>
+                    </template>
+                    <div class="text-danger small" x-show="erros.checklist" x-text="erros.checklist"></div>
+                </div>
 
                 <div class="mb-3">
                     <label for="feedback" class="form-label">Feedback para o aluno</label>
@@ -76,7 +101,8 @@
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-success" :disabled="enviando"
+                    <!-- Com algum critério insuficiente, o botão de aprovar fica desligado -->
+                    <button type="button" class="btn btn-success" :disabled="enviando || algumCriterioInsuficiente()"
                             @click="avaliar('APROVAR')">Aprovar</button>
                     <button type="button" class="btn btn-warning" :disabled="enviando"
                             @click="avaliar('DEVOLVER')">Devolver para ajustes</button>
@@ -99,6 +125,17 @@
                                   x-text="'em ' + formatarDataHora(versao.avaliadaEm)"></span>
                             <p class="mb-1 mt-2 small" x-show="versao.feedback"><strong>Feedback:</strong>
                                 <span class="texto-livre" x-text="versao.feedback"></span></p>
+
+                            <!-- Resultado de cada critério do checklist nesta versão (F6) -->
+                            <template x-for="(item, posicao) in versao.checklist" :key="posicao">
+                                <div class="small mt-1">
+                                    <span class="badge" :class="classeResultado(item.resultado)"
+                                          x-text="nomeResultado(item.resultado)"></span>
+                                    <span x-text="item.descricaoCriterio"></span>
+                                    <div class="text-muted texto-livre" x-show="item.observacao"
+                                         x-text="'Observação: ' + item.observacao"></div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </template>

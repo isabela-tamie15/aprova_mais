@@ -148,6 +148,20 @@
                             <p class="mb-1 mt-2" x-show="versao.feedback">
                                 <strong>Feedback:</strong> <span class="texto-livre" x-text="versao.feedback"></span>
                             </p>
+
+                            <!-- Resultado de cada critério do checklist nesta versão (F6) -->
+                            <div class="mt-2" x-show="versao.checklist.length > 0">
+                                <strong class="small">Checklist de critérios:</strong>
+                                <template x-for="(item, posicao) in versao.checklist" :key="posicao">
+                                    <div class="small mt-1">
+                                        <span class="badge" :class="classeResultado(item.resultado)"
+                                              x-text="nomeResultado(item.resultado)"></span>
+                                        <span x-text="item.descricaoCriterio"></span>
+                                        <div class="text-muted texto-livre" x-show="item.observacao"
+                                             x-text="'Observação: ' + item.observacao"></div>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </template>
