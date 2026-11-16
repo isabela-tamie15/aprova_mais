@@ -12,7 +12,7 @@
 
 <div th:replace="~{fragments/navbar-orientador :: navbar('correcoes')}"></div>
 
-<!-- Avaliação da entrega (F4, RF36) -->
+<!-- Avaliação da entrega -->
 <div class="container pb-5" th:attr="x-data=${'avaliacaoEntrega(' + entregaId + ')'}" x-init="carregar()">
     <a href="/orientador/correcoes" class="btn btn-outline-secondary btn-sm mb-3">← Voltar ao painel</a>
 
@@ -30,7 +30,7 @@
                 <span class="badge fs-6" :class="classeStatus(detalhe.status)" x-text="nomeStatus(detalhe.status)"></span>
             </div>
 
-            <!-- Versão atual e versão anterior lado a lado (CA02 do RF36) -->
+            <!-- Versão atual e versão anterior lado a lado -->
             <div class="card p-4 mb-4">
                 <div class="row g-4">
                     <div class="col-md-6">
@@ -66,7 +66,7 @@
             <form class="card p-4 mb-4" x-show="aguardando()" @submit.prevent novalidate>
                 <h5 class="fw-semibold mb-3">Avaliação</h5>
 
-                <!-- Checklist de critérios da tarefa (F6). Só aparece quando o coordenador cadastrou critérios -->
+                <!-- Checklist de critérios da tarefa. Só aparece quando o coordenador cadastrou critérios -->
                 <div class="mb-4" x-show="detalhe.criterios.length > 0">
                     <h6 class="fw-semibold mb-1">Checklist de critérios</h6>
                     <p class="form-text mt-0">Marque cada critério. Com algum insuficiente, a entrega só pode ser devolvida.</p>
@@ -109,7 +109,7 @@
                 </div>
             </form>
 
-            <!-- Histórico completo (RF34) -->
+            <!-- Histórico completo -->
             <div class="card p-4">
                 <h5 class="fw-semibold mb-3">Histórico de versões</h5>
                 <template x-for="versao in detalhe.versoes" :key="versao.id">
@@ -126,7 +126,7 @@
                             <p class="mb-1 mt-2 small" x-show="versao.feedback"><strong>Feedback:</strong>
                                 <span class="texto-livre" x-text="versao.feedback"></span></p>
 
-                            <!-- Resultado de cada critério do checklist nesta versão (F6) -->
+                            <!-- Resultado de cada critério do checklist nesta versão -->
                             <template x-for="(item, posicao) in versao.checklist" :key="posicao">
                                 <div class="small mt-1">
                                     <span class="badge" :class="classeResultado(item.resultado)"

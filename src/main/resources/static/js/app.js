@@ -64,7 +64,6 @@ function loginForm() {
                     })
                 });
 
-                // Lê o corpo da resposta como JSON. Resposta vazia ou que não é JSON fica como um objeto vazio
                 // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
                 let dados = {};
                 try {

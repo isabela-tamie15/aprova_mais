@@ -11,13 +11,7 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-dark navbar-aprovamais px-3 mb-4">
-    <div class="d-flex align-items-center gap-3">
-        <a href="/secretaria/dashboard" class="btn btn-outline-light btn-sm">← Voltar</a>
-        <span class="navbar-brand fw-bold mb-0">Aprova+</span>
-    </div>
-    <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
-</nav>
+<div th:replace="~{fragments/navbar-secretaria :: navbar('solicitacoes')}"></div>
 
 <div class="container" x-data="painelSolicitacoes('/api/v1/secretaria/solicitacoes', 'PENDENTE', false)"
      x-init="init()" style="max-width: 900px;">

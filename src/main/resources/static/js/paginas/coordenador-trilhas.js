@@ -226,7 +226,7 @@ function trilhasPagina() {
             this.sucesso = 'Tarefa removida.';
         },
 
-        // ---------- critérios do checklist (F6) ----------
+        // ---------- critérios do checklist ----------
 
         async abrirCriterios(tarefa) {
             this.limparMensagens();

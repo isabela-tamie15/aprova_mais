@@ -12,7 +12,7 @@
 
 <div th:replace="~{fragments/navbar-orientador :: navbar('validacoes')}"></div>
 
-<!-- Visão consolidada do aluno (F4, RF37): progresso e tarefas da trilha com status, versões e último feedback -->
+<!-- Visão consolidada do aluno: progresso e tarefas da trilha com status, versões e último feedback -->
 <div class="container pb-5" th:attr="x-data=${'acompanhamentoAluno(' + estagioId + ')'}" x-init="carregar()">
     <a href="/orientador/validacoes" class="btn btn-outline-secondary btn-sm mb-3">← Voltar aos estágios</a>
 
@@ -24,7 +24,7 @@
             <h4 class="mb-1" x-text="visao.progresso.nomeAluno"></h4>
             <p class="text-muted mb-4" x-text="visao.progresso.nomeTipoEstagio + ' em ' + visao.progresso.nomeEmpresa"></p>
 
-            <!-- Progresso, com as mesmas contas do painel do aluno (RF30) -->
+            <!-- Progresso, com as mesmas contas do painel do aluno -->
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
                     <div class="card p-3 h-100">

@@ -8,10 +8,7 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
-</nav>
+<div th:replace="~{fragments/navbar-aluno :: navbar('estagio')}"></div>
 
 <div class="container">
 
@@ -23,7 +20,7 @@
     <div th:if="${estagio != null and estagio.status == 'PENDENTE'}" class="card p-4 mb-4">
         <h5 class="card-title mb-3">Situação Atual</h5>
         <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
-        <!-- Mesmos nomes e mesma ordem da F2 (estágio ativo), para a tela não mudar de nome quando o estágio for aprovado -->
+        <!-- Mesmos nomes e mesma ordem do estágio ativo, para a tela não mudar de nome quando o estágio for aprovado -->
         <p><strong>Prof. orientador:</strong>
             <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
             <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
@@ -37,6 +34,14 @@
             <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
         </p>
         <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
+    </div>
+
+    <!-- Estágio já aprovado: os dados e o andamento ficam no painel do aluno -->
+    <div th:if="${estagio != null and estagio.status != 'PENDENTE' and estagio.status != 'REJEITADO'}" class="card p-4 mb-4">
+        <h5 class="card-title mb-2">Estágio aprovado</h5>
+        <p>Seu estágio na empresa <strong th:text="${estagio.nomeEmpresa}"></strong> já foi aprovado pelo orientador.
+            Os dados, a carga horária e os prazos ficam no painel.</p>
+        <div><a href="/aluno/dashboard" class="btn btn-primary">Ir para o painel</a></div>
     </div>
 
     <div th:if="${estagio == null and estagioConcluido != null}" class="card p-4 mb-4">

@@ -9,13 +9,7 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <div>
-        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-        <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
-    </div>
-</nav>
+<div th:replace="~{fragments/navbar-aluno :: navbar('solicitacoes')}"></div>
 
 <div class="container pb-5" x-data="solicitacoesAluno()" x-init="init()" style="max-width: 900px;">
     <div class="d-flex align-items-center mb-4">

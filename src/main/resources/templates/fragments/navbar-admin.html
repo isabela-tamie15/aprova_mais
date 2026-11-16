@@ -5,9 +5,9 @@
 <!--
    Barra de navegação das páginas do Administrador.
    Uso: <div th:replace="~{fragments/navbar-admin :: navbar('auditoria')}"></div>
-   O parâmetro marca a página ativa: auditoria ou convites
+   O parâmetro marca a página ativa: auditoria, convites, configuracoes ou correcoes
 -->
-<nav th:fragment="navbar(ativo)" class="navbar navbar-expand navbar-dark navbar-aprovamais px-3 mb-4 flex-wrap">
+<nav th:fragment="navbar(ativo)" class="navbar navbar-expand navbar-dark bg-dark px-3 mb-4 flex-wrap">
     <span class="navbar-brand fw-bold">Aprova+</span>
     <ul class="navbar-nav me-auto flex-wrap">
         <li class="nav-item">

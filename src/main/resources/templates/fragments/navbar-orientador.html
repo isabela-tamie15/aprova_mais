@@ -1,19 +1,30 @@
 <!DOCTYPE html>
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Barra de navegação do orientador. O parâmetro "ativo" marca a página atual -->
-<nav th:fragment="navbar(ativo)" class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="/orientador/validacoes" class="btn btn-sm"
-           th:classappend="${ativo == 'validacoes'} ? 'btn-light' : 'btn-outline-light'">Validações</a>
-        <a href="/orientador/correcoes" class="btn btn-sm"
-           th:classappend="${ativo == 'correcoes'} ? 'btn-light' : 'btn-outline-light'">Correções</a>
-        <a href="/orientador/historico" class="btn btn-sm"
-           th:classappend="${ativo == 'historico'} ? 'btn-light' : 'btn-outline-light'">Histórico</a>
-        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm">Segurança</a>
+
+<!--
+    Barra de navegação das telas do orientador. Cada página usa assim:
+    <div th:replace="~{fragments/navbar-orientador :: navbar('validacoes')}"></div>
+    O parâmetro diz qual link fica destacado. O botão Sair chama o logout() do /js/comum.js.
+-->
+<nav th:fragment="navbar(ativo)" class="navbar navbar-expand navbar-dark bg-dark px-3 mb-4 flex-wrap">
+    <a class="navbar-brand fw-bold" href="/orientador/validacoes">Aprova+</a>
+    <ul class="navbar-nav me-auto flex-wrap">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'validacoes'} ? 'active'" href="/orientador/validacoes">Validações</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'correcoes'} ? 'active'" href="/orientador/correcoes">Correções</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'historico'} ? 'active'" href="/orientador/historico">Histórico</a>
+        </li>
+    </ul>
+    <div>
+        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
         <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
     </div>
 </nav>
+
 </body>
 </html>

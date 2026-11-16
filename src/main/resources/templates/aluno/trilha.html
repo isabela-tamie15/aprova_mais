@@ -11,10 +11,7 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
-</nav>
+<div th:replace="~{fragments/navbar-aluno :: navbar('trilha')}"></div>
 
 <div class="container pb-5" x-data="trilhaAluno()">
 
@@ -40,7 +37,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <!-- O status vem do servidor e é atualizado pelo script depois de um envio (RF32) -->
+                <!-- O status vem do servidor e é atualizado pelo script depois de um envio -->
                 <tr th:each="tarefa : ${trilha.tarefas}">
                     <td class="text-center" th:text="${tarefa.ordem}"></td>
                     <td th:text="${tarefa.nome}"></td>
@@ -72,7 +69,7 @@
         <p class="text-muted">Nenhuma trilha encontrada para o seu tipo de estágio.</p>
     </div>
 
-    <!-- Entrega da tarefa selecionada: envio de arquivo (RF33) e histórico de versões (RF34) -->
+    <!-- Entrega da tarefa selecionada: envio de arquivo e histórico de versões -->
     <div id="painel-entrega" class="card p-4 mt-4" x-show="tarefaId" x-cloak>
         <div class="text-muted" x-show="carregando">Carregando a entrega...</div>
         <div class="alert alert-danger" x-show="erro" x-text="erro"></div>
@@ -149,7 +146,7 @@
                                 <strong>Feedback:</strong> <span class="texto-livre" x-text="versao.feedback"></span>
                             </p>
 
-                            <!-- Resultado de cada critério do checklist nesta versão (F6) -->
+                            <!-- Resultado de cada critério do checklist nesta versão -->
                             <div class="mt-2" x-show="versao.checklist.length > 0">
                                 <strong class="small">Checklist de critérios:</strong>
                                 <template x-for="(item, posicao) in versao.checklist" :key="posicao">
