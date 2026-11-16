@@ -1,8 +1,12 @@
 package tcc.ges.aprovamais.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.List;
 
 // Avaliação da entrega pelo orientador
 @Data
@@ -16,4 +20,8 @@ public class AvaliacaoEntregaRequest {
     // Obrigatório na devolução, a regra fica no service
     @Size(max = 2000, message = "O feedback deve ter no máximo 2000 caracteres")
     private String feedback;
+
+    // Checklist de critérios da tarefa. Fica vazio quando a tarefa não tem critérios
+    @Valid
+    private List<RespostaCriterioRequest> respostas = new ArrayList<>();
 }

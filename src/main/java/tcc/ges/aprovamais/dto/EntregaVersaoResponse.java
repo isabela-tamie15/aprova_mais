@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 // Uma versão da entrega no histórico, com o envio do aluno e se já houve, a avaliação do orientador
 @Getter
@@ -22,4 +23,7 @@ public class EntregaVersaoResponse {
     private final String feedback;
     private final String nomeAvaliador;
     private final OffsetDateTime avaliadaEm;
+
+    // Resultado de cada critério nesta versão. Vazio quando a tarefa não tinha critérios na correção
+    private final List<RespostaCriterioResponse> checklist;
 }

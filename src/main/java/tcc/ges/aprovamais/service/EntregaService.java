@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.dto.CriterioChecklistResponse;
 import tcc.ges.aprovamais.dto.EntregaDetalheResponse;
 import tcc.ges.aprovamais.dto.EntregaVersaoResponse;
 import tcc.ges.aprovamais.entity.*;
@@ -43,6 +44,7 @@ public class EntregaService {
     private final EntregaVersaoRepository entregaVersaoRepository;
     private final ArmazenamentoArquivos armazenamentoArquivos;
     private final AuditoriaService auditoriaService;
+    private final ChecklistService checklistService;
 
     // Arquivo pronto para o download, vem com nome original, Content-Type e conteúdo
     public record ArquivoEntrega(String nome, String tipoConteudo, byte[] conteudo) {
@@ -178,8 +180,17 @@ public class EntregaService {
         return entregaVersaoRepository.countByEntregaId(entregaId);
     }
 
-    // Monta a resposta com o histórico completo, igual para o aluno e para o orientador
+    // Monta a resposta com o histórico completo, sem os critérios para preencher (tela do aluno)
     public EntregaDetalheResponse montarDetalhe(Tarefa tarefa, Entrega entrega) {
+        return montarDetalhe(tarefa, entrega, new ArrayList<>());
+    }
+
+    /*
+       Monta a resposta com o histórico completo, igual para o aluno e para o orientador. O orientador
+       recebe também os critérios ativos da tarefa, para preencher o checklist na correção
+    */
+    public EntregaDetalheResponse montarDetalhe(Tarefa tarefa, Entrega entrega,
+                                                List<CriterioChecklistResponse> criteriosParaAvaliar) {
         // Tarefa sem entrega não tem versões. Com entrega, as versões vão da primeira para a última
         List<EntregaVersaoResponse> versoes = new ArrayList<>();
         if (entrega != null && entrega.getId() != null) {
@@ -198,6 +209,7 @@ public class EntregaService {
                 .status(status == null ? StatusEntrega.PENDENTE.name() : status.name())
                 .podeEnviar(status == null || podeEnviar(status))
                 .versoes(versoes)
+                .criterios(criteriosParaAvaliar)
                 .build();
     }
 
@@ -219,6 +231,7 @@ public class EntregaService {
                 .feedback(versao.getFeedback())
                 .nomeAvaliador(versao.getAvaliador() == null ? null : versao.getAvaliador().getNome())
                 .avaliadaEm(versao.getAvaliadaEm())
+                .checklist(checklistService.listarRespostasDaVersao(versao.getId()))
                 .build();
     }
 
