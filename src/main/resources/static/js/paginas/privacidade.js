@@ -9,8 +9,14 @@ function direitosDoTitular() {
         senha: '',
         codigo: '',
         erro: '',
+        protocolo: '',
+        prazo: '',
+        erroSolicitacao: '',
 
-        // Acesso e correção registram o pedido na auditoria e abrem o e-mail para a secretaria
+        /*
+           Acesso e correção registram o pedido, que recebe um protocolo e o prazo de resposta, e abrem
+           o e-mail para a secretaria com o protocolo no assunto
+        */
         async enviarSolicitacao() {
             let endereco = '/api/v1/lgpd/solicitar-correcao';
             let assuntoDoEmail = 'Aprova%2B%20-%20Solicitação%20de%20Correção%20de%20Dados';
@@ -19,11 +25,23 @@ function direitosDoTitular() {
                 assuntoDoEmail = 'Aprova%2B%20-%20Solicitação%20de%20Acesso%20aos%20Dados';
             }
 
+            this.protocolo = '';
+            this.prazo = '';
+            this.erroSolicitacao = '';
+
             // Mesmo se o registro falhar, abrimos o e-mail, para o pedido chegar à secretaria
             try {
-                await fetch(endereco, { method: 'POST', credentials: 'include' });
+                const resposta = await fetch(endereco, { method: 'POST', credentials: 'include' });
+                if (resposta.ok) {
+                    const dados = await resposta.json();
+                    this.protocolo = dados.protocolo;
+                    this.prazo = dados.prazoResposta.split('-').reverse().join('/');
+                    assuntoDoEmail += '%20-%20Protocolo%20' + encodeURIComponent(dados.protocolo);
+                } else {
+                    this.erroSolicitacao = 'Não foi possível registrar a solicitação no sistema. Envie o e-mail assim mesmo.';
+                }
             } catch (erro) {
-                console.error('Não foi possível registrar a solicitação', erro);
+                this.erroSolicitacao = 'Não foi possível conectar ao servidor. Envie o e-mail assim mesmo.';
             }
             window.open('mailto:secretaria@umc.br?subject=' + assuntoDoEmail);
         },

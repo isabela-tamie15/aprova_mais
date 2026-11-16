@@ -57,7 +57,8 @@
             <li>Identificador institucional: RGM (aluno) ou matrícula institucional e departamento (orientador); setor (secretaria)</li>
             <li>Curso, turma e período do aluno</li>
             <li>Dados do estágio: nome e CNPJ da empresa, tipo de estágio, data de início, situação e justificativa de rejeição, quando houver (a justificativa é armazenada cifrada)</li>
-            <li>Entregas do estágio: arquivos enviados, comentário do aluno e feedback do orientador (o comentário e o feedback são armazenados cifrados)</li>
+            <li>Entregas do estágio: arquivos enviados, comentário do aluno, feedback do orientador e resultado e observação de cada critério do checklist de avaliação (o comentário, o feedback e as observações são armazenados cifrados)</li>
+            <li>Solicitações sobre o estágio (troca de modalidade, trancamento e reabertura) e encerramento do estágio: tipo, motivo, decisão e observação (o motivo, a justificativa e a observação são armazenados cifrados)</li>
             <li>Data e versão do aceite dos Termos de Uso e desta Política</li>
             <li>Registros de auditoria: ação realizada, data e hora, resultado e endereço IP de origem</li>
             <li>Dados da verificação em duas etapas: chave do aplicativo autenticador, armazenada cifrada com AES-256-GCM</li>
@@ -78,7 +79,7 @@
             </thead>
             <tbody>
             <tr><td>Nome, identificador institucional, curso, turma, período e dados do estágio e das entregas</td><td>Identificação nos registros acadêmicos e controle do estágio supervisionado</td><td>Cumprimento de obrigação legal (art. 7º, II), pois o estágio é regido pela Lei nº 11.788/2008</td></tr>
-            <tr><td>E-mail e senha</td><td>Autenticação na conta e envio dos e-mails do sistema (convites, recuperação de senha e resultado das entregas)</td><td>Legítimo interesse (art. 7º, IX), limitado ao funcionamento do sistema</td></tr>
+            <tr><td>E-mail e senha</td><td>Autenticação na conta e envio dos e-mails do sistema (convites, recuperação de senha, decisões sobre o estágio, resultado das entregas e andamento das solicitações)</td><td>Legítimo interesse (art. 7º, IX), limitado ao funcionamento do sistema</td></tr>
             <tr><td>Registros de auditoria e IP de origem</td><td>Segurança da informação e rastreabilidade das operações críticas</td><td>Legítimo interesse (art. 7º, IX), com acesso restrito ao administrador do sistema</td></tr>
             <tr><td>Dados da verificação em duas etapas</td><td>Proteção da conta contra acessos indevidos</td><td>Legítimo interesse (art. 7º, IX)</td></tr>
             <tr><td>Data e versão do aceite</td><td>Comprovação da manifestação do titular, que o art. 8º, § 2º, atribui ao controlador</td><td>Cumprimento de obrigação legal (art. 7º, II)</td></tr>
@@ -92,7 +93,7 @@
         <p>Dentro do sistema, os dados são acessíveis apenas aos perfis autorizados, e cada perfil vê somente o que o seu papel exige. Os registros de auditoria são consultados apenas pelo administrador.</p>
         <p>Fora do sistema, o Aprova+ utiliza os seguintes serviços:</p>
         <ul>
-            <li><strong>Resend:</strong> serviço de envio de e-mails usado para os convites de acesso, a recuperação de senha e o resultado das entregas. Recebe o e-mail e o nome do destinatário e o conteúdo da mensagem.</li>
+            <li><strong>Resend:</strong> serviço de envio de e-mails usado para os convites de acesso, a recuperação de senha, as decisões sobre o estágio, o resultado das entregas e o andamento das solicitações. Recebe o e-mail e o nome do destinatário e o conteúdo da mensagem.</li>
             <li><strong>Cloudflare R2:</strong> serviço de armazenamento de arquivos, usado, quando configurado, para guardar os arquivos das entregas.</li>
             <li><strong>BrasilAPI:</strong> serviço público de consulta de dados abertos, que recebe apenas o CNPJ da empresa concedente do estágio, para confirmar a razão social e a situação.</li>
             <li><strong>jsDelivr e Google Fonts:</strong> redes de distribuição que fornecem os arquivos de estilo, os scripts e as fontes das páginas. Recebem o endereço IP do navegador ao carregar esses arquivos.</li>
@@ -104,7 +105,7 @@
 
     <div class="doc-section">
         <h2>Cookies</h2>
-        <p>O sistema utiliza um único cookie, chamado <code>jwt</code>, estritamente necessário para manter a sessão autenticada. Ele é HttpOnly (inacessível ao JavaScript), SameSite=Strict e Secure em produção, expira em 8 horas e é removido no logout. Não são utilizados cookies opcionais, de rastreamento, de publicidade ou de análise de comportamento.</p>
+        <p>O sistema utiliza um único cookie, chamado <code>jwt</code>, estritamente necessário para manter a sessão autenticada. Ele é HttpOnly (inacessível ao JavaScript), SameSite=Strict e Secure em produção, expira em 8 horas, por padrão, e é removido no logout. Não são utilizados cookies opcionais, de rastreamento, de publicidade ou de análise de comportamento.</p>
     </div>
     <hr class="doc-divider">
 
@@ -113,7 +114,7 @@
         <ul>
             <li><strong>Dados de conta:</strong> mantidos enquanto o usuário estiver ativo. Quando o titular solicita a exclusão, os identificadores são substituídos por valores neutros: o nome passa a ser "USUÁRIO REMOVIDO", o e-mail passa a ser removido_[código]@anonimizado.br e o RGM ou a matrícula passam a ser REMOVIDO_[código], em que [código] é uma sequência aleatória de 8 caracteres. A conta é desativada.</li>
             <li><strong>Registros acadêmicos do estágio:</strong> preservados, por força da Lei nº 11.788/2008, mas desvinculados de dados identificáveis após a anonimização.</li>
-            <li><strong>Registros de auditoria:</strong> mantidos por, no mínimo, 6 meses, inclusive após a anonimização da conta.</li>
+            <li><strong>Registros de auditoria:</strong> mantidos por 6 meses, por padrão, e eliminados após esse prazo. Durante esse período, são preservados mesmo após a anonimização da conta.</li>
             <li><strong>Registros de consentimento:</strong> mantidos enquanto for necessário comprovar a manifestação do titular.</li>
         </ul>
     </div>
@@ -146,10 +147,16 @@
         </div>
 
         <div x-show="direito === 'acesso' || direito === 'correcao'" x-cloak>
-            <p>Clique no botão abaixo para enviar sua solicitação à secretaria acadêmica da UMC. Você receberá uma resposta em até 15 dias úteis.</p>
+            <p>Clique no botão abaixo para registrar sua solicitação e enviá-la por e-mail à secretaria acadêmica da UMC. Você receberá uma resposta em até 15 dias, conforme o art. 19 da LGPD.</p>
             <button class="btn-doc-ver" @click="enviarSolicitacao()">
                 Enviar solicitação por e-mail
             </button>
+            <!-- Protocolo devolvido pelo backend, que também vai no assunto do e-mail -->
+            <div class="alert alert-success mt-3" x-show="protocolo" x-cloak>
+                Solicitação registrada com o protocolo <strong x-text="protocolo"></strong>.
+                Prazo de resposta: <strong x-text="prazo"></strong>.
+            </div>
+            <p class="text-danger mt-2" x-show="erroSolicitacao" x-text="erroSolicitacao" x-cloak></p>
         </div>
 
         <div x-show="direito === 'exclusao'" x-cloak>
