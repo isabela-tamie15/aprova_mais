@@ -79,6 +79,7 @@ public class SecurityConfig {
                 // O navegador não envia o endereço da página para outros sites (os links de convite e de recuperação levam o token na URL)
                 .headers(cabecalhos -> cabecalhos
                         .referrerPolicy(politica -> politica.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(POLITICA_DE_CONTEUDO))
                 )
                 .authorizeHttpRequests(auth -> auth
                         /*
@@ -149,6 +150,24 @@ public class SecurityConfig {
         String caminho = requisicao.getRequestURI();
         return caminho.equals("/livez") || caminho.equals("/readyz");
     }
+
+    /*
+       Política de segurança de conteúdo. As páginas só carregam scripts do próprio sistema e do jsDelivr,
+       e as fontes do Google Fonts. O Alpine.js avalia as expressões dos atributos das páginas, por isso o
+       unsafe-eval, e os estilos aceitam o atributo style das telas. Nenhum script inline é aceito, e a
+       página não pode ser aberta dentro de um frame de outro site
+    */
+    private static final String POLITICA_DE_CONTEUDO = String.join("; ",
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+            "img-src 'self' data:",
+            "connect-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'");
 
     private void responderNaoAutenticado(HttpServletRequest requisicao,
                                          HttpServletResponse resposta,

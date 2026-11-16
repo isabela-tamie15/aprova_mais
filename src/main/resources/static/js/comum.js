@@ -12,6 +12,33 @@ async function logout() {
 }
 
 /*
+   Quando a versão dos termos muda, a API responde 403 com consentimentoPendente até o novo aceite.
+   Qualquer chamada da página que receber essa resposta leva o usuário à tela de consentimento
+*/
+const fetchOriginal = window.fetch.bind(window);
+window.fetch = async function (...argumentos) {
+    const resposta = await fetchOriginal(...argumentos);
+    if (resposta.status === 403) {
+        try {
+            const dados = await resposta.clone().json();
+            if (dados.consentimentoPendente) {
+                window.location.href = '/consentimento';
+            }
+        } catch (erroDeLeitura) {
+            // Resposta sem JSON segue para a página tratar
+        }
+    }
+    return resposta;
+};
+
+// Liga o botão Sair das barras de navegação. O clique é tratado aqui porque a política de conteúdo não aceita onclick no HTML
+document.addEventListener('click', (evento) => {
+    if (evento.target.closest('[data-acao="sair"]')) {
+        logout();
+    }
+});
+
+/*
    Janela de confirmação no lugar do confirm() do navegador, com os estilos do Bootstrap. Devolve uma
    Promise que resolve em true quando a pessoa confirma e em false quando cancela, fecha ou aperta Esc
 */

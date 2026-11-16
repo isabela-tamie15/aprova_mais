@@ -6,7 +6,7 @@
     Barra de navegação das telas da coordenação. Cada página usa assim:
     <div th:replace="~{fragments/navbar-coordenador :: navbar('cursos')}"></div>
     O parâmetro diz qual link fica destacado. Página nova da coordenação ganha o link aqui.
-    O botão Sair chama o logout() do /js/comum.js, que a página precisa carregar.
+    O botão Sair (data-acao="sair") chama o logout() do /js/comum.js, que a página precisa carregar.
 -->
 <nav th:fragment="navbar(ativo)" class="navbar navbar-expand navbar-dark bg-dark px-3 mb-4 flex-wrap">
     <a class="navbar-brand fw-bold" href="/coordenador/dashboard">Aprova+</a>
@@ -41,7 +41,7 @@
     </ul>
     <div>
         <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
-        <button class="btn btn-outline-light btn-sm" onclick="logout()">Sair</button>
+        <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
     </div>
 </nav>
 
