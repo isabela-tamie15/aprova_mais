@@ -1,10 +1,12 @@
-// Página coordenador/turmas.html, que lista, cadastra e altera as turmas de um curso
+// Página coordenador/turmas.html, que lista, cadastra e altera as turmas de um curso e define o orientador de cada uma
 
 function turmasPagina() {
     return {
         cursos: [],
         cursoId: '',
         turmas: [],
+        orientadores: [],
+        atribuindo: null,
         carregando: true,
         salvando: false,
         erro: '',
@@ -17,6 +19,8 @@ function turmasPagina() {
         // Carrega os cursos e já abre o primeiro, que é o caso mais comum (coordenador de um curso só)
         async init() {
             this.cursos = await carregarCursosDoCoordenador();
+            const respostaOrientadores = await requisicaoJson('/api/v1/coordenador/turmas/orientadores');
+            this.orientadores = respostaOrientadores.ok ? respostaOrientadores.dados : [];
             if (this.cursos.length > 0) {
                 this.cursoId = String(this.cursos[0].id);
                 await this.carregarTurmas();
@@ -124,6 +128,44 @@ function turmasPagina() {
             const mensagem = editando ? 'Turma alterada.' : 'Turma cadastrada.';
             await this.carregarTurmas();
             this.sucesso = mensagem;
+        },
+
+        /*
+           Atribui ou troca o orientador da turma. Os estágios em aberto da turma passam para o novo
+           orientador, então a troca pede confirmação. Se a pessoa desistir ou der erro, o select volta
+           ao orientador anterior
+        */
+        async atribuirOrientador(turma, select) {
+            this.erro = '';
+            this.sucesso = '';
+            const orientadorId = Number(select.value);
+            const escolhido = this.orientadores.find(o => o.id === orientadorId);
+            if (!escolhido) {
+                select.value = turma.orientadorId ? String(turma.orientadorId) : '';
+                return;
+            }
+            if (turma.orientadorId) {
+                const confirmou = await confirmarAcao('Trocar o orientador da turma ' + turma.identificador + ' para '
+                    + escolhido.nome + '? Os estágios em aberto da turma passam para o novo orientador.', 'Trocar orientador');
+                if (!confirmou) {
+                    select.value = String(turma.orientadorId);
+                    return;
+                }
+            }
+
+            this.atribuindo = turma.id;
+            const resposta = await requisicaoJson('/api/v1/coordenador/turmas/' + turma.id + '/orientador', 'PUT',
+                { orientadorId: orientadorId });
+            this.atribuindo = null;
+
+            if (!resposta.ok) {
+                select.value = turma.orientadorId ? String(turma.orientadorId) : '';
+                this.erro = resposta.dados.mensagem || 'Erro ao atribuir o orientador.';
+                return;
+            }
+            const indice = this.turmas.findIndex(t => t.id === turma.id);
+            this.turmas.splice(indice, 1, resposta.dados);
+            this.sucesso = escolhido.nome + ' agora orienta a turma ' + turma.identificador + '.';
         },
 
         // A API devolve a data no formato 2026-06-15, e na tabela mostramos no formato 15/06/2026

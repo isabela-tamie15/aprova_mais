@@ -49,6 +49,12 @@ public class CoordenadorPaginaController {
         return "coordenador/solicitacoes";
     }
 
+    // Página em que o coordenador convida as secretarias e acompanha os convites enviados
+    @GetMapping("/coordenador/convites")
+    public String convites() {
+        return "coordenador/convites";
+    }
+
     // Endpoint que serve a página da lista de pré-cadastro
     @GetMapping("/coordenador/pre-cadastros")
     public String preCadastros() {

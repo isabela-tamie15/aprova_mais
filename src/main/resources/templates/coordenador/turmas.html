@@ -12,7 +12,7 @@
 
 <div th:replace="~{fragments/navbar-coordenador :: navbar('turmas')}"></div>
 
-<div class="container" x-data="turmasPagina()" x-init="init()" style="max-width: 900px;">
+<div class="container" x-data="turmasPagina()" x-init="init()" style="max-width: 1100px;">
     <h4 class="fw-bold mb-1">Turmas</h4>
     <p class="text-muted mb-4">As turmas organizam as matrículas, o orientador e o acompanhamento dos estágios.</p>
 
@@ -109,6 +109,7 @@
                         <th>Período</th>
                         <th>Modalidade</th>
                         <th>Encerramento das entregas</th>
+                        <th>Orientador</th>
                         <th class="text-end">Ações</th>
                     </tr>
                     </thead>
@@ -120,6 +121,18 @@
                             <td x-text="nomesPeriodo[turma.periodo]"></td>
                             <td x-text="nomesModalidade[turma.modalidade]"></td>
                             <td x-text="formatarData(turma.dataEncerramentoEntregas)"></td>
+                            <!-- A troca do orientador leva junto os estágios em aberto da turma -->
+                            <td style="min-width: 220px;">
+                                <select class="form-select form-select-sm" :aria-label="'Orientador da turma ' + turma.identificador"
+                                        :disabled="atribuindo === turma.id"
+                                        @change="atribuirOrientador(turma, $event.target)">
+                                    <option value="" x-show="!turma.orientadorId" :selected="!turma.orientadorId">Sem orientador</option>
+                                    <template x-for="orientador in orientadores" :key="orientador.id">
+                                        <option :value="orientador.id" x-text="orientador.nome"
+                                                :selected="orientador.id === turma.orientadorId"></option>
+                                    </template>
+                                </select>
+                            </td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-primary" @click="editar(turma)">Editar</button>
                             </td>
