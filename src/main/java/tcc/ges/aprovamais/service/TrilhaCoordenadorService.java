@@ -15,6 +15,7 @@ import tcc.ges.aprovamais.entity.TipoEstagio;
 import tcc.ges.aprovamais.entity.Trilha;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.CriterioChecklistRepository;
 import tcc.ges.aprovamais.repository.EntregaRepository;
 import tcc.ges.aprovamais.repository.TarefaRepository;
 import tcc.ges.aprovamais.repository.TipoEstagioRepository;
@@ -39,6 +40,7 @@ public class TrilhaCoordenadorService {
     private final TipoEstagioRepository tipoEstagioRepository;
     private final AuditoriaService auditoriaService;
     private final EntregaRepository entregaRepository;
+    private final CriterioChecklistRepository criterioChecklistRepository;
 
     // Busca a trilha de um tipo. Vazio quer dizer que o tipo ainda não tem trilha
     @Transactional(readOnly = true)
@@ -137,6 +139,8 @@ public class TrilhaCoordenadorService {
         if (entregaRepository.existsByTarefaId(tarefa.getId())) {
             throw new RegraNegocioException("Esta tarefa já tem entregas de alunos e não pode ser removida.");
         }
+        // Sem entregas, a tarefa não tem correções, então os critérios do checklist dela saem junto
+        criterioChecklistRepository.deleteAll(criterioChecklistRepository.findByTarefaId(tarefa.getId()));
         tarefaRepository.delete(tarefa);
 
         registrar(tipoEstagio, "TAREFA_REMOVIDA",
