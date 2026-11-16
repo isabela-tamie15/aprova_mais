@@ -8,6 +8,8 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
+import tcc.ges.aprovamais.service.ParametrosVigentes;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -24,10 +26,6 @@ public class JwtService {
 
     @Value("${jwt.secret}")
     private String segredo;
-
-    // Tempo de validade do token em milissegundos, configurado no application.yml
-    @Value("${jwt.expiration-ms}")
-    private long expiracaoMs;
 
     private SecretKey chaveAssinatura;
 
@@ -53,7 +51,8 @@ public class JwtService {
                 // Id único de cada token, para o logout de um login não encerrar outro feito no mesmo segundo
                 .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiracaoMs))
+                .expiration(new Date(System.currentTimeMillis()
+                        + ParametrosVigentes.valor(ParametroSistema.HORAS_VALIDADE_SESSAO) * 3_600_000L))
                 .signWith(chaveAssinatura)
                 .compact();
     }

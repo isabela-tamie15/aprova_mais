@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import tcc.ges.aprovamais.service.BloqueioContaService;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -62,7 +63,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(construirErro(HttpStatus.UNAUTHORIZED,
-                        "E-mail ou senha inválidos. Depois de 5 tentativas erradas, o acesso fica bloqueado por 5 minutos."));
+                        "E-mail ou senha inválidos. Depois de " + BloqueioContaService.maximoTentativas()
+                                + " tentativas erradas, o acesso fica bloqueado por " + BloqueioContaService.minutosBloqueio()
+                                + " minutos."));
     }
 
     // 423 conta bloqueada ou desativada

@@ -60,10 +60,6 @@ public class SolicitacaoService {
     @Value("${app.url}")
     private String appUrl;
 
-    // Dias corridos que o aluno tem para pedir a reabertura depois da aprovação do trancamento
-    @Value("${app.trancamento.prazo-arrependimento-dias:7}")
-    private int diasDeArrependimento;
-
     // Pedidos do aluno
 
     @Transactional(readOnly = true)
@@ -263,7 +259,7 @@ public class SolicitacaoService {
                     "A coordenação aprovou a troca para " + solicitacao.getNovoTipoEstagio().getNome()
                             + ". O novo estágio começa do zero e aguarda a validação do orientador.");
         } else {
-            LocalDate prazo = hoje().plusDays(diasDeArrependimento);
+            LocalDate prazo = hoje().plusDays(ParametrosVigentes.valor(ParametroSistema.PRAZO_ARREPENDIMENTO_DIAS));
             solicitacao.setPrazoArrependimento(prazo);
             trancar(estagio);
             avisarAluno(solicitacao, "Trancamento aprovado",

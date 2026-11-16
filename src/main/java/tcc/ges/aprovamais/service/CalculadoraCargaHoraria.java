@@ -1,6 +1,8 @@
 package tcc.ges.aprovamais.service;
 
 
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -58,11 +60,9 @@ public final class CalculadoraCargaHoraria {
 
     /*
        Avisos de prazo. A partir de 30 dias antes do encerramento das entregas o aviso fica amarelo, e
-       a partir de 10 dias fica vermelho. No próprio dia fica vermelho com "PRAZO VENCE HOJE", e
+       a partir de 10 dias fica vermelho, valores que o administrador pode ajustar. No próprio dia fica vermelho com "PRAZO VENCE HOJE", e
        depois da data fica roxo com "PRAZO VENCEU"
     */
-    public static final int DIAS_AVISO_AMARELO = 30;
-    public static final int DIAS_AVISO_VERMELHO = 10;
 
     public static final String AVISO_AMARELO = "AMARELO";
     public static final String AVISO_VERMELHO = "VERMELHO";
@@ -98,7 +98,7 @@ public final class CalculadoraCargaHoraria {
        - depois da data, roxo avisando que o prazo venceu
     */
     public static String definirAvisoPrazo(Long diasRestantes) {
-        if (diasRestantes == null || diasRestantes > DIAS_AVISO_AMARELO) {
+        if (diasRestantes == null || diasRestantes > ParametrosVigentes.valor(ParametroSistema.DIAS_AVISO_AMARELO)) {
             return null;
         }
         if (diasRestantes < 0) {
@@ -107,7 +107,7 @@ public final class CalculadoraCargaHoraria {
         if (diasRestantes == 0) {
             return AVISO_ULTIMO_DIA;
         }
-        if (diasRestantes <= DIAS_AVISO_VERMELHO) {
+        if (diasRestantes <= ParametrosVigentes.valor(ParametroSistema.DIAS_AVISO_VERMELHO)) {
             return AVISO_VERMELHO;
         }
         return AVISO_AMARELO;

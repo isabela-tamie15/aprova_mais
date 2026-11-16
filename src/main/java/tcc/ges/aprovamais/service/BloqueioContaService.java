@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.stereotype.Service;
 import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 import java.time.OffsetDateTime;
@@ -19,8 +20,15 @@ public class BloqueioContaService {
 
     private static final Logger log = LoggerFactory.getLogger(BloqueioContaService.class);
 
-    public static final int MAX_TENTATIVAS = 5;
-    public static final int MINUTOS_BLOQUEIO = 5;
+    // Tentativas erradas antes do bloqueio, ajustável pelo administrador
+    public static int maximoTentativas() {
+        return ParametrosVigentes.valor(ParametroSistema.TENTATIVAS_ANTES_BLOQUEIO);
+    }
+
+    // Minutos de bloqueio da conta, ajustável pelo administrador
+    public static int minutosBloqueio() {
+        return ParametrosVigentes.valor(ParametroSistema.MINUTOS_BLOQUEIO);
+    }
 
     private final UsuarioRepository usuarioRepository;
     private final AuditoriaService auditoriaService;
@@ -36,7 +44,7 @@ public class BloqueioContaService {
 
         OffsetDateTime agora = OffsetDateTime.now(ZoneOffset.UTC);
         if (usuario.getMomentoBloqueio() != null
-                && agora.isBefore(usuario.getMomentoBloqueio().plusMinutes(MINUTOS_BLOQUEIO))) {
+                && agora.isBefore(usuario.getMomentoBloqueio().plusMinutes(minutosBloqueio()))) {
 
             auditoriaService.registrar(usuario, acaoAuditoria, "Conta bloqueada", ipOrigem, false);
             throw new LockedException("Conta bloqueada. Tente novamente em alguns minutos.");
@@ -49,14 +57,14 @@ public class BloqueioContaService {
     }
 
     /*
-       Soma uma falha no contador. Ao chegar em MAX_TENTATIVAS, bloqueia a conta e guarda o momento
+       Soma uma falha no contador. Ao chegar no máximo de tentativas, bloqueia a conta e guarda o momento
        do bloqueio. Devolve o número de tentativas para a mensagem da auditoria
     */
     public int registrarFalha(Usuario usuario) {
         int tentativas = usuario.getTentativasFalhas() + 1;
         usuario.setTentativasFalhas(tentativas);
 
-        if (tentativas >= MAX_TENTATIVAS) {
+        if (tentativas >= maximoTentativas()) {
             usuario.setContaBloqueada(true);
             usuario.setMomentoBloqueio(OffsetDateTime.now(ZoneOffset.UTC));
             log.warn("[AUTH] Conta bloqueada por excesso de tentativas: {}", usuario.getEmail());

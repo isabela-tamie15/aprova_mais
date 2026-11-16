@@ -15,6 +15,18 @@ public class AdministradorPaginaController {
         return "admin/auditoria";
     }
 
+    // Tela dos parâmetros do sistema
+    @GetMapping("/admin/configuracoes")
+    public String configuracoes() {
+        return "admin/configuracoes";
+    }
+
+    // Tela das correções excepcionais, como desativar o 2FA de um usuário
+    @GetMapping("/admin/correcoes")
+    public String correcoes() {
+        return "admin/correcoes";
+    }
+
     // Tela em que o administrador convida os coordenadores
     @GetMapping("/admin/convites")
     public String convites() {

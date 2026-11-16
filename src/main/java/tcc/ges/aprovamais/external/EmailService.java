@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
+import tcc.ges.aprovamais.service.ParametrosVigentes;
 
 // E-mails transacionais do sistema, enviados pela API do Resend
 @Service
@@ -17,6 +19,8 @@ import org.springframework.web.util.HtmlUtils;
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+
+    private static final int TENTATIVAS_DE_ENVIO = 3;
 
     // Chave de API do Resend, configurada no application.yml
     @Value("${resend.api-key}")
@@ -29,47 +33,25 @@ public class EmailService {
     // Envia o e-mail de convite
     @Async
     public void enviarConvite(String destinatario, String nomeDestinatario, String linkConvite) {
-        try {
-            // Cria um cliente do Resend a cada chamada, porque o método roda em outra thread por causa do @Async
-            Resend resend = new Resend(apiKey);
-
-            CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(remetente)
-                    .to(destinatario)
-                    .subject("Convite de acesso - Aprova+")
-                    .html(montarCorpoConvite(nomeDestinatario, linkConvite))
-                    .build();
-
-            resend.emails().send(email);
-
-            log.info("[EMAIL] Convite enviado para: {}", destinatario);
-
-        } catch (ResendException | RuntimeException excecao) {
-            // Se o envio falhar, o erro fica só no log
-            log.error("[EMAIL] Erro ao enviar convite para {}: {}", destinatario, excecao.getMessage(), excecao);
-        }
+        CreateEmailOptions email = CreateEmailOptions.builder()
+                .from(remetente)
+                .to(destinatario)
+                .subject("Convite de acesso - Aprova+")
+                .html(montarCorpoConvite(nomeDestinatario, linkConvite))
+                .build();
+        enviarComTentativas(email, destinatario, "Convite");
     }
 
     // Envia o e-mail de recuperação de senha
     @Async
     public void enviarRecuperacaoSenha(String destinatario, String nomeDestinatario, String linkRecuperacao) {
-        try {
-            Resend resend = new Resend(apiKey);
-
-            CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(remetente)
-                    .to(destinatario)
-                    .subject("Recuperação de senha - Aprova+")
-                    .html(montarCorpoRecuperacaoSenha(nomeDestinatario, linkRecuperacao))
-                    .build();
-
-            resend.emails().send(email);
-
-            log.info("[EMAIL] Recuperação de senha enviada para: {}", destinatario);
-
-        } catch (ResendException | RuntimeException excecao) {
-            log.error("[EMAIL] Erro ao enviar recuperação de senha para {}: {}", destinatario, excecao.getMessage(), excecao);
-        }
+        CreateEmailOptions email = CreateEmailOptions.builder()
+                .from(remetente)
+                .to(destinatario)
+                .subject("Recuperação de senha - Aprova+")
+                .html(montarCorpoRecuperacaoSenha(nomeDestinatario, linkRecuperacao))
+                .build();
+        enviarComTentativas(email, destinatario, "Recuperação de senha");
     }
 
     /*
@@ -79,19 +61,13 @@ public class EmailService {
     @Async
     public void enviarResultadoEntrega(String destinatario, String nomeDestinatario, String nomeTarefa,
                                        boolean aprovada, String linkTrilha) {
-        try {
-            Resend resend = new Resend(apiKey);
-            CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(remetente)
-                    .to(destinatario)
-                    .subject((aprovada ? "Entrega aprovada" : "Entrega devolvida para ajustes") + " - Aprova+")
-                    .html(montarCorpoResultadoEntrega(nomeDestinatario, nomeTarefa, aprovada, linkTrilha))
-                    .build();
-            resend.emails().send(email);
-            log.info("[EMAIL] Resultado da entrega enviado para: {}", destinatario);
-        } catch (ResendException | RuntimeException excecao) {
-            log.error("[EMAIL] Erro ao enviar resultado da entrega para {}: {}", destinatario, excecao.getMessage(), excecao);
-        }
+        CreateEmailOptions email = CreateEmailOptions.builder()
+                .from(remetente)
+                .to(destinatario)
+                .subject((aprovada ? "Entrega aprovada" : "Entrega devolvida para ajustes") + " - Aprova+")
+                .html(montarCorpoResultadoEntrega(nomeDestinatario, nomeTarefa, aprovada, linkTrilha))
+                .build();
+        enviarComTentativas(email, destinatario, "Resultado da entrega");
     }
 
     /*
@@ -101,38 +77,26 @@ public class EmailService {
     @Async
     public void enviarResultadoValidacaoEstagio(String destinatario, String nomeDestinatario,
                                                 boolean aprovado, String linkEstagio) {
-        try {
-            Resend resend = new Resend(apiKey);
-            CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(remetente)
-                    .to(destinatario)
-                    .subject((aprovado ? "Estágio aprovado" : "Estágio rejeitado para ajustes") + " - Aprova+")
-                    .html(montarCorpoResultadoValidacao(nomeDestinatario, aprovado, linkEstagio))
-                    .build();
-            resend.emails().send(email);
-            log.info("[EMAIL] Resultado da validação do estágio enviado para: {}", destinatario);
-        } catch (ResendException | RuntimeException excecao) {
-            log.error("[EMAIL] Erro ao enviar resultado da validação para {}: {}", destinatario, excecao.getMessage(), excecao);
-        }
+        CreateEmailOptions email = CreateEmailOptions.builder()
+                .from(remetente)
+                .to(destinatario)
+                .subject((aprovado ? "Estágio aprovado" : "Estágio rejeitado para ajustes") + " - Aprova+")
+                .html(montarCorpoResultadoValidacao(nomeDestinatario, aprovado, linkEstagio))
+                .build();
+        enviarComTentativas(email, destinatario, "Resultado da validação do estágio");
     }
 
     // Avisa o aluno de que o estágio foi concluído ou encerrado. A observação de quem encerrou fica no sistema
     @Async
     public void enviarFinalizacaoEstagio(String destinatario, String nomeDestinatario,
                                          boolean concluido, String linkEstagio) {
-        try {
-            Resend resend = new Resend(apiKey);
-            CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(remetente)
-                    .to(destinatario)
-                    .subject((concluido ? "Estágio concluído" : "Estágio encerrado") + " - Aprova+")
-                    .html(montarCorpoFinalizacaoEstagio(nomeDestinatario, concluido, linkEstagio))
-                    .build();
-            resend.emails().send(email);
-            log.info("[EMAIL] Finalização do estágio enviada para: {}", destinatario);
-        } catch (ResendException | RuntimeException excecao) {
-            log.error("[EMAIL] Erro ao enviar a finalização do estágio para {}: {}", destinatario, excecao.getMessage(), excecao);
-        }
+        CreateEmailOptions email = CreateEmailOptions.builder()
+                .from(remetente)
+                .to(destinatario)
+                .subject((concluido ? "Estágio concluído" : "Estágio encerrado") + " - Aprova+")
+                .html(montarCorpoFinalizacaoEstagio(nomeDestinatario, concluido, linkEstagio))
+                .build();
+        enviarComTentativas(email, destinatario, "Finalização do estágio");
     }
 
     /*
@@ -142,18 +106,46 @@ public class EmailService {
     @Async
     public void enviarAvisoSolicitacao(String destinatario, String nomeDestinatario, String assunto,
                                        String texto, String link) {
+        CreateEmailOptions email = CreateEmailOptions.builder()
+                .from(remetente)
+                .to(destinatario)
+                .subject(assunto + " - Aprova+")
+                .html(montarCorpoAvisoSolicitacao(nomeDestinatario, assunto, texto, link))
+                .build();
+        enviarComTentativas(email, destinatario, "Aviso de solicitação");
+    }
+
+
+    /*
+       Envia pelo Resend com até 3 tentativas, esperando 2 e depois 4 segundos entre elas. Se todas
+       falharem, o erro fica no log e a operação que pediu o e-mail não é desfeita. O cliente é criado
+       a cada envio, porque o método roda em outra thread por causa do @Async
+    */
+    private void enviarComTentativas(CreateEmailOptions email, String destinatario, String descricao) {
+        Resend resend = new Resend(apiKey);
+        for (int tentativa = 1; tentativa <= TENTATIVAS_DE_ENVIO; tentativa++) {
+            try {
+                resend.emails().send(email);
+                log.info("[EMAIL] Enviado: {} para {}", descricao, destinatario);
+                return;
+            } catch (ResendException | RuntimeException excecao) {
+                if (tentativa == TENTATIVAS_DE_ENVIO) {
+                    log.error("[EMAIL] Envio falhou depois de {} tentativas ({} para {}): {}",
+                            TENTATIVAS_DE_ENVIO, descricao, destinatario, excecao.getMessage(), excecao);
+                    return;
+                }
+                log.warn("[EMAIL] Tentativa {} de {} falhou ({} para {}): {}", tentativa, TENTATIVAS_DE_ENVIO,
+                        descricao, destinatario, excecao.getMessage());
+                esperar(tentativa * 2000L);
+            }
+        }
+    }
+
+    private void esperar(long milissegundos) {
         try {
-            Resend resend = new Resend(apiKey);
-            CreateEmailOptions email = CreateEmailOptions.builder()
-                    .from(remetente)
-                    .to(destinatario)
-                    .subject(assunto + " - Aprova+")
-                    .html(montarCorpoAvisoSolicitacao(nomeDestinatario, assunto, texto, link))
-                    .build();
-            resend.emails().send(email);
-            log.info("[EMAIL] Aviso de solicitação enviado para: {}", destinatario);
-        } catch (ResendException | RuntimeException excecao) {
-            log.error("[EMAIL] Erro ao enviar aviso de solicitação para {}: {}", destinatario, excecao.getMessage(), excecao);
+            Thread.sleep(milissegundos);
+        } catch (InterruptedException interrupcao) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -172,12 +164,13 @@ public class EmailService {
                         Concluir cadastro
                     </a>
                     <p style="color: #6B7280; font-size: 0.85rem;">
-                        Este link expira em 24 horas. Se você não esperava este convite, ignore este email.
+                        Este link expira em %s horas. Se você não esperava este convite, ignore este email.
                     </p>
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), link);
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), link,
+                ParametrosVigentes.valor(ParametroSistema.HORAS_VALIDADE_CONVITE));
     }
 
     // O nome da tarefa vem do cadastro do coordenador, então passa pelo escape de HTML

@@ -72,7 +72,6 @@ class SolicitacaoServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(solicitacaoService, "appUrl", "http://localhost:8080");
-        ReflectionTestUtils.setField(solicitacaoService, "diasDeArrependimento", 7);
 
         aluno = new Aluno();
         aluno.setId(1L);

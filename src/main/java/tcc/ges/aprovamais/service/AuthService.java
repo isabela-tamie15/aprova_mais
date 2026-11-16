@@ -79,7 +79,7 @@ public class AuthService {
             auditoriaService.registrar(
                     usuario,
                     "LOGIN_FALHA",
-                    "Senha incorreta. Tentativa " + tentativas + " de " + BloqueioContaService.MAX_TENTATIVAS,
+                    "Senha incorreta. Tentativa " + tentativas + " de " + BloqueioContaService.maximoTentativas(),
                     ip,
                     false
             );
@@ -191,7 +191,7 @@ public class AuthService {
             auditoriaService.registrar(
                     usuario,
                     "LOGIN_2FA_FALHA",
-                    "Código 2FA inválido. Tentativa " + tentativas + " de " + BloqueioContaService.MAX_TENTATIVAS,
+                    "Código 2FA inválido. Tentativa " + tentativas + " de " + BloqueioContaService.maximoTentativas(),
                     ip,
                     false
             );
