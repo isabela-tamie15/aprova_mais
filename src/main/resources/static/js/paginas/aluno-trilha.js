@@ -18,6 +18,8 @@ function trilhaAluno() {
         },
         nomeStatus: nomeStatusEntrega,
         classeStatus: classeStatusEntrega,
+        nomeResultado: nomeResultadoCriterio,
+        classeResultado: classeResultadoCriterio,
         formatarDataHora: formatarDataHoraEntrega,
         formatarTamanho: formatarTamanhoArquivo,
 

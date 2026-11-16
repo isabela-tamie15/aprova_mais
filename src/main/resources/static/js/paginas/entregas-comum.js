@@ -16,6 +16,17 @@ const CLASSES_STATUS_ENTREGA = {
     DEVOLVIDA: 'bg-warning text-dark'
 };
 
+// Resultado de cada critério do checklist, marcado pelo orientador na correção
+const NOMES_RESULTADO_CRITERIO = {
+    SUFICIENTE: 'Suficiente',
+    INSUFICIENTE: 'Insuficiente'
+};
+
+const CLASSES_RESULTADO_CRITERIO = {
+    SUFICIENTE: 'bg-success',
+    INSUFICIENTE: 'bg-danger'
+};
+
 const FORMATOS_ENTREGA = ['pdf', 'docx', 'xlsx', 'pptx', 'jpg', 'jpeg', 'png'];
 const TAMANHO_MAXIMO_ENTREGA = 10 * 1024 * 1024;
 
@@ -25,6 +36,14 @@ function nomeStatusEntrega(status) {
 
 function classeStatusEntrega(status) {
     return CLASSES_STATUS_ENTREGA[status] || 'bg-secondary';
+}
+
+function nomeResultadoCriterio(resultado) {
+    return NOMES_RESULTADO_CRITERIO[resultado] || resultado;
+}
+
+function classeResultadoCriterio(resultado) {
+    return CLASSES_RESULTADO_CRITERIO[resultado] || 'bg-secondary';
 }
 
 // A API devolve a data com fuso, como 2026-11-02T19:30:00-03:00, e a tela mostra 02/11/2026 19:30

@@ -15,6 +15,11 @@ function trilhasPagina() {
         erros: {},
         formTrilha: { nome: '', descricao: '' },
         formTarefa: { id: null, nome: '', descricao: '', ordem: '', linkApoio: '' },
+        // Checklist da tarefa escolhida no botão Critérios. Os erros ficam separados dos erros da tarefa
+        tarefaDosCriterios: null,
+        criterios: [],
+        formCriterio: { id: null, descricao: '', ordem: '' },
+        errosCriterio: {},
 
         async init() {
             this.cursos = await carregarCursosDoCoordenador();
@@ -61,6 +66,7 @@ function trilhasPagina() {
         async carregarTrilha() {
             this.editandoTrilha = false;
             this.cancelarTarefa();
+            this.fecharCriterios();
             const resposta = await requisicaoJson('/api/v1/coordenador/trilhas?tipoEstagioId=' + this.tipoId);
             if (resposta.status === 204) {
                 this.trilha = null;
@@ -218,6 +224,121 @@ function trilhasPagina() {
             }
             await this.carregarTrilha();
             this.sucesso = 'Tarefa removida.';
+        },
+
+        // ---------- critérios do checklist (F6) ----------
+
+        async abrirCriterios(tarefa) {
+            this.limparMensagens();
+            this.tarefaDosCriterios = tarefa;
+            this.criterios = [];
+            this.errosCriterio = {};
+            const resposta = await requisicaoJson('/api/v1/coordenador/trilhas/tarefas/' + tarefa.id + '/criterios');
+            if (!resposta.ok) {
+                this.erro = resposta.dados.mensagem || 'Erro ao carregar os critérios.';
+                return;
+            }
+            this.criterios = resposta.dados;
+            this.cancelarCriterio();
+            rolarParaFormulario(this.$refs.painelCriterios);
+        },
+
+        fecharCriterios() {
+            this.tarefaDosCriterios = null;
+            this.criterios = [];
+            this.errosCriterio = {};
+        },
+
+        tituloCriterios() {
+            if (!this.tarefaDosCriterios) {
+                return '';
+            }
+            return 'Critérios: ' + this.tarefaDosCriterios.nome;
+        },
+
+        // Sugere a próxima posição livre depois do último critério, como nas tarefas
+        proximaOrdemCriterio() {
+            let maiorOrdem = 0;
+            for (const criterio of this.criterios) {
+                if (criterio.ordem > maiorOrdem) {
+                    maiorOrdem = criterio.ordem;
+                }
+            }
+            return maiorOrdem + 1;
+        },
+
+        validarCriterio() {
+            const erros = {};
+            const descricao = this.formCriterio.descricao.trim();
+            const ordem = Number(this.formCriterio.ordem);
+            if (!descricao) {
+                erros.descricao = 'Informe a descrição do critério.';
+            } else if (descricao.length < 2 || descricao.length > 200) {
+                erros.descricao = 'A descrição deve ter entre 2 e 200 caracteres.';
+            }
+            if (!Number.isInteger(ordem) || ordem < 1 || ordem > 99) {
+                erros.ordem = 'Informe uma ordem entre 1 e 99.';
+            }
+            this.errosCriterio = erros;
+            return Object.keys(erros).length === 0;
+        },
+
+        editarCriterio(criterio) {
+            this.limparMensagens();
+            this.errosCriterio = {};
+            this.formCriterio = { id: criterio.id, descricao: criterio.descricao, ordem: String(criterio.ordem) };
+        },
+
+        cancelarCriterio() {
+            this.formCriterio = { id: null, descricao: '', ordem: String(this.proximaOrdemCriterio()) };
+            this.errosCriterio = {};
+        },
+
+        async salvarCriterio() {
+            this.limparMensagens();
+            if (!this.validarCriterio()) {
+                return;
+            }
+            this.salvando = true;
+            const editando = this.formCriterio.id !== null;
+            const url = editando
+                ? '/api/v1/coordenador/trilhas/criterios/' + this.formCriterio.id
+                : '/api/v1/coordenador/trilhas/tarefas/' + this.tarefaDosCriterios.id + '/criterios';
+            const resposta = await requisicaoJson(url, editando ? 'PUT' : 'POST', {
+                descricao: this.formCriterio.descricao.trim(),
+                ordem: Number(this.formCriterio.ordem)
+            });
+            this.salvando = false;
+
+            if (!resposta.ok) {
+                this.mostrarErroCriterio(resposta, 'Erro ao salvar o critério.');
+                return;
+            }
+            this.criterios = resposta.dados;
+            this.cancelarCriterio();
+            this.sucesso = editando ? 'Critério alterado.' : 'Critério adicionado.';
+        },
+
+        // O critério já usado em uma correção não é apagado: ele sai das próximas correções e fica no histórico
+        async removerCriterio(criterio) {
+            if (!confirm('Remover o critério "' + criterio.descricao + '"? As correções já feitas não mudam.')) {
+                return;
+            }
+            this.limparMensagens();
+            const resposta = await requisicaoJson('/api/v1/coordenador/trilhas/criterios/' + criterio.id, 'DELETE');
+            if (!resposta.ok) {
+                this.mostrarErroCriterio(resposta, 'Erro ao remover o critério.');
+                return;
+            }
+            await this.abrirCriterios(this.tarefaDosCriterios);
+            this.sucesso = 'Critério removido.';
+        },
+
+        mostrarErroCriterio(resposta, padrao) {
+            if (resposta.dados && resposta.dados.campos) {
+                this.errosCriterio = resposta.dados.campos;
+            }
+            this.erro = (resposta.dados && resposta.dados.mensagem) || padrao;
         },
 
         mostrarErro(resposta, padrao) {
