@@ -95,7 +95,7 @@ As regras abaixo estão implementadas no backend. Ocultar botões no frontend n�
 - Obrigatória para SECRETARIA e COORDENADOR: configurada no primeiro login, antes da emissão do JWT, e não pode ser desativada
 - Opcional para ALUNO e ORIENTADOR: ativada e desativada em /conta/seguranca, sempre mediante código válido
 - O JWT só é emitido depois da validação do segundo fator
-- Token de pré-autenticação: aleatório, de uso único, válido por 2 minutos (jwt.pre-auth-expiration) e armazenado apenas como hash SHA-256
+- Token de pré-autenticação: aleatório, de uso único, válido por 2 minutos (ajustável pelo administrador) e armazenado apenas como hash SHA-256
 - Código errado conta como tentativa falha e compartilha o bloqueio da senha; o contador só é zerado após o login completo
 - QR Code gerado no navegador: o segredo não é enviado a serviços externos; o script do CDN usa verificação de integridade (SRI)
 - Segredo do 2FA armazenado cifrado com AES-256-GCM

@@ -4,7 +4,6 @@ import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import com.warrenstrange.googleauth.GoogleAuthenticatorQRGenerator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
@@ -12,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.ConfiguracaoDoisFatoresResponse;
 import tcc.ges.aprovamais.dto.StatusDoisFatoresResponse;
 import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
 import tcc.ges.aprovamais.exception.CodigoDoisFatoresInvalidoException;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
@@ -34,10 +34,6 @@ public class DoisFatoresService {
     private final UsuarioRepository usuarioRepository;
     private final AuditoriaService auditoriaService;
     private final BloqueioContaService bloqueioContaService;
-
-    // Tempo em minutos que o token de pré-autenticação fica válido, vem do application.yml
-    @Value("${jwt.pre-auth-expiration}")
-    private long minutosPreAutenticacao;
 
     // ===== Token de pré-autenticação (fluxo de login) =====
 
@@ -227,7 +223,7 @@ public class DoisFatoresService {
         if (!codigoValido(usuario, codigo)) {
             int tentativas = bloqueioContaService.registrarFalha(usuario);
             auditoriaService.registrar(usuario, "DOIS_FATORES_FALHA",
-                    "Código inválido. Tentativa " + tentativas + " de " + BloqueioContaService.MAX_TENTATIVAS,
+                    "Código inválido. Tentativa " + tentativas + " de " + BloqueioContaService.maximoTentativas(),
                     ipOrigem, false);
             throw new CodigoDoisFatoresInvalidoException();
         }
@@ -242,7 +238,7 @@ public class DoisFatoresService {
 
     // Calcula quando o token de pré-autenticação vai expirar
     private OffsetDateTime calcularExpiracao() {
-        return OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(minutosPreAutenticacao);
+        return OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(ParametrosVigentes.valor(ParametroSistema.MINUTOS_PRE_AUTENTICACAO));
     }
 
 }

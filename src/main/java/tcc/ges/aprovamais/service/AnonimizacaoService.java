@@ -164,7 +164,7 @@ public class AnonimizacaoService {
     private void registrarFalha(Usuario usuario, String detalhe, String ipOrigem) {
         int tentativas = bloqueioContaService.registrarFalha(usuario);
         auditoriaService.registrar(usuario, "ANONIMIZACAO_FALHA",
-                detalhe + ". Tentativa " + tentativas + " de " + BloqueioContaService.MAX_TENTATIVAS, ipOrigem, false);
+                detalhe + ". Tentativa " + tentativas + " de " + BloqueioContaService.maximoTentativas(), ipOrigem, false);
     }
 
     // O coordenador com cursos e a última secretaria ativa não podem se anonimizar

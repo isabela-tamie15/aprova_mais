@@ -3,20 +3,20 @@ package tcc.ges.aprovamais.security;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
+import tcc.ges.aprovamais.service.ParametrosVigentes;
 
 // Monta o cookie do JWT, usado no login, no logout e na desativação do 2FA
 @Component
 public class CookieSessao {
-
-    // Mesmo prazo do token, 8 horas
-    public static final int SEGUNDOS_DE_VALIDADE = 28800;
 
     // Diz se o cookie vai com o atributo Secure (só trafega em HTTPS).
     @Value("${app.cookie.secure:false}")
     private boolean cookieSeguro;
 
     public void gravar(HttpServletResponse respostaHttp, String token) {
-        adicionar(respostaHttp, token, SEGUNDOS_DE_VALIDADE);
+        // Mesmo prazo do token, que o administrador pode ajustar
+        adicionar(respostaHttp, token, ParametrosVigentes.valor(ParametroSistema.HORAS_VALIDADE_SESSAO) * 3600);
     }
 
     // Valor vazio com Max-Age 0 pede ao navegador para apagar o cookie

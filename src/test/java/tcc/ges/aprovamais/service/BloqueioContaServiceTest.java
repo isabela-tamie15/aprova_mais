@@ -67,7 +67,7 @@ class BloqueioContaServiceTest {
     void deveLancarExcecaoQuandoContaBloqueadaDentroDoPrazo() {
         // arrange bloqueada há 2 minutos, o prazo é de 5
         usuario.setContaBloqueada(true);
-        usuario.setTentativasFalhas(BloqueioContaService.MAX_TENTATIVAS);
+        usuario.setTentativasFalhas(BloqueioContaService.maximoTentativas());
         usuario.setMomentoBloqueio(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(2));
 
         // Act
@@ -86,9 +86,9 @@ class BloqueioContaServiceTest {
     void deveLiberarContaQuandoPrazoDeBloqueioVenceu() {
         // Arrange: bloqueada há 5 minutos e 1 segundo, logo após o limite
         usuario.setContaBloqueada(true);
-        usuario.setTentativasFalhas(BloqueioContaService.MAX_TENTATIVAS);
+        usuario.setTentativasFalhas(BloqueioContaService.maximoTentativas());
         usuario.setMomentoBloqueio(OffsetDateTime.now(ZoneOffset.UTC)
-                .minusMinutes(BloqueioContaService.MINUTOS_BLOQUEIO)
+                .minusMinutes(BloqueioContaService.minutosBloqueio())
                 .minusSeconds(1));
 
         // Act

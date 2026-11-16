@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.ConviteResponse;
 import tcc.ges.aprovamais.entity.*;
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
 import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.entity.enums.StatusConvite;
@@ -88,7 +89,7 @@ public class ConviteService {
 
         /*
            Um convite pendente por e-mail. O convite vencido desse e-mail vira EXPIRADO antes da conferência,
-           para a secretaria poder mandar um novo depois das 24 horas
+           para a secretaria poder mandar um novo depois do vencimento
         */
         conviteRepository.expirarVencidosDoEmail(email, OffsetDateTime.now(ZoneOffset.UTC));
         if (conviteRepository.existsByEmailAndStatus(email, StatusConvite.PENDENTE)) {
@@ -132,8 +133,9 @@ public class ConviteService {
         }
         convite.setStatus(StatusConvite.PENDENTE);
 
-        // Convite vale por 24 horas, depois disso precisa pedir outro
-        convite.setExpiracaoToken(OffsetDateTime.now(ZoneOffset.UTC).plusHours(24));
+        // O convite vale pelas horas configuradas, 24 por padrão. Depois disso precisa de outro
+        convite.setExpiracaoToken(OffsetDateTime.now(ZoneOffset.UTC)
+                .plusHours(ParametrosVigentes.valor(ParametroSistema.HORAS_VALIDADE_CONVITE)));
 
         conviteRepository.save(convite);
 

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Correções</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/css/paginas/admin-convites.css}" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar-admin :: navbar('correcoes')}"></div>
+
+<div class="container pb-5" x-data="correcoesAdmin()" style="max-width: 900px;">
+    <h4 class="fw-bold mb-1">Correções excepcionais</h4>
+    <p class="text-muted mb-4">Use só fora do fluxo normal. Toda correção exige justificativa e fica na auditoria.</p>
+
+    <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+    <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
+
+    <!-- 2FA de um usuário que perdeu o celular -->
+    <form class="card p-4 mb-4" @submit.prevent="desativarDoisFatores()" novalidate>
+        <h5 class="fw-semibold mb-1">Desativar o 2FA de um usuário</h5>
+        <p class="text-muted small mb-3">Para quem perdeu o celular. No próximo login, a pessoa entra com a senha e configura o 2FA de novo.</p>
+        <div class="mb-3" style="max-width: 420px;">
+            <label class="form-label" for="emailUsuario">E-mail do usuário</label>
+            <input id="emailUsuario" type="email" class="form-control" maxlength="150" x-model="doisFatores.email">
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="justificativaDoisFatores">Justificativa</label>
+            <textarea id="justificativaDoisFatores" class="form-control" rows="2" maxlength="500" x-model="doisFatores.justificativa"></textarea>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-danger" :disabled="salvando">Desativar 2FA</button>
+        </div>
+    </form>
+
+    <!-- Status de um estágio, inclusive concluído ou encerrado -->
+    <div class="card p-4">
+        <h5 class="fw-semibold mb-1">Corrigir o status de um estágio</h5>
+        <p class="text-muted small mb-3">Busque o estágio pelo número, que aparece nos registros da auditoria (Estágio id=...).</p>
+        <form class="d-flex gap-2 mb-3" style="max-width: 420px;" @submit.prevent="buscarEstagio()" novalidate>
+            <input type="number" min="1" class="form-control" placeholder="Número do estágio" aria-label="Número do estágio" x-model="estagioId">
+            <button type="submit" class="btn btn-outline-primary" :disabled="salvando">Buscar</button>
+        </form>
+
+        <template x-if="estagio">
+            <div>
+                <p class="mb-1"><strong>Aluno:</strong> <span x-text="estagio.nomeAluno"></span></p>
+                <p class="mb-1"><strong>Tipo e empresa:</strong> <span x-text="estagio.nomeTipoEstagio + ', ' + estagio.nomeEmpresa"></span></p>
+                <p class="mb-3"><strong>Status atual:</strong>
+                    <span x-text="estagio.status + (estagio.motivoEncerramento ? ' (' + estagio.motivoEncerramento + ')' : '')"></span></p>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="novoStatus">Novo status</label>
+                        <select id="novoStatus" class="form-select" x-model="correcao.status">
+                            <option value="">Selecione</option>
+                            <template x-for="status in statusPossiveis" :key="status">
+                                <option :value="status" x-text="status"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="col-md-6" x-show="correcao.status === 'ENCERRADO'">
+                        <label class="form-label" for="motivo">Motivo do encerramento</label>
+                        <select id="motivo" class="form-select" x-model="correcao.motivoEncerramento">
+                            <option value="">Selecione</option>
+                            <template x-for="motivo in motivos" :key="motivo">
+                                <option :value="motivo" x-text="motivo"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="justificativaEstagio">Justificativa</label>
+                    <textarea id="justificativaEstagio" class="form-control" rows="2" maxlength="500" x-model="correcao.justificativa"></textarea>
+                </div>
+                <button class="btn btn-danger" :disabled="salvando" @click="corrigirEstagio()">Corrigir status</button>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/admin-administracao.js}"></script>
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+</body>
+</html>

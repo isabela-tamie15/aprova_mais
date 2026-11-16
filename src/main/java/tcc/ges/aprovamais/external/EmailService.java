@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
+import tcc.ges.aprovamais.entity.enums.ParametroSistema;
+import tcc.ges.aprovamais.service.ParametrosVigentes;
 
 // E-mails transacionais do sistema, enviados pela API do Resend
 @Service
@@ -172,12 +174,13 @@ public class EmailService {
                         Concluir cadastro
                     </a>
                     <p style="color: #6B7280; font-size: 0.85rem;">
-                        Este link expira em 24 horas. Se você não esperava este convite, ignore este email.
+                        Este link expira em %s horas. Se você não esperava este convite, ignore este email.
                     </p>
                     <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
                     <p style="color: #9CA3AF; font-size: 0.8rem;">Aprova+ - UMC Gestão de Estágios</p>
                 </div>
-                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), link);
+                """.formatted(HtmlUtils.htmlEscape(nomeDoDestinatario), link,
+                ParametrosVigentes.valor(ParametroSistema.HORAS_VALIDADE_CONVITE));
     }
 
     // O nome da tarefa vem do cadastro do coordenador, então passa pelo escape de HTML
