@@ -34,8 +34,16 @@ async function requisicaoJson(url, metodo = 'GET', corpo = null) {
     if (resposta.status >= 500) {
         return { ok: false, status: resposta.status, dados: { mensagem: 'Erro interno no servidor. Tente novamente.' } };
     }
+    // Sessão expirada ou encerrada em outro lugar leva de volta ao login
+    if (resposta.status === 401) {
+        window.location.href = '/login';
+        return { ok: false, status: 401, dados: { mensagem: 'Sua sessão expirou. Faça login novamente.' } };
+    }
     if (resposta.status === 403) {
-        return { ok: false, status: 403, dados: { mensagem: 'Você não tem permissão para esta ação.' } };
+        return { ok: false, status: 403, dados: { mensagem: (dados && dados.mensagem) || 'Você não tem permissão para esta ação.' } };
+    }
+    if (resposta.status === 429) {
+        return { ok: false, status: 429, dados: { mensagem: 'Muitas requisições em pouco tempo. Aguarde um minuto e tente novamente.' } };
     }
     return { ok: resposta.ok, status: resposta.status, dados: dados };
 }

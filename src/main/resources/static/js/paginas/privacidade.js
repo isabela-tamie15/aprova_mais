@@ -30,7 +30,8 @@ function direitosDoTitular() {
 
         // Exclusão anonimiza os dados e encerra a sessão
         async anonimizarMeusDados() {
-            const confirmou = confirm('Confirma a anonimização dos seus dados pessoais? Esta ação não pode ser desfeita.');
+            const confirmou = await confirmarAcao('Confirma a anonimização dos seus dados pessoais? Esta ação não pode ser desfeita.',
+                'Anonimizar meus dados', true);
             if (!confirmou) {
                 return;
             }
@@ -66,7 +67,7 @@ function direitosDoTitular() {
             } catch (erro) {
                 console.error('Não foi possível fazer o logout', erro);
             }
-            alert('Seus dados foram anonimizados com sucesso.');
+            await mostrarAviso('Seus dados foram anonimizados com sucesso.');
             window.location.href = '/login';
         }
     };

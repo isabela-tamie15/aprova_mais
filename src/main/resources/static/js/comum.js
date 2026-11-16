@@ -10,3 +10,84 @@ async function logout() {
     });
     window.location.href = '/login';
 }
+
+/*
+   Janela de confirmação no lugar do confirm() do navegador, com os estilos do Bootstrap. Devolve uma
+   Promise que resolve em true quando a pessoa confirma e em false quando cancela, fecha ou aperta Esc
+*/
+function confirmarAcao(mensagem, textoConfirmar = 'Confirmar', perigosa = false) {
+    return abrirJanela(mensagem, textoConfirmar, perigosa ? 'btn-danger' : 'btn-primary', true);
+}
+
+// Aviso com um botão só, no lugar do alert() do navegador. A Promise resolve quando a pessoa fecha a janela
+function mostrarAviso(mensagem) {
+    return abrirJanela(mensagem, 'Entendi', 'btn-primary', false);
+}
+
+/*
+   Monta a janela no fim da página e a remove ao fechar. A mensagem entra como texto, nunca como HTML,
+   para um nome vindo da API não virar código na página
+*/
+function abrirJanela(mensagem, textoConfirmar, classeBotao, comCancelar) {
+    return new Promise((resolver) => {
+        const anterior = document.activeElement;
+        const fundo = document.createElement('div');
+        fundo.className = 'modal-backdrop fade show';
+
+        const janela = document.createElement('div');
+        janela.className = 'modal fade show d-block';
+        janela.tabIndex = -1;
+        janela.setAttribute('role', 'dialog');
+        janela.setAttribute('aria-modal', 'true');
+        janela.innerHTML =
+            '<div class="modal-dialog modal-dialog-centered">' +
+            '  <div class="modal-content border-0 shadow">' +
+            '    <div class="modal-body p-4"><p class="mb-0 janela-mensagem"></p></div>' +
+            '    <div class="modal-footer border-0 pt-0">' +
+            '      <button type="button" class="btn btn-outline-secondary janela-cancelar">Cancelar</button>' +
+            '      <button type="button" class="btn janela-confirmar"></button>' +
+            '    </div>' +
+            '  </div>' +
+            '</div>';
+        janela.querySelector('.janela-mensagem').textContent = mensagem;
+        const botaoConfirmar = janela.querySelector('.janela-confirmar');
+        botaoConfirmar.textContent = textoConfirmar;
+        botaoConfirmar.classList.add(classeBotao);
+        const botaoCancelar = janela.querySelector('.janela-cancelar');
+        if (!comCancelar) {
+            botaoCancelar.remove();
+        }
+
+        function fechar(resultado) {
+            document.removeEventListener('keydown', teclado);
+            janela.remove();
+            fundo.remove();
+            document.body.classList.remove('modal-open');
+            if (anterior && anterior.focus) {
+                anterior.focus();
+            }
+            resolver(resultado);
+        }
+
+        function teclado(evento) {
+            if (evento.key === 'Escape') {
+                fechar(false);
+            }
+        }
+
+        botaoConfirmar.addEventListener('click', () => fechar(true));
+        botaoCancelar.addEventListener('click', () => fechar(false));
+        // Clicar fora da caixa equivale a cancelar
+        janela.addEventListener('click', (evento) => {
+            if (evento.target === janela) {
+                fechar(false);
+            }
+        });
+        document.addEventListener('keydown', teclado);
+
+        document.body.appendChild(fundo);
+        document.body.appendChild(janela);
+        document.body.classList.add('modal-open');
+        botaoConfirmar.focus();
+    });
+}
