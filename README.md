@@ -12,8 +12,8 @@ O sistema permite que alunos cadastrem seus estágios, orientadores validem as s
 
 | Nome | RGM |
 |------|-----|
-| Leonardo Valdir Silva | 11232100617 |
-| Isabela Tamie Shihara | 11231203887 |
+| Leonardo Valdir Silva | 11232100617 
+| Isabela Tamie Shihara | 11231203887 
 
 Turma: 8B - Engenharia de Software - UMC
 Orientador: Prof. Leonardo Torres
@@ -185,13 +185,13 @@ POST /api/v1/auth/login (e-mail e senha)
 - Em trânsito: HTTPS (TLS) no perfil prod
 - Senhas: hash BCrypt, nunca armazenadas nem registradas em log em texto puro
 - Em repouso: AES-256-GCM (AesEncryptor, chave derivada de ENCRYPTION_SECRET com SHA-256) nos campos:
-  - segredo do 2FA (usuarios.dois_fatores_segredo)
-  - justificativa de rejeição do estágio (estagios.justificativa_rejeicao)
-  - justificativa de cada decisão do orientador no histórico (validacoes_estagio.justificativa)
-  - comentário do aluno e feedback do orientador nas entregas (entrega_versoes.comentario_aluno e entrega_versoes.feedback)
-  - observação de cada critério do checklist (respostas_criterio_checklist.observacao)
-  - motivo e justificativa das solicitações (solicitacoes.motivo e solicitacoes.justificativa_reprovacao)
-  - observação do encerramento do estágio (estagios.observacao_encerramento)
+    - segredo do 2FA (usuarios.dois_fatores_segredo)
+    - justificativa de rejeição do estágio (estagios.justificativa_rejeicao)
+    - justificativa de cada decisão do orientador no histórico (validacoes_estagio.justificativa)
+    - comentário do aluno e feedback do orientador nas entregas (entrega_versoes.comentario_aluno e entrega_versoes.feedback)
+    - observação de cada critério do checklist (respostas_criterio_checklist.observacao)
+    - motivo e justificativa das solicitações (solicitacoes.motivo e solicitacoes.justificativa_reprovacao)
+    - observação do encerramento do estágio (estagios.observacao_encerramento)
 - O texto cifrado não é copiado para o log de auditoria
 - RGM e matrícula institucional não são cifrados por decisão de projeto: são identificadores únicos usados em buscas por secretaria, coordenação e orientador. A cifragem AES-GCM gera um valor diferente a cada gravação, o que impediria a restrição de unicidade e a busca. Esses campos são protegidos pelo controle de acesso por perfil.
 
@@ -440,11 +440,11 @@ Abra o link numa janela anônima do navegador, para não misturar a sessão de q
 1. **Administrador.** Entre em /login com o ADMIN_INICIAL_EMAIL e a senha do .env. O sistema pede o aceite dos Termos e da Política e mostra o QR Code do 2FA: leia com o aplicativo autenticador e digite o código de 6 dígitos.
 2. **Coordenador.** Como administrador, no menu Convites, convide um coordenador. Abra o link do log, aceite os termos e defina a senha. Entre como coordenador e configure o 2FA.
 3. **Cadastros.** Como coordenador, cadastre:
-   - um curso (Cursos);
-   - uma turma (Turmas), com a data de encerramento das entregas;
-   - um tipo de estágio (Tipos de estágio), com carga total e jornada semanal;
-   - a trilha desse tipo (Trilhas), com algumas tarefas;
-   - em Critérios, o checklist de avaliação de uma tarefa.
+    - um curso (Cursos);
+    - uma turma (Turmas), com a data de encerramento das entregas;
+    - um tipo de estágio (Tipos de estágio), com carga total e jornada semanal;
+    - a trilha desse tipo (Trilhas), com algumas tarefas;
+    - em Critérios, o checklist de avaliação de uma tarefa.
 4. **Pré-cadastro.** Em Pré-cadastro, inclua um aluno (com RGM só com números e turma) e um orientador (com matrícula institucional).
 5. **Secretaria.** Como coordenador, no menu Convites, convide uma secretaria e aceite o convite pelo link do log. Entre como secretaria e configure o 2FA. Em Enviar convite, clique em Convidar na lista de pré-cadastrados para o aluno e o orientador e aceite os dois convites pelos links do log. No convite do aluno, informe o RGM do pré-cadastro: com um RGM errado, a tela mostra quantas tentativas restam.
 6. **Orientador da turma.** Como coordenador, em Turmas, escolha o orientador na coluna Orientador.
@@ -561,24 +561,42 @@ curl -i -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: applic
 
 Capturas feitas com dados fictícios do seed de demonstração, usadas também no manual do usuário da monografia:
 
-| Tela | Captura |
-|------|---------|
-| Login | [login.png](docs/evidencias/login.png) |
-| Primeiro acesso pelo convite | [figura12_primeiro_acesso.png](docs/evidencias/figura12_primeiro_acesso.png) |
-| Login com a verificação em duas etapas | [figura13_login_2fa.png](docs/evidencias/figura13_login_2fa.png) |
-| Pedido de nova configuração do 2FA | [liberacao_2fa_pedido.png](docs/evidencias/liberacao_2fa_pedido.png) |
-| Análise do pedido pelo administrador | [liberacao_2fa_analise.png](docs/evidencias/liberacao_2fa_analise.png) |
-| Painel do aluno | [figura14_painel_aluno.png](docs/evidencias/figura14_painel_aluno.png) |
-| Trilha com o histórico de versões | [figura15_trilha_versoes.png](docs/evidencias/figura15_trilha_versoes.png) |
-| Pedido de exclusão de anexo pelo aluno | [exclusao_anexo_aluno.png](docs/evidencias/exclusao_anexo_aluno.png) |
-| Pedido de exclusão na tela da secretaria | [exclusao_anexo_secretaria.png](docs/evidencias/exclusao_anexo_secretaria.png) |
-| Validação de estágios | [figura16_validacoes.png](docs/evidencias/figura16_validacoes.png) |
-| Painel de correção | [figura17_painel_correcao.png](docs/evidencias/figura17_painel_correcao.png) |
-| Avaliação com o checklist de critérios | [figura18_avaliacao_checklist.png](docs/evidencias/figura18_avaliacao_checklist.png) |
-| Montagem da trilha | [figura19_montagem_trilha.png](docs/evidencias/figura19_montagem_trilha.png) |
-| Painel do coordenador com filtros | [painel_coordenador.png](docs/evidencias/painel_coordenador.png) |
-| Auditoria | [figura20_auditoria.png](docs/evidencias/figura20_auditoria.png) |
-| Página de erro (acesso não permitido) | [pagina_erro.png](docs/evidencias/pagina_erro.png) |
+<table>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/login.png"><img src="docs/evidencias/login.png" alt="Login" width="420"></a><br>Login</td>
+    <td align="center" width="50%"><a href="docs/evidencias/figura12_primeiro_acesso.png"><img src="docs/evidencias/figura12_primeiro_acesso.png" alt="Primeiro acesso pelo convite" width="420"></a><br>Primeiro acesso pelo convite</td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/figura13_login_2fa.png"><img src="docs/evidencias/figura13_login_2fa.png" alt="Login com a verificação em duas etapas" width="420"></a><br>Login com a verificação em duas etapas</td>
+    <td align="center" width="50%"><a href="docs/evidencias/liberacao_2fa_pedido.png"><img src="docs/evidencias/liberacao_2fa_pedido.png" alt="Pedido de nova configuração do 2FA" width="420"></a><br>Pedido de nova configuração do 2FA</td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/liberacao_2fa_analise.png"><img src="docs/evidencias/liberacao_2fa_analise.png" alt="Análise do pedido pelo administrador" width="420"></a><br>Análise do pedido pelo administrador</td>
+    <td align="center" width="50%"><a href="docs/evidencias/figura14_painel_aluno.png"><img src="docs/evidencias/figura14_painel_aluno.png" alt="Painel do aluno" width="420"></a><br>Painel do aluno</td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/figura15_trilha_versoes.png"><img src="docs/evidencias/figura15_trilha_versoes.png" alt="Trilha com o histórico de versões" width="420"></a><br>Trilha com o histórico de versões</td>
+    <td align="center" width="50%"><a href="docs/evidencias/exclusao_anexo_aluno.png"><img src="docs/evidencias/exclusao_anexo_aluno.png" alt="Pedido de exclusão de anexo pelo aluno" width="420"></a><br>Pedido de exclusão de anexo pelo aluno</td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/exclusao_anexo_secretaria.png"><img src="docs/evidencias/exclusao_anexo_secretaria.png" alt="Pedido de exclusão na tela da secretaria" width="420"></a><br>Pedido de exclusão na tela da secretaria</td>
+    <td align="center" width="50%"><a href="docs/evidencias/figura16_validacoes.png"><img src="docs/evidencias/figura16_validacoes.png" alt="Validação de estágios" width="420"></a><br>Validação de estágios</td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/figura17_painel_correcao.png"><img src="docs/evidencias/figura17_painel_correcao.png" alt="Painel de correção" width="420"></a><br>Painel de correção</td>
+    <td align="center" width="50%"><a href="docs/evidencias/figura18_avaliacao_checklist.png"><img src="docs/evidencias/figura18_avaliacao_checklist.png" alt="Avaliação com o checklist de critérios" width="420"></a><br>Avaliação com o checklist de critérios</td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/figura19_montagem_trilha.png"><img src="docs/evidencias/figura19_montagem_trilha.png" alt="Montagem da trilha" width="420"></a><br>Montagem da trilha</td>
+    <td align="center" width="50%"><a href="docs/evidencias/painel_coordenador.png"><img src="docs/evidencias/painel_coordenador.png" alt="Painel do coordenador com filtros" width="420"></a><br>Painel do coordenador com filtros</td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><a href="docs/evidencias/figura20_auditoria.png"><img src="docs/evidencias/figura20_auditoria.png" alt="Auditoria" width="420"></a><br>Auditoria</td>
+    <td align="center" width="50%"><a href="docs/evidencias/pagina_erro.png"><img src="docs/evidencias/pagina_erro.png" alt="Página de erro (acesso não permitido)" width="420"></a><br>Página de erro (acesso não permitido)</td>
+  </tr>
+</table>
+
+Clique em uma imagem para abri-la no tamanho original.
 
 ------|---------|
 | Primeiro acesso pelo convite | [figura12_primeiro_acesso.png](docs/evidencias/figura12_primeiro_acesso.png) |
