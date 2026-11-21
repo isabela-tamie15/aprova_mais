@@ -1,0 +1,32 @@
+package tcc.ges.aprovamais.dto;
+
+import lombok.Builder;
+import lombok.Getter;
+
+import java.util.List;
+
+// Entrega de uma tarefa com todo o histórico. O aluno recebe na trilha e o orientador na tela de avaliação
+@Getter
+@Builder
+public class EntregaDetalheResponse {
+    // Nulo enquanto o aluno não enviou nada para a tarefa
+    private final Long entregaId;
+    private final Long tarefaId;
+    private final String nomeTarefa;
+    private final String descricaoTarefa;
+    private final String nomeAluno;
+
+    // PENDENTE (nada enviado), ENVIADA, EM_REVISAO, APROVADA ou DEVOLVIDA
+    private final String status;
+
+    // Se o aluno pode mandar um arquivo agora, ou seja, sem entrega ou com a última versão devolvida
+    private final boolean podeEnviar;
+
+    // Há um pedido de exclusão de anexo em análise, e a entrega fica parada até a decisão
+    private final boolean exclusaoEmAnalise;
+
+    private final List<EntregaVersaoResponse> versoes;
+
+    // Critérios ativos da tarefa, para o orientador preencher o checklist. Vazio na tela do aluno
+    private final List<CriterioChecklistResponse> criterios;
+}

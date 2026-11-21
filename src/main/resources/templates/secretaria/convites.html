@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Meus Convites</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/paginas/secretaria-convites.css}" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar-secretaria :: navbar('convites')}"></div>
+
+<div class="container" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold mb-1">Meus Convites</h4>
+            <p class="text-muted mb-0">Acompanhe o status dos convites enviados</p>
+        </div>
+        <a href="/secretaria/enviar-convite" class="btn btn-primary btn-sm fw-semibold">
+            + Novo convite
+        </a>
+    </div>
+
+    <div class="card-lista">
+        <div th:if="${#lists.isEmpty(convites)}" class="p-4 text-center text-muted">
+            Nenhum convite enviado ainda.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(convites)}">
+            <table class="table mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th class="ps-4">E-mail</th>
+                    <th>Perfil</th>
+                    <th>Status</th>
+                    <th>Enviado em</th>
+                    <th>Expira em</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="convite : ${convites}">
+                    <td class="ps-4" th:text="${convite.email}"></td>
+                    <td th:text="${convite.perfilDestino}"></td>
+                    <td>
+                            <span class="badge-status"
+                                  th:classappend="'badge-' + ${convite.status}"
+                                  th:text="${convite.status}">
+                            </span>
+                    </td>
+                    <td th:text="${#temporals.format(convite.criadoEm, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td th:text="${#temporals.format(convite.expiracaoToken, 'dd/MM/yyyy HH:mm')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

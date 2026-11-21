@@ -1,0 +1,144 @@
+package tcc.ges.aprovamais.service;
+
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.dto.TurmaRequest;
+import tcc.ges.aprovamais.dto.TurmaResponse;
+import tcc.ges.aprovamais.entity.Curso;
+import tcc.ges.aprovamais.entity.Orientador;
+import tcc.ges.aprovamais.entity.OrientadorTurma;
+import tcc.ges.aprovamais.entity.Turma;
+import tcc.ges.aprovamais.exception.RegraNegocioException;
+import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.repository.OrientadorTurmaRepository;
+import tcc.ges.aprovamais.repository.TurmaRepository;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+
+// Cadastro de turmas pelo coordenador
+@Service
+@RequiredArgsConstructor
+public class TurmaService {
+
+    private static final Logger log = LoggerFactory.getLogger(TurmaService.class);
+
+    private final TurmaRepository turmaRepository;
+    private final CursoService cursoService;
+    private final AuditoriaService auditoriaService;
+    private final OrientadorTurmaRepository orientadorTurmaRepository;
+
+    // Lista as turmas de um curso do coordenador logado
+    @Transactional(readOnly = true)
+    public List<TurmaResponse> listar(Long cursoId, String emailCoordenador) {
+        Curso curso = cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
+        List<Turma> turmasDoCurso = turmaRepository.findByCursoIdOrderBySemestreDescIdentificadorAsc(curso.getId());
+
+        // Orientador de cada turma do curso, buscado numa consulta só e guardado pelo id da turma
+        Map<Long, Orientador> orientadorPorIdDaTurma = new HashMap<>();
+        for (OrientadorTurma vinculo : orientadorTurmaRepository.findByTurmaCursoId(curso.getId())) {
+            orientadorPorIdDaTurma.put(vinculo.getTurma().getId(), vinculo.getOrientador());
+        }
+
+        // Transforma cada turma do banco na resposta que vai para a tela
+        List<TurmaResponse> respostas = new ArrayList<>();
+        for (Turma turma : turmasDoCurso) {
+            respostas.add(paraResponse(turma, orientadorPorIdDaTurma.get(turma.getId())));
+        }
+        return respostas;
+    }
+
+    // Cadastra uma turma num curso do coordenador. Não pode haver duas turmas com o mesmo identificador no mesmo semestre
+    @Transactional
+    public TurmaResponse cadastrar(String emailCoordenador, TurmaRequest request, String ipOrigem) {
+        Curso curso = cursoService.buscarCursoDoCoordenador(request.getCursoId(), emailCoordenador);
+        String identificador = normalizarIdentificador(request.getIdentificador());
+
+        if (turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCase(
+                curso.getId(), request.getSemestre(), identificador)) {
+            throw new RegraNegocioException("Já existe a turma " + identificador + " neste semestre do curso");
+        }
+
+        Turma turma = new Turma();
+        turma.setCurso(curso);
+        preencher(turma, request, identificador);
+        Turma salva = turmaRepository.save(turma);
+
+        auditoriaService.registrar(curso.getCoordenador(), "TURMA_CADASTRADA",
+                "Turma id=" + salva.getId() + " (" + identificador + " " + request.getSemestre()
+                        + ") no curso id=" + curso.getId(), ipOrigem, true);
+        log.info("[TURMA] Turma {} cadastrada no curso {} por {}", salva.getId(), curso.getId(), emailCoordenador);
+
+        // Turma recém-criada ainda não tem orientador
+        return paraResponse(salva, null);
+    }
+
+    // Altera uma turma. A turma não muda de curso, porque isso levaria junto as matrículas e o orientador
+    @Transactional
+    public TurmaResponse atualizar(Long turmaId, String emailCoordenador, TurmaRequest request, String ipOrigem) {
+        Turma turma = turmaRepository.findByIdAndCursoCoordenadorEmail(turmaId, emailCoordenador)
+                .orElseThrow(() -> new ResourceNotFoundException("Turma não encontrada"));
+
+        if (!turma.getCurso().getId().equals(request.getCursoId())) {
+            throw new RegraNegocioException("Uma turma não pode mudar de curso");
+        }
+
+        String identificador = normalizarIdentificador(request.getIdentificador());
+        if (turmaRepository.existsByCursoIdAndSemestreAndIdentificadorIgnoreCaseAndIdNot(
+                turma.getCurso().getId(), request.getSemestre(), identificador, turmaId)) {
+            throw new RegraNegocioException("Já existe a turma " + identificador + " neste semestre do curso");
+        }
+
+        preencher(turma, request, identificador);
+        Turma salva = turmaRepository.save(turma);
+
+        auditoriaService.registrar(turma.getCurso().getCoordenador(), "TURMA_ALTERADA",
+                "Turma id=" + turmaId + " alterada", ipOrigem, true);
+        log.info("[TURMA] Turma {} alterada por {}", turmaId, emailCoordenador);
+
+        Optional<OrientadorTurma> vinculo = orientadorTurmaRepository.findByTurmaId(turmaId);
+        Orientador orientador = null;
+        if (vinculo.isPresent()) {
+            orientador = vinculo.get().getOrientador();
+        }
+        return paraResponse(salva, orientador);
+    }
+
+    private void preencher(Turma turma, TurmaRequest request, String identificador) {
+        turma.setSemestre(request.getSemestre());
+        turma.setIdentificador(identificador);
+        turma.setPeriodo(request.getPeriodo());
+        turma.setModalidade(request.getModalidade());
+
+        // Data em que as entregas do semestre fecham, usada no aviso de prazo
+        turma.setDataEncerramentoEntregas(request.getDataEncerramentoEntregas());
+    }
+
+    // Grava o identificador em maiúsculas e sem espaços nas pontas, assim "8b " e "8B" são a mesma turma
+    private String normalizarIdentificador(String identificador) {
+        return identificador.trim().toUpperCase(Locale.ROOT);
+    }
+
+    // O orientador pode vir null, quando a turma ainda não tem orientador atribuído
+    TurmaResponse paraResponse(Turma turma, Orientador orientador) {
+        return TurmaResponse.builder()
+                .id(turma.getId())
+                .cursoId(turma.getCurso().getId())
+                .nomeCurso(turma.getCurso().getNome())
+                .semestre(turma.getSemestre())
+                .identificador(turma.getIdentificador())
+                .periodo(turma.getPeriodo().name())
+                .modalidade(turma.getModalidade().name())
+                .dataEncerramentoEntregas(turma.getDataEncerramentoEntregas())
+                .orientadorId(orientador != null ? orientador.getId() : null)
+                .nomeOrientador(orientador != null ? orientador.getNome() : null)
+                .build();
+    }
+}

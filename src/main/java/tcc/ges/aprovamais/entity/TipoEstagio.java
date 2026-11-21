@@ -8,7 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 @EntityListeners(AuditingEntityListener.class)
@@ -30,8 +30,13 @@ public class TipoEstagio {
     @Column
     private String descricao;
 
+    // Carga horária total exigida pelo curso nesse tipo
     @Column(name = "carga_horaria_necessaria", nullable = false)
     private BigDecimal cargaHorariaNecessaria;
+
+    // Horas por semana que esse tipo abate
+    @Column(name = "jornada_semanal", nullable = false)
+    private BigDecimal jornadaSemanal;
 
     @ToString.Exclude
     @OneToOne(mappedBy = "tipoEstagio", cascade = CascadeType.ALL)
@@ -39,9 +44,9 @@ public class TipoEstagio {
 
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
-    private LocalDateTime criadoEm;
+    private OffsetDateTime criadoEm;
 
     @LastModifiedDate
     @Column(name = "alterado_em", nullable = false)
-    private LocalDateTime alteradoEm;
+    private OffsetDateTime alteradoEm;
 }

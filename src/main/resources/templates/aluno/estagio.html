@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Aprova+ | Meu Estágio</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar-aluno :: navbar('estagio')}"></div>
+
+<div class="container">
+
+    <h4 class="mb-4">Meu Estágio</h4>
+
+    <div th:if="${estagio != null and estagio.status == 'PENDENTE'}" class="card p-4 mb-4">
+        <h5 class="card-title mb-3">Situação Atual</h5>
+        <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
+        <!-- Mesmos nomes e mesma ordem do estágio ativo, para a tela não mudar de nome quando o estágio for aprovado -->
+        <p><strong>Aluno:</strong> <span th:text="${estagio.nomeAluno + (estagio.rgmAluno != null ? ' (RGM ' + estagio.rgmAluno + ')' : '')}"></span></p>
+        <p><strong>Prof. orientador:</strong>
+            <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+            <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
+        </p>
+        <p><strong>Tipo de estágio:</strong>
+            <span th:text="${estagio.nomeTipoEstagio + (estagio.jornadaSemanal != null
+                    ? ' (' + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
+        </p>
+        <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>CNPJ da empresa:</strong>
+            <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
+        </p>
+        <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
+    </div>
+
+    <!-- Estágio aprovado: ficha com os dados do cadastro, o histórico de validações e o que o aluno pode pedir -->
+    <th:block th:if="${estagio != null and estagio.status != 'PENDENTE' and estagio.status != 'REJEITADO'}">
+        <div class="card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Dados do estágio</h5>
+                <span th:switch="${estagio.status}">
+                    <span th:case="'ATIVO'" class="badge bg-success">Ativo</span>
+                    <span th:case="'SUSPENSO'" class="badge bg-secondary">Suspenso (trancado)</span>
+                    <span th:case="*" class="badge bg-dark" th:text="${estagio.status}"></span>
+                </span>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Aluno:</strong> <span th:text="${estagio.nomeAluno + (estagio.rgmAluno != null ? ' (RGM ' + estagio.rgmAluno + ')' : '')}"></span></p>
+                    <p><strong>Prof. orientador:</strong>
+                        <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+                        <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
+                    </p>
+                    <p><strong>Tipo de estágio:</strong>
+                        <span th:text="${estagio.nomeTipoEstagio + (estagio.jornadaSemanal != null
+                                ? ' (' + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
+                    </p>
+                    <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+                    <p class="mb-md-0"><strong>CNPJ da empresa:</strong>
+                        <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
+                    <p th:if="${estagio.dataPrevistaConclusao}"><strong>Conclusão prevista do estágio:</strong>
+                        <span th:text="${#temporals.format(estagio.dataPrevistaConclusao, 'dd/MM/yyyy')}"></span>
+                    </p>
+                    <p><strong>Carga horária exigida:</strong>
+                        <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
+                    </p>
+                    <p th:if="${estagio.dataEncerramentoEntregas}"><strong>Encerramento das entregas:</strong>
+                        <span th:text="${#temporals.format(estagio.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
+                    </p>
+                    <p th:if="${estagio.diasSuspensos != null and estagio.diasSuspensos > 0}" class="mb-md-0"><strong>Dias de trancamento descontados:</strong>
+                        <span th:text="${estagio.diasSuspensos}"></span>
+                    </p>
+                </div>
+            </div>
+            <p class="small text-muted mt-3 mb-0">A carga horária cumprida e os prazos ficam no Painel.</p>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Decisões do orientador sobre este estágio, inclusive rejeições de envios anteriores -->
+            <div class="col-lg-7">
+                <div class="card p-4 h-100">
+                    <h5 class="card-title mb-3">Histórico de validação</h5>
+                    <p th:if="${historico == null or #lists.isEmpty(historico)}" class="text-muted mb-0">Nenhuma decisão registrada.</p>
+                    <ul th:unless="${historico == null or #lists.isEmpty(historico)}" class="list-group list-group-flush">
+                        <li th:each="decisao : ${historico}" class="list-group-item px-0">
+                            <span th:if="${decisao.aprovado}" class="badge bg-success me-2">Aprovado</span>
+                            <span th:unless="${decisao.aprovado}" class="badge bg-danger me-2">Rejeitado</span>
+                            <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
+                            <span class="text-muted">por <span th:text="${decisao.nomeOrientador}"></span></span>
+                            <div th:if="${decisao.justificativa}" class="small mt-1" th:text="${decisao.justificativa}"></div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Mudanças na situação do estágio são pedidas por solicitação -->
+            <div class="col-lg-5">
+                <div class="card p-4 h-100">
+                    <h5 class="card-title mb-3">Precisa mudar algo?</h5>
+                    <p class="mb-2">Trancar o estágio, reabrir depois do trancamento ou trocar de modalidade é feito por uma solicitação, analisada pela secretaria e pela coordenação.</p>
+                    <p class="small text-muted">Dados da empresa ou do RGM errados? Peça a correção em Política de Privacidade, no rodapé.</p>
+                    <div class="d-flex gap-2 flex-wrap mt-auto">
+                        <a href="/aluno/solicitacoes" class="btn btn-primary">Fazer uma solicitação</a>
+                        <a href="/aluno/trilha" class="btn btn-success">Ver minha trilha</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <div th:if="${estagio == null and estagioConcluido != null}" class="card p-4 mb-4">
+        <h5 class="card-title mb-2">Estágio concluído</h5>
+        <p class="mb-0">O estágio desta matrícula já foi concluído, então não é possível cadastrar outro.</p>
+    </div>
+
+    <div th:if="${(estagio == null and estagioConcluido == null) or (estagio != null and estagio.status == 'REJEITADO')}" x-data="estagioForm()" x-init="init()" th:attr="data-nome-empresa=${estagio != null ? estagio.nomeEmpresa : ''},data-data-inicio=${estagio != null ? estagio.dataInicio : ''},data-cnpj-empresa=${estagio != null ? estagio.cnpjEmpresa : ''}, data-tipo-estagio-nome=${estagio != null ? estagio.nomeTipoEstagio : ''}">
+
+        <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="alert alert-danger mb-4">
+            <strong>Estágio rejeitado.</strong>
+            Justificativa: <span th:text="${estagio.justificativaRejeicao}"></span>
+            <p class="mb-0 mt-2">Preencha o formulário abaixo para reenviar.</p>
+        </div>
+
+        <div th:if="${estagio == null}" class="alert alert-info mb-4">
+            Cadastre seu estágio para iniciar o processo de aprovação.
+        </div>
+
+        <div class="card p-4">
+            <h5 class="card-title mb-3">Cadastrar Estágio</h5>
+            <!-- Mesmos nomes da tela do estágio aprovado, que só ganha mais campos -->
+            <p th:if="${usuarioLogado}"><strong>Aluno:</strong>
+                <span th:text="${usuarioLogado.nome + ' (' + usuarioLogado.email + ')'}"></span>
+            </p>
+
+            <div class="alert alert-danger" x-show="erro" x-text="erro"></div>
+
+            <form @submit.prevent="enviar()" novalidate>
+                <div class="mb-3">
+                    <label class="form-label fw-bold" for="tipoEstagioId">Tipo de estágio</label>
+                    <select id="tipoEstagioId" class="form-select" x-model="form.tipoEstagioId" required
+                            :class="{ 'is-invalid': erros.tipoEstagioId }">
+                        <option value="">Selecione...</option>
+                        <template x-for="tipoEstagio in tipos" :key="tipoEstagio.id">
+                            <option :value="tipoEstagio.id"
+                                    x-text="tipoEstagio.nome + ' (' + Number(tipoEstagio.cargaHorariaNecessaria) + 'h, ' + Number(tipoEstagio.jornadaSemanal) + 'h semanais)'"></option>
+                        </template>
+                    </select>
+                    <div class="invalid-feedback" x-text="erros.tipoEstagioId"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold" for="cnpjEmpresa">CNPJ da empresa</label>
+                    <input id="cnpjEmpresa" type="text" class="form-control" x-model="form.cnpjEmpresa"
+                           placeholder="00.000.000/0000-00" maxlength="18" required
+                           @input="form.cnpjEmpresa = mascararCnpj(form.cnpjEmpresa)"
+                           @blur="consultarCnpj()"
+                           :class="{ 'is-invalid': erros.cnpjEmpresa }">
+                    <div class="invalid-feedback" x-text="erros.cnpjEmpresa"></div>
+                    <div class="form-text" x-show="!erros.cnpjEmpresa && consultandoCnpj">Consultando na Receita Federal...</div>
+                    <div class="form-text" x-show="!erros.cnpjEmpresa && !consultandoCnpj && avisoCnpj"
+                         :class="avisoCnpjOk ? 'text-success' : 'text-warning'" x-text="avisoCnpj"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold" for="nomeEmpresa">Empresa a estagiar</label>
+                    <input id="nomeEmpresa" type="text" class="form-control" x-model="form.nomeEmpresa"
+                           required minlength="2" maxlength="150"
+                           :class="{ 'is-invalid': erros.nomeEmpresa }">
+                    <div class="invalid-feedback" x-text="erros.nomeEmpresa"></div>
+                    <div class="form-text" x-show="!erros.nomeEmpresa"
+                         x-text="form.nomeEmpresa.length + '/150'"></div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold" for="dataInicio">Início do estágio</label>
+                    <input id="dataInicio" type="date" class="form-control" x-model="form.dataInicio"
+                           required :max="dataMaxima()"
+                           :class="{ 'is-invalid': erros.dataInicio }">
+                    <div class="invalid-feedback" x-text="erros.dataInicio"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" :disabled="enviando">
+                    <span x-show="!enviando">Enviar para aprovação</span>
+                    <span x-show="enviando">
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                        Enviando...
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/aluno-estagio.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

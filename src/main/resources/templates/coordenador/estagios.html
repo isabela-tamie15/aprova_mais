@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Estágios</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar-coordenador :: navbar('estagios')}"></div>
+
+<div class="container" x-data="estagiosPagina()" x-init="init()" style="max-width: 1000px;">
+    <h4 class="fw-bold mb-1">Estágios em aberto</h4>
+    <p class="text-muted mb-4">Acompanhe os estágios dos alunos do curso. Se um aluno sair da empresa ou desistir, encerre o estágio por desligamento.</p>
+
+    <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+    <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
+
+    <p class="text-muted" x-show="carregando">Carregando...</p>
+
+    <div class="card p-4 text-center" x-show="!carregando && cursos.length === 0" x-cloak>
+        <p class="text-muted mb-2">Você ainda não tem cursos cadastrados.</p>
+        <a href="/coordenador/cursos" class="btn btn-primary">Cadastrar um curso</a>
+    </div>
+
+    <div x-show="!carregando && cursos.length > 0" x-cloak>
+        <div class="mb-4" style="max-width: 420px;">
+            <label class="form-label" for="curso">Curso</label>
+            <select id="curso" class="form-select" x-model="cursoId" @change="trocarCurso()">
+                <template x-for="curso in cursos" :key="curso.id">
+                    <option :value="curso.id" x-text="curso.nome"></option>
+                </template>
+            </select>
+        </div>
+
+        <div class="card">
+            <div class="p-4 text-center text-muted" x-show="estagios.length === 0">
+                Nenhum estágio em aberto neste curso.
+            </div>
+            <div class="table-responsive" x-show="estagios.length > 0">
+                <table class="table mb-0 align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Aluno</th>
+                        <th>Tipo de estágio</th>
+                        <th>Empresa</th>
+                        <th>Orientador</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <template x-for="estagio in estagios" :key="estagio.id">
+                        <tr>
+                            <td x-text="estagio.nomeAluno"></td>
+                            <td x-text="estagio.nomeTipoEstagio"></td>
+                            <td x-text="estagio.nomeEmpresa"></td>
+                            <td x-text="estagio.nomeOrientador || 'Sem orientador'"></td>
+                            <td><span class="badge" :class="classesStatus[estagio.status]" x-text="nomesStatus[estagio.status]"></span></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-danger" @click="abrirDesligamento(estagio)">Desligar</button>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Confirmação do desligamento, com a observação obrigatória -->
+        <div class="card p-4 mt-4" x-show="selecionado" x-cloak x-ref="formulario">
+            <h5 class="mb-1">Encerrar por desligamento</h5>
+            <p class="text-muted mb-3" x-text="selecionado ? selecionado.nomeAluno + ', ' + selecionado.nomeTipoEstagio + ' em ' + selecionado.nomeEmpresa : ''"></p>
+            <label class="form-label" for="observacao">Observação</label>
+            <textarea id="observacao" class="form-control mb-1" rows="3" maxlength="1000"
+                      :class="erroObservacao ? 'is-invalid' : ''" x-model="observacao"></textarea>
+            <div class="invalid-feedback d-block" x-show="erroObservacao" x-text="erroObservacao"></div>
+            <div class="form-text mb-2" x-text="observacao.length + '/1000'"></div>
+            <p class="small text-muted">O estágio fica no histórico do aluno como encerrado, e ele poderá cadastrar um novo.</p>
+            <div>
+                <button class="btn btn-danger me-2" :disabled="salvando" @click="desligar()">Confirmar desligamento</button>
+                <button class="btn btn-secondary" :disabled="salvando" @click="cancelar()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/coordenador.js}"></script>
+<script th:src="@{/js/paginas/coordenador-estagios.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

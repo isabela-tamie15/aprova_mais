@@ -1,0 +1,70 @@
+package tcc.ges.aprovamais.controller;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import tcc.ges.aprovamais.dto.AprovacaoRequest;
+import tcc.ges.aprovamais.dto.EstagioResponse;
+import tcc.ges.aprovamais.dto.RejeicaoRequest;
+import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
+import tcc.ges.aprovamais.service.EstagioService;
+
+import java.time.LocalDate;
+import java.util.List;
+
+// Validação dos estágios dos alunos pelo orientador
+@Tag(name = "Validação do estágio", description = "Aprovação e rejeição dos estágios pelo orientador da turma.")
+@RestController
+@RequestMapping("/api/v1/orientador/validacoes")
+@RequiredArgsConstructor
+public class OrientadorValidacaoController {
+
+    private final EstagioService estagioService;
+
+    // Lista os estágios do orientador logado esperando validação
+    @GetMapping
+    public ResponseEntity<List<EstagioResponse>> listarPendentes(Authentication authentication) {
+
+
+        //E-mail vem do token, então cada orientador só vê os estágios que estão vinculados a ele mesmo
+        return ResponseEntity.ok(estagioService.listarPendentes(authentication.getName()));
+    }
+
+    // Aprova um estágio pendente
+    @PostMapping("/{id}/aprovar")
+    public ResponseEntity<EstagioResponse> aprovar(@PathVariable Long id, Authentication authentication, @Valid @RequestBody(required = false) AprovacaoRequest request, HttpServletRequest httpRequest) {
+
+        /*
+           O service confere se o estágio é mesmo do orientador do token antes de aprovar. O corpo é
+           opcional e traz a data de início conferida no termo de compromisso
+        */
+        String email = authentication.getName();
+        LocalDate dataInicio = request != null ? request.getDataInicio() : null;
+        return ResponseEntity.ok(estagioService.aprovar(id, email, dataInicio, httpRequest.getRemoteAddr()));
+    }
+
+    // Esse endpoint que devolve o histórico de aprovações e rejeições de um estágio do orientador
+    @GetMapping("/{id}/historico")
+    public ResponseEntity<List<ValidacaoEstagioResponse>> historico(@PathVariable Long id,
+                                                                    Authentication authentication) {
+        return ResponseEntity.ok(estagioService.listarHistoricoDoOrientador(id, authentication.getName()));
+    }
+
+    // Rejeita um estágio, com justificativa obrigatória
+    @PostMapping("/{id}/rejeitar")
+    public ResponseEntity<EstagioResponse> rejeitar(
+            @PathVariable Long id,
+            Authentication authentication,
+            @Valid @RequestBody RejeicaoRequest request,
+            HttpServletRequest httpRequest) {
+
+        // A justificativa fica registrada para o aluno entender por que o estágio foi recusado
+        String email = authentication.getName();
+        return ResponseEntity.ok(estagioService.rejeitar(
+                id, email, request.getJustificativa(), httpRequest.getRemoteAddr()));
+    }
+}

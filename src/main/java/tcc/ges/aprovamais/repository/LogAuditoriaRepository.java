@@ -1,0 +1,56 @@
+package tcc.ges.aprovamais.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import tcc.ges.aprovamais.entity.LogAuditoria;
+import tcc.ges.aprovamais.entity.enums.PerfilAuditoria;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+
+@Repository
+public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long>,
+        JpaSpecificationExecutor<LogAuditoria> {
+
+    // Lista os logs de um usuário específico, usado na tela de histórico dele
+    List<LogAuditoria> findByUsuarioId(Long usuarioId);
+
+    // Busca logs por e-mail tentado, usado para rastrear tentativas em e-mails que nem existem na base
+    List<LogAuditoria> findByEmailTentativa(String emailTentativa);
+
+    // Filtra pelo perfil do usuário que gerou o registro
+    List<LogAuditoria> findByPerfil(PerfilAuditoria perfil);
+
+    // Filtra pelo tipo de ação, como LOGIN_SUCESSO e LOGIN_FALHA
+    List<LogAuditoria> findByAcao(String acao);
+
+    // Filtra por sucesso ou falha, usado para auditorias e relatórios de segurança
+    List<LogAuditoria> findBySucesso(Boolean sucesso);
+
+    // Filtra por intervalo de datas, usado em relatórios e consultas de LGPD
+    List<LogAuditoria> findByCriadoEmBetween(OffsetDateTime inicio, OffsetDateTime fim);
+
+    // Lista as ações que já aparecem na auditoria, usado no filtro da tela do administrador
+    @Query("select distinct l.acao from LogAuditoria l order by l.acao")
+    List<String> listarAcoesRegistradas();
+
+    // Troca o e-mail nos registros de auditoria, usado na anonimização
+    @Modifying
+    @Query("UPDATE LogAuditoria l SET l.emailTentativa = :emailNovo WHERE l.emailTentativa = :emailAntigo")
+    int trocarEmail(@Param("emailAntigo") String emailAntigo, @Param("emailNovo") String emailNovo);
+
+    // Troca um texto, e-mail ou nome, nos detalhes dos registros, usado na anonimização
+    @Modifying
+    @Query(value = "UPDATE registros_auditoria SET detalhes = REPLACE(detalhes, :textoAntigo, :textoNovo) "
+            + "WHERE detalhes LIKE CONCAT('%', :textoAntigo, '%')", nativeQuery = true)
+    int trocarTextoNosDetalhes(@Param("textoAntigo") String textoAntigo, @Param("textoNovo") String textoNovo);
+
+    // Elimina os registros anteriores ao prazo de guarda
+    @Modifying
+    @Query("DELETE FROM LogAuditoria l WHERE l.criadoEm < :limite")
+    int apagarAnterioresA(@Param("limite") OffsetDateTime limite);
+}

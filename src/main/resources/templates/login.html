@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Login</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <!-- Gera o QR Code do 2FA no próprio navegador (o segredo não é enviado a terceiros).
+         integrity (SRI): o navegador recusa o arquivo se o conteúdo do CDN for alterado -->
+    <script defer th:src="@{/vendor/qrcodejs/qrcode.min.js}"></script>
+    <script defer th:src="@{/js/mostrar-senha.js}"></script>
+    <script defer th:src="@{/js/app.js}"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+</head>
+<body class="pagina-login">
+
+<!-- Painel esquerdo -->
+<div class="painel-esquerdo">
+    <div class="hero-text">
+        <img th:src="@{/css/img/logo-aprova-subtitulo.png}" class="logo-hero" alt="Aprova+">
+        <h1>Acesse o portal para gerenciar estágios, validações e pareceres acadêmicos.</h1>
+    </div>
+
+    <div class="rodape-esquerdo">
+        © 2026 Aprova+
+    </div>
+</div>
+
+<!-- Painel direito -->
+<div class="painel-direito">
+    <div class="form-area">
+        <span class="badge-portal">Portal Aprova+</span>
+        <h2 class="titulo-form">Boas-vindas de volta!</h2>
+        <p class="subtitulo-form">Entre com o e-mail cadastrado no seu convite</p>
+
+        <div x-data="loginForm()">
+            <div class="alerta-erro" role="alert" x-show="erro" x-text="erro" x-cloak></div>
+
+            <!-- Volta da recuperação de senha (/redefinir-senha redireciona com ?senha=redefinida) -->
+            <div class="alerta-sucesso" role="status" th:if="${param.senha != null and param.senha[0] == 'redefinida'}">
+                Senha alterada. Entre com a nova senha.
+            </div>
+
+            <!-- Etapa 1: e-mail e senha -->
+            <form @submit.prevent="entrar" x-show="etapa === 'credenciais'">
+                <div>
+                    <label for="email" class="form-label">E-mail</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <path d="M2 7l10 7 10-7"/>
+                        </svg>
+                        <input
+                                id="email"
+                                type="email"
+                                class="form-control"
+                                placeholder="seuemail@exemplo.com"
+                                x-model="email"
+                                maxlength="254"
+                                required
+                                autofocus
+                                autocomplete="email">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="senha" class="form-label">Senha</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <input
+                                id="senha"
+                                type="password"
+                                class="form-control"
+                                placeholder="••••••••••••"
+                                x-model="senha"
+                                maxlength="72"
+                                required
+                                autocomplete="current-password">
+                    </div>
+                </div>
+
+                <span class="link-recuperar">
+                    Esqueceu sua senha?
+                    <a href="/recuperar-senha">Recupere agora</a>
+                </span>
+
+                <button type="submit" class="btn-entrar" :disabled="carregando">
+                    <span x-show="!carregando">Entrar no Portal</span>
+                    <span x-show="carregando" x-cloak>
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Entrando...
+                    </span>
+                </button>
+            </form>
+
+            <!-- Etapa 2: configuração obrigatória do 2FA (perfis que exigem segundo fator) -->
+            <div x-show="etapa === 'configuracao'" x-cloak>
+                <p class="mb-2"><strong>Configure a verificação em duas etapas</strong></p>
+                <p class="text-muted small mb-3">
+                    Seu perfil exige verificação em duas etapas. Escaneie o QR Code com um aplicativo
+                    autenticador (Google Authenticator, Microsoft Authenticator ou similar).
+                </p>
+                <div class="d-flex justify-content-center mb-3" x-ref="qrcode"></div>
+                <p class="text-muted small mb-3">
+                    Não consegue escanear? Digite esta chave no aplicativo:
+                    <code class="d-block text-break mt-1" x-text="segredo"></code>
+                </p>
+            </div>
+
+            <!-- Etapa 2 (comum): digitar o código de 6 dígitos -->
+            <form @submit.prevent="confirmarCodigo" x-show="etapa !== 'credenciais'" x-cloak>
+                <p class="text-muted small mb-3" x-show="etapa === 'codigo'">
+                    Digite o código de 6 dígitos exibido no seu aplicativo autenticador.
+                </p>
+                <div class="small mb-3" x-show="etapa === 'codigo'">
+                    <div x-show="!liberacaoEnviada">
+                        <a href="#" @click.prevent="pedindoLiberacao = !pedindoLiberacao">Perdi o acesso ao aplicativo autenticador</a>
+                        <div x-show="pedindoLiberacao" x-cloak class="mt-2">
+                            <label for="motivoLiberacao" class="form-label">O que aconteceu? (opcional)</label>
+                            <textarea id="motivoLiberacao" class="form-control" rows="2" maxlength="500"
+                                      placeholder="Ex.: troquei de celular" x-model="motivoLiberacao"></textarea>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                    :disabled="carregando" @click="pedirLiberacao()">Pedir nova configuração</button>
+                        </div>
+                    </div>
+                    <div class="alerta-sucesso mb-0" role="status" x-show="liberacaoEnviada" x-cloak>
+                        Pedido enviado. Quando ele for aprovado, entre de novo com seu e-mail e senha para configurar o aplicativo no novo celular.
+                    </div>
+                </div>
+                <div>
+                    <label for="codigo" class="form-label">Código de verificação</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 3L4 7v5c0 5.25 3.4 10.15 8 11.35C16.6 22.15 20 17.25 20 12V7L12 3z"/>
+                        </svg>
+                        <input
+                                id="codigo"
+                                type="text"
+                                class="form-control"
+                                inputmode="numeric"
+                                pattern="[0-9]{6}"
+                                maxlength="6"
+                                placeholder="000000"
+                                x-model="codigo"
+                                x-ref="campoCodigo"
+                                required
+                                autocomplete="one-time-code">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-entrar mt-3" :disabled="carregando || codigo.length !== 6">
+                    <span x-show="!carregando">Verificar</span>
+                    <span x-show="carregando" x-cloak>
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Verificando...
+                    </span>
+                </button>
+
+                <span class="link-recuperar mt-3">
+                    <a href="#" @click.prevent="reiniciar()">Voltar ao login</a>
+                </span>
+            </form>
+        </div>
+    </div>
+
+    <div class="rodape-direito">
+        Dúvidas no acesso?
+        <a href="mailto:atendimentoaprovamais@gmail.com">Contate o Suporte</a>
+        <div th:replace="~{fragments/rodape-lgpd :: rodape-compacto}"></div>
+    </div>
+</div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

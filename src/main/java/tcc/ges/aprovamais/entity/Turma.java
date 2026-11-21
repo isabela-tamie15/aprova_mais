@@ -1,0 +1,59 @@
+package tcc.ges.aprovamais.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.ToString;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import tcc.ges.aprovamais.entity.enums.Periodo;
+import tcc.ges.aprovamais.entity.enums.Modalidade;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+
+@Data
+@EntityListeners(AuditingEntityListener.class)
+@Entity
+@Table(name = "turmas")
+public class Turma {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "curso_id", nullable = false)
+    @ToString.Exclude
+    private Curso curso;
+
+    @Column(nullable = false)
+    private String semestre;
+
+    @Column(nullable = false)
+    private String identificador;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Periodo periodo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Modalidade modalidade;
+
+    /*
+       Data em que as entregas do semestre fecham, informada pelo coordenador. Mostra ao aluno e ao
+       orientador quantos dias faltam e o aviso de prazo. Aceita vazio porque as turmas antigas não
+       têm essa data
+    */
+    @Column(name = "data_encerramento_entregas")
+    private LocalDate dataEncerramentoEntregas;
+
+    @CreatedDate
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private OffsetDateTime criadoEm;
+
+    @LastModifiedDate
+    @Column(name = "alterado_em", nullable = false)
+    private OffsetDateTime alteradoEm;
+}

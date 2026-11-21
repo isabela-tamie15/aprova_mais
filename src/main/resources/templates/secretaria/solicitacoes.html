@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Solicitações</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/paginas/secretaria-convites.css}" rel="stylesheet">
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar-secretaria :: navbar('solicitacoes')}"></div>
+
+<div class="container" x-data="painelSolicitacoes('/api/v1/secretaria/solicitacoes', 'PENDENTE', false)"
+     x-init="init()" style="max-width: 900px;">
+    <h4 class="fw-bold mb-1">Solicitações</h4>
+    <p class="text-muted mb-4">Confira os dados do aluno e decida os pedidos de trancamento, de reabertura e de exclusão de anexo. O trancamento aprovado aqui segue para a coordenação.</p>
+
+    <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
+    <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
+    <p class="text-muted" x-show="carregando">Carregando...</p>
+
+    <div x-show="!carregando" x-cloak>
+        <div th:replace="~{fragments/lista-solicitacoes :: lista}"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/solicitacoes-comum.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+</body>
+</html>

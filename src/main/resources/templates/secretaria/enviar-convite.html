@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Enviar Convite</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+    <link th:href="@{/css/paginas/secretaria-enviar-convite.css}" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar-secretaria :: navbar('enviar-convite')}"></div>
+
+<div class="container" style="max-width: 900px;" x-data="conviteForm()" x-init="carregarPreCadastros()">
+    <h4 class="fw-bold mb-1">Enviar Convite de Acesso</h4>
+    <p class="text-muted mb-4">
+        Convide os alunos e orientadores cadastrados pela coordenação. Cada pessoa recebe um e-mail
+        com o link para criar a conta.
+    </p>
+
+    <div class="alerta-erro mb-3" role="alert" x-show="erro" x-text="erro" x-cloak></div>
+    <div class="alerta-sucesso mb-3" role="status" x-show="sucesso" x-text="sucesso" x-cloak></div>
+
+    <!-- Pré-cadastrados que ainda não concluíram o cadastro, com a situação do convite -->
+    <div class="card-form p-4 mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+            <div>
+                <h5 class="fw-bold mb-0">Pré-cadastrados aguardando convite</h5>
+                <span class="text-muted small">quem ainda não criou a conta</span>
+            </div>
+            <input type="search" class="form-control form-control-sm busca-pre-cadastro"
+                   placeholder="Buscar por nome, RGM ou e-mail" x-model="busca" maxlength="100">
+        </div>
+
+        <p class="text-muted mb-0" x-show="carregandoLista">Carregando...</p>
+        <p class="text-muted mb-0" x-show="!carregandoLista && preCadastrosFiltrados().length === 0" x-cloak
+           x-text="busca ? 'Nenhum pré-cadastrado encontrado para a busca.' : 'Nenhum pré-cadastrado aguardando convite.'"></p>
+
+        <template x-for="item in preCadastrosFiltrados()" :key="item.id">
+            <div class="linha-pre-cadastro">
+                <div class="flex-grow-1">
+                    <div class="fw-semibold" x-text="item.nome"></div>
+                    <div class="small text-muted">
+                        <span x-text="(item.perfil === 'ALUNO' ? 'RGM ' : 'Matrícula ') + item.identificadorInstitucional"></span>
+                        <span> · </span>
+                        <span x-text="item.perfil === 'ALUNO' ? 'Aluno' : 'Orientador'"></span>
+                        <template x-if="item.nomeCurso">
+                            <span x-text="' · ' + item.nomeCurso + ' · Turma ' + item.descricaoTurma"></span>
+                        </template>
+                    </div>
+                    <div class="small text-muted" x-text="item.email"></div>
+                </div>
+                <div class="text-end">
+                    <span class="badge mb-2 d-inline-block"
+                          :class="item.situacao === 'CONVITE_PENDENTE' ? 'text-bg-primary' : 'text-bg-warning'"
+                          x-text="item.situacao === 'CONVITE_PENDENTE' ? 'Convite pendente' : 'Aguardando convite'"></span>
+                    <div x-show="item.situacao === 'AGUARDANDO_CONVITE'">
+                        <button type="button" class="btn btn-sm btn-primary"
+                                :disabled="enviando" @click="convidar(item)">Convidar</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Envio pelo e-mail, para quem preferir digitar -->
+    <div class="card-form p-4" style="max-width: 520px;">
+        <h6 class="fw-bold mb-3">Ou informe o e-mail</h6>
+
+        <div class="mb-3">
+            <label for="email" class="form-label fw-semibold">E-mail do destinatário</label>
+            <input id="email"
+                   type="email"
+                   class="form-control"
+                   placeholder="nome@email.com"
+                   x-model="form.emailDestino"
+                   maxlength="254"
+                   :class="{ 'is-invalid': erros.emailDestino }"
+                   required>
+            <div class="invalid-feedback" x-text="erros.emailDestino"></div>
+        </div>
+
+        <div class="mb-4">
+            <label for="perfil" class="form-label fw-semibold">Perfil de acesso</label>
+            <select id="perfil" class="form-select" x-model="form.perfil"
+                    :class="{ 'is-invalid': erros.perfil }">
+                <option value="">Selecione o perfil...</option>
+                <option value="ALUNO">Aluno</option>
+                <option value="ORIENTADOR">Orientador</option>
+            </select>
+            <div class="invalid-feedback" x-text="erros.perfil"></div>
+        </div>
+
+        <button class="btn btn-primary"
+                :disabled="!podoEnviar() || enviando"
+                @click="enviar()">
+            <span x-show="!enviando">Enviar convite</span>
+            <span x-show="enviando" x-cloak>
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Enviando...
+            </span>
+        </button>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/secretaria-enviar-convite.js}"></script>
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

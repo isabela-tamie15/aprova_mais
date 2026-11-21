@@ -1,0 +1,38 @@
+/* Estilos das telas de entregas para trilha do aluno, painel de correção e avaliação do orientador */
+
+[x-cloak] {
+    display: none !important;
+}
+
+.coluna-ordem {
+    width: 80px;
+}
+
+/* Cada versão do histórico fica num bloco com borda à esquerda */
+.versao-entrega {
+    border-left: 4px solid #C7D2FE;
+    padding: 0.5rem 0 0.5rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.avaliacao-versao {
+    background: #F8FAFC;
+    border: 1px solid #EEF0F4;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+/* Feedback e comentários mantêm as quebras de linha digitadas */
+.texto-livre {
+    white-space: pre-line;
+}
+
+.total-aguardando {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.coluna-versao-anterior {
+    border-left: 1px solid #E5E7EB;
+}

@@ -7,7 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Entity
@@ -26,15 +26,23 @@ public class Curso {
     @Column(name = "codigo_mec", nullable = false, unique = true)
     private String codigoMec;
 
+    /*
+       Coordenador responsável pelo curso, que é quem cadastra o curso. Fica nulo nos cursos criados
+       por script antes desse campo existir
+    */
+    @ManyToOne
+    @JoinColumn(name = "coordenador_id")
+    @ToString.Exclude
+    private Coordenador coordenador;
+
     @OneToMany(mappedBy = "curso")
     @ToString.Exclude
     private List<TipoEstagio> tiposEstagio;
 
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
-    private LocalDateTime criadoEm;
+    private OffsetDateTime criadoEm;
 
     @LastModifiedDate
     @Column(name = "alterado_em", nullable = false)
-    private LocalDateTime alteradoEm;
-}
+    private OffsetDateTime alteradoEm;}

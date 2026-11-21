@@ -2,18 +2,22 @@ package tcc.ges.aprovamais.entity;
 
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.security.AesEncryptor;
 
 import java.time.OffsetDateTime;
 
 
+// @Getter e @Setter no lugar do @Data, para o toString não mostrar senha, segredo do 2FA e tokens
 @Inheritance(strategy = InheritanceType.JOINED)
 @EntityListeners(AuditingEntityListener.class)
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "usuarios")
 public abstract class Usuario {
@@ -38,8 +42,13 @@ public abstract class Usuario {
     @Column(name = "dois_fatores_ativo")
     private Boolean doisFatoresAtivo = false;
 
+    @Convert(converter = AesEncryptor.class)
     @Column(name = "dois_fatores_segredo")
     private String doisFatoresSegredo;
+
+    // Passo de 30 segundos do último código TOTP aceito, para cada código valer uma vez só
+    @Column(name = "ultimo_passo_totp")
+    private Long ultimoPassoTotp;
 
     @Column(name = "token_pre_autenticacao")
     private String tokenPreAutenticacao;
@@ -77,6 +86,10 @@ public abstract class Usuario {
     @Column(nullable = false)
     private Boolean ativo = true;
 
+    // Versão da sessão gravada no JWT. Somar 1 encerra todas as sessões abertas da conta (nulo vale como zero)
+    @Column(name = "versao_sessao")
+    private Integer versaoSessao = 0;
+
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
@@ -84,4 +97,20 @@ public abstract class Usuario {
     @LastModifiedDate
     @Column(name = "alterado_em", nullable = false)
     private OffsetDateTime alteradoEm;
+
+    // Versão atual da sessão, com nulo valendo zero
+    public int versaoSessaoAtual() {
+        return versaoSessao == null ? 0 : versaoSessao;
+    }
+
+    // Encerra todas as sessões abertas da conta, e os tokens emitidos antes deixam de valer
+    public void encerrarSessoes() {
+        versaoSessao = versaoSessaoAtual() + 1;
+    }
+
+    // Só o id e o perfil, para senha, segredo do 2FA, tokens e e-mail não aparecerem em log
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(id=" + id + ", perfil=" + perfil + ")";
+    }
 }

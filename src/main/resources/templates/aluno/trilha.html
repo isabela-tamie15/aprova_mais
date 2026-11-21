@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:x-bind="http://www.w3.org/1999/xhtml"
+      xmlns:x-on="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Minha Trilha</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/paginas/entregas.css}" rel="stylesheet">
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar-aluno :: navbar('trilha')}"></div>
+
+<div class="container pb-5" x-data="trilhaAluno()">
+
+    <h4 class="mb-4">Minha Trilha de Tarefas</h4>
+
+    <div th:if="${trilha}" class="card p-4">
+        <h5 class="card-title fw-bold mb-1">Trilha de Estágio</h5>
+        <p class="text-muted mb-0"><strong>Tipo de estágio:</strong> <span th:text="${trilha.nomeTipoEstagio}"></span></p>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mt-3 mb-0 align-middle">
+                <thead>
+                <tr>
+                    <th class="coluna-ordem">Ordem</th>
+                    <th>Tarefa</th>
+                    <th>Descrição</th>
+                    <th>Material de apoio</th>
+                    <th>Entrega</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- O status vem do servidor e é atualizado pelo script depois de um envio -->
+                <tr th:each="tarefa : ${trilha.tarefas}">
+                    <td class="text-center" th:text="${tarefa.ordem}"></td>
+                    <td th:text="${tarefa.nome}"></td>
+                    <td th:text="${tarefa.descricao}"></td>
+                    <td>
+                        <a th:if="${tarefa.linkApoio}" th:href="${tarefa.linkApoio}" target="_blank"
+                           rel="noopener noreferrer">Abrir</a>
+                        <span th:unless="${tarefa.linkApoio}" class="text-muted">-</span>
+                    </td>
+                    <td>
+                        <span class="badge" th:data-id="${tarefa.id}" th:data-status="${tarefa.statusEntrega}"
+                              x-bind:class="classeStatus(statusDe($el.dataset.id, $el.dataset.status))"
+                              x-text="nomeStatus(statusDe($el.dataset.id, $el.dataset.status))"
+                              th:text="${tarefa.statusEntrega}"></span>
+                        <small class="text-muted d-block" th:if="${tarefa.totalVersoes > 0}"
+                               th:text="${tarefa.totalVersoes == 1 ? '1 versão' : tarefa.totalVersoes + ' versões'}"></small>
+                    </td>
+                    <td class="text-center text-nowrap">
+                        <!-- Entregar só aparece quando a tarefa aceita envio; Ver só quando já existe versão -->
+                        <div class="d-inline-flex gap-2" th:data-id="${tarefa.id}" th:data-status="${tarefa.statusEntrega}"
+                             th:data-versoes="${tarefa.totalVersoes}">
+                            <button type="button" class="btn btn-sm btn-primary"
+                                    x-show="podeEntregar(statusDe($el.parentElement.dataset.id, $el.parentElement.dataset.status))"
+                                    x-on:click="abrir($el.parentElement.dataset.id, 'entregar')">Entregar</button>
+                            <button type="button" class="btn btn-sm btn-success"
+                                    x-show="temVersao($el.parentElement.dataset.id, $el.parentElement.dataset.versoes)"
+                                    x-on:click="abrir($el.parentElement.dataset.id, 'ver')">Ver</button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:unless="${trilha}" class="card p-4 text-center" th:switch="${situacaoEstagio}">
+        <div th:case="'PENDENTE'">
+            <h5 class="mb-2">Seu estágio está aguardando aprovação</h5>
+            <p class="text-muted">Assim que o orientador aprovar o cadastro, as tarefas da sua trilha aparecem aqui.</p>
+            <a href="/estagio" class="btn btn-primary">Ver meu estágio</a>
+        </div>
+        <div th:case="'REJEITADO'">
+            <h5 class="mb-2">Seu cadastro de estágio precisa de ajustes</h5>
+            <p class="text-muted">Confira o motivo informado pelo orientador, corrija os dados e envie de novo.</p>
+            <a href="/estagio" class="btn btn-primary">Corrigir meu estágio</a>
+        </div>
+        <div th:case="'SUSPENSO'">
+            <h5 class="mb-2">Seu estágio está trancado</h5>
+            <p class="text-muted">A trilha volta a aparecer se o estágio for reaberto.</p>
+            <a href="/aluno/solicitacoes" class="btn btn-primary">Ver minhas solicitações</a>
+        </div>
+        <div th:case="'CONCLUIDO'">
+            <h5 class="mb-2">Seu estágio foi concluído</h5>
+            <p class="text-muted">Todas as tarefas da trilha foram aprovadas. Os dados do estágio continuam disponíveis em Meu estágio.</p>
+            <a href="/estagio" class="btn btn-primary">Ver meu estágio</a>
+        </div>
+        <div th:case="'SEM_ESTAGIO'">
+            <h5 class="mb-2">Você ainda não tem um estágio em andamento</h5>
+            <p class="text-muted">Cadastre o seu estágio para liberar a trilha de tarefas.</p>
+            <a href="/estagio" class="btn btn-primary">Cadastrar meu estágio</a>
+        </div>
+        <div th:case="*">
+            <h5 class="mb-2">Sua trilha ainda não está pronta</h5>
+            <p class="text-muted mb-0">A coordenação ainda está montando as tarefas do seu tipo de estágio. Volte mais tarde.</p>
+        </div>
+    </div>
+
+    <!-- Entrega da tarefa selecionada: envio de arquivo e histórico de versões -->
+    <div id="painel-entrega" class="card p-4 mt-4" x-show="tarefaId" x-cloak>
+        <div class="text-muted" x-show="carregando">Carregando a entrega...</div>
+        <div class="alert alert-danger" x-show="erro" x-text="erro"></div>
+
+        <template x-if="detalhe && !carregando">
+            <div>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1" x-text="detalhe.nomeTarefa"></h5>
+                        <p class="text-muted mb-0" x-text="detalhe.descricaoTarefa"></p>
+                    </div>
+                    <span class="badge" :class="classeStatus(detalhe.status)" x-text="nomeStatus(detalhe.status)"></span>
+                </div>
+
+                <div class="alert alert-success" x-show="sucesso" x-text="sucesso"></div>
+
+                <div class="alert alert-warning" x-show="detalhe.status === 'DEVOLVIDA'">
+                    Sua última versão foi devolvida. Confira o feedback do orientador abaixo e envie uma nova versão.
+                </div>
+                <div class="alert alert-info" x-show="detalhe.status === 'ENVIADA' || detalhe.status === 'EM_REVISAO'">
+                    Sua entrega está com o orientador. Uma nova versão só pode ser enviada se ela for devolvida.
+                </div>
+                <div class="alert alert-success" x-show="detalhe.status === 'APROVADA'">
+                    Tarefa aprovada pelo orientador.
+                </div>
+
+                <!-- Formulário de envio, só quando a tarefa aceita uma nova versão -->
+                <form x-show="detalhe.podeEnviar" @submit.prevent="enviar()" novalidate class="mb-4">
+                    <h6 class="fw-semibold" x-text="'Enviar versão ' + (detalhe.versoes.length + 1)"></h6>
+                    <div class="mb-3">
+                        <label for="arquivo" class="form-label">Arquivo</label>
+                        <input id="arquivo" type="file" class="form-control" x-ref="arquivo"
+                               accept=".pdf,.docx,.xlsx,.pptx,.jpg,.jpeg,.png"
+                               :class="{ 'is-invalid': erros.arquivo }" @change="erros.arquivo = ''">
+                        <div class="invalid-feedback" x-text="erros.arquivo"></div>
+                        <div class="form-text">PDF, DOCX, XLSX, PPTX, JPG, JPEG ou PNG, até 10 MB.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="comentario" class="form-label">Comentário para o orientador (opcional)</label>
+                        <textarea id="comentario" class="form-control" rows="2" maxlength="1000"
+                                  x-model="comentario" :class="{ 'is-invalid': erros.comentario }"></textarea>
+                        <div class="invalid-feedback" x-text="erros.comentario"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" :disabled="enviando">
+                        <span x-show="!enviando">Enviar</span>
+                        <span x-show="enviando">Enviando...</span>
+                    </button>
+                </form>
+
+                <h6 id="historico-versoes" class="fw-semibold">Histórico de versões</h6>
+                <p class="text-muted" x-show="detalhe.versoes.length === 0">Nenhuma versão enviada ainda.</p>
+
+                <template x-for="versao in detalhe.versoes" :key="versao.id">
+                    <div class="versao-entrega">
+                        <div class="d-flex justify-content-between flex-wrap gap-2">
+                            <strong x-text="'Versão ' + versao.numero"></strong>
+                            <span class="text-muted small" x-text="'Enviada em ' + formatarDataHora(versao.enviadaEm)"></span>
+                        </div>
+                        <div class="mt-1" x-show="anexoDisponivel(versao)">
+                            <a :href="'/api/v1/aluno/entregas/versoes/' + versao.id + '/arquivo'" x-text="versao.nomeArquivo"></a>
+                            <span class="text-muted small" x-text="'(' + formatarTamanho(versao.tamanhoBytes) + ')'"></span>
+                        </div>
+                        <p class="mt-1 mb-0 small text-muted" x-show="!anexoDisponivel(versao)" x-text="textoSituacaoAnexo(versao)"></p>
+                        <div class="mt-2" x-show="excluindoId !== versao.id">
+                            <button type="button" class="btn btn-outline-danger btn-sm me-2" x-show="versao.podeCancelarEnvio"
+                                    @click="cancelarEnvio(versao)">Cancelar envio</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    x-show="versao.podeSolicitarExclusao && !versao.podeCancelarEnvio"
+                                    @click="abrirExclusao(versao)">Solicitar exclusão do anexo</button>
+                        </div>
+                        <div class="mt-2" x-show="excluindoId === versao.id">
+                            <label class="form-label small" :for="'motivo-exclusao-' + versao.id">Por que este anexo deve ser excluído?</label>
+                            <textarea class="form-control mb-1" rows="2" maxlength="1000" :id="'motivo-exclusao-' + versao.id"
+                                      x-model="motivoExclusao"></textarea>
+                            <div class="form-text mb-2">Enquanto o pedido é analisado pela secretaria ou pela coordenação, ninguém consegue abrir o anexo. Se for aprovado, o arquivo é apagado na hora.</div>
+                            <button type="button" class="btn btn-danger btn-sm me-2" @click="solicitarExclusao(versao)">Enviar pedido</button>
+                            <button type="button" class="btn btn-secondary btn-sm" @click="excluindoId = null">Voltar</button>
+                        </div>
+                        <p class="mb-0 mt-1 small" x-show="versao.comentarioAluno">
+                            <strong>Seu comentário:</strong> <span x-text="versao.comentarioAluno"></span>
+                        </p>
+
+                        <div class="avaliacao-versao" x-show="versao.resultado">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="badge" :class="classeStatus(versao.resultado)" x-text="nomeStatus(versao.resultado)"></span>
+                                <span class="text-muted small"
+                                      x-text="'por ' + versao.nomeAvaliador + ' em ' + formatarDataHora(versao.avaliadaEm)"></span>
+                            </div>
+                            <p class="mb-1 mt-2" x-show="versao.feedback">
+                                <strong>Feedback:</strong> <span class="texto-livre" x-text="versao.feedback"></span>
+                            </p>
+
+                            <!-- Resultado de cada critério do checklist nesta versão -->
+                            <div class="mt-2" x-show="versao.checklist.length > 0">
+                                <strong class="small">Checklist de critérios:</strong>
+                                <template x-for="(item, posicao) in versao.checklist" :key="posicao">
+                                    <div class="small mt-1">
+                                        <span class="badge" :class="classeResultado(item.resultado)"
+                                              x-text="nomeResultado(item.resultado)"></span>
+                                        <span x-text="item.descricaoCriterio"></span>
+                                        <div class="text-muted texto-livre" x-show="item.observacao"
+                                             x-text="'Observação: ' + item.observacao"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+<script th:src="@{/js/paginas/entregas-comum.js}"></script>
+<script th:src="@{/js/paginas/aluno-trilha.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

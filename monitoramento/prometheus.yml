@@ -1,0 +1,9 @@
+# Lê as métricas do backend a cada 15 segundos, pela porta 9090 da rede interna
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "aprovamais"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["backend:9090"]

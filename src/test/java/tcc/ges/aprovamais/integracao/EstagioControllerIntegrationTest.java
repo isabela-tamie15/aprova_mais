@@ -1,0 +1,603 @@
+package tcc.ges.aprovamais.integracao;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import tcc.ges.aprovamais.dto.ConsultaCnpjResponse;
+import tcc.ges.aprovamais.entity.*;
+import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
+import tcc.ges.aprovamais.entity.enums.StatusEstagio;
+import tcc.ges.aprovamais.repository.EstagioRepository;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+
+class EstagioControllerIntegrationTest extends IntegracaoTestBase {
+
+    @Autowired
+    private WebApplicationContext context;
+    @Autowired
+    private EstagioRepository estagioRepository;
+    private MockMvc mockMvc;
+    private Matricula matricula;
+    private Orientador orientador;
+    private TipoEstagio tipoEstagio;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+
+
+        Turma turma = criarTurma();
+        tipoEstagio = criarTipoEstagio(turma.getCurso());
+        orientador = criarOrientador(EMAIL_ORIENTADOR, "ORI-001");
+        vincularOrientadorNaTurma(orientador, turma);
+        matricula = criarMatricula(criarAluno(EMAIL_ALUNO, "RGM-001"), turma);
+
+
+    }
+
+    @Test
+    @DisplayName("POST /aprovar retorna 200 e o estágio volta como ativo")
+    void deveRetornar200AoAprovarEstagioPendente() throws Exception {
+        Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", estagio.getId()).with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR"))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(estagio.getId()))
+                .andExpect(jsonPath("$.status").value("ATIVO"))
+                .andExpect(jsonPath("$.nomeEmpresa").value("Empresa Teste"));
+
+
+    }
+
+    @Test
+    @DisplayName("POST /aprovar em estagio que não está pendente retorna 409 com a mensagem de erro")
+    void deveRetornar409AoAprovarEstagioQueNaoEstaPendente() throws Exception {
+        Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+
+
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", estagio.getId()).with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR"))).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.mensagem", containsString("pendentes podem ser aprovados")));
+
+    }
+
+    @Test
+    @DisplayName("Aluno cadastra estagio pela API e ele aparece na lista do orientador")
+    void deveCadastrarEstagioEExibirNaListaDoOrientador() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Integracao"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        // o aluno envia o estagio
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDENTE"))
+                .andExpect(jsonPath("$.nomeOrientador").value("Orientador Teste"));
+
+
+
+        // ficou gravado no banco como pendente
+        List<Estagio> gravados = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId());
+        assertEquals(1, gravados.size());
+        assertEquals(StatusEstagio.PENDENTE, gravados.get(0).getStatus());
+
+
+
+
+        // o orientador da turma enxerga a solicitação
+        mockMvc.perform(get("/api/v1/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nomeEmpresa").value("Empresa Integracao"))
+                .andExpect(jsonPath("$[0].status").value("PENDENTE"));
+    }
+
+    @Test
+    @DisplayName("GET /tipos devolve só os tipos do curso do aluno e barra cadastro com tipo de outro curso")
+    void deveFiltrarTiposPeloCursoDoAluno() throws Exception {
+        // Um segundo curso com um tipo próprio, que o aluno não pode ver nem usar
+        Curso outroCurso = new Curso();
+        outroCurso.setNome("Administração");
+        outroCurso.setCodigoMec("MEC-TESTE-002");
+        entityManager.persist(outroCurso);
+        TipoEstagio tipoDeOutroCurso = criarTipoEstagio(outroCurso);
+        tipoDeOutroCurso.setNome("CLT Administração");
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio/tipos").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(tipoEstagio.getId()));
+
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Integracao"
+                }
+                """.formatted(tipoDeOutroCurso.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isNotFound());
+
+        assertTrue(estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Rejeição, reenvio e aprovação ficam no histórico, com a justificativa preservada")
+    void deveManterHistoricoDeValidacoes() throws Exception {
+        Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+        // orientador rejeita
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/rejeitar", estagio.getId())
+                        .with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"justificativa\": \"Data não confere com o termo\"}"))
+                .andExpect(status().isOk());
+
+        // aluno corrige e reenvia
+        String corpo = """
+                {
+                  "dataInicio": "2026-08-03",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Teste"
+                }
+                """.formatted(tipoEstagio.getId());
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isOk());
+
+        // orientador aprova sem corpo, vale a data do aluno
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", estagio.getId())
+                        .with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dataInicio").value("2026-08-03"));
+
+        // o aluno vê as duas decisões, a rejeição com a justificativa
+        mockMvc.perform(get("/api/v1/aluno/estagio/historico").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].aprovado").value(false))
+                .andExpect(jsonPath("$[0].justificativa").value("Data não confere com o termo"))
+                .andExpect(jsonPath("$[0].nomeOrientador").value("Orientador Teste"))
+                .andExpect(jsonPath("$[1].aprovado").value(true));
+
+        // outro orientador não enxerga o histórico desse estágio
+        criarOrientador("outro@teste.com", "ORI-002");
+        mockMvc.perform(get("/api/v1/orientador/validacoes/{id}/historico", estagio.getId())
+                        .with(user("outro@teste.com").roles("ORIENTADOR")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Estágio encerrado fica no histórico e a matrícula aceita um novo, mas não reenvio de um ATIVO")
+    void deveManterHistoricoDeEstagiosDaMatricula() throws Exception {
+        // estágio anterior já encerrado, por exemplo numa troca de modalidade
+        Estagio anterior = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ENCERRADO);
+        anterior.setMotivoEncerramento(MotivoEncerramento.TROCA_MODALIDADE);
+        entityManager.flush();
+
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Nova"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        // com o anterior encerrado, o aluno consegue abrir um novo estágio
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDENTE"));
+
+        // o estágio atual é o novo, e a lista completa traz os dois
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomeEmpresa").value("Empresa Nova"));
+        mockMvc.perform(get("/api/v1/aluno/estagio/todos").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].status").value("ENCERRADO"))
+                .andExpect(jsonPath("$[0].motivoEncerramento").value("TROCA_MODALIDADE"))
+                .andExpect(jsonPath("$[1].status").value("PENDENTE"));
+
+        // depois de aprovado, o reenvio é recusado com 409
+        Estagio novo = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).get(1);
+        mockMvc.perform(post("/api/v1/orientador/validacoes/{id}/aprovar", novo.getId())
+                        .with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensagem", containsString("troca de modalidade")));
+    }
+
+    @Test
+    @DisplayName("Formulário inválido volta 400 com a mensagem e o erro de cada campo")
+    void deveRetornar400ComErrosPorCampo() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "2099-01-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": " "
+                }
+                """.formatted(tipoEstagio.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.mensagem").isNotEmpty())
+                .andExpect(jsonPath("$.campos.nomeEmpresa").isNotEmpty())
+                .andExpect(jsonPath("$.campos.dataInicio")
+                        .value("A data de início não pode ser mais de 1 ano no futuro"));
+
+        assertTrue(estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Data fora do formato volta 400 com mensagem clara, e não 500")
+    void deveRetornar400QuandoJsonInvalido() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "31/02/2026",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Teste"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem", containsString("formato inválido")));
+    }
+
+    @Test
+    @DisplayName("CNPJ inexistente na Receita é recusado e CNPJ ativo fica gravado com a situação")
+    void deveVerificarCnpjNaReceita() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-81",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Teste"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        // a Receita diz que o CNPJ não existe: 409 e nada gravado
+        when(consultaCnpjService.consultar("11222333000181")).thenReturn(ConsultaCnpjResponse.naoEncontrado());
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensagem", containsString("não encontrado na Receita")));
+        assertTrue(estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).isEmpty());
+
+        // a Receita encontra: grava o CNPJ sem pontuação e a situação
+        when(consultaCnpjService.consultar("11222333000181"))
+                .thenReturn(ConsultaCnpjResponse.encontrado("EMPRESA TESTE LTDA", null, "ATIVA"));
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cnpjEmpresa").value("11.222.333/0001-81"))
+                .andExpect(jsonPath("$.situacaoCnpj").value("ATIVA"));
+
+        Estagio gravado = estagioRepository.findByMatriculaIdOrderByIdAsc(matricula.getId()).get(0);
+        assertEquals("11222333000181", gravado.getCnpjEmpresa());
+    }
+
+    @Test
+    @DisplayName("CNPJ com dígito verificador errado volta 400 no campo, sem consultar a Receita")
+    void deveRecusarCnpjComDigitoErrado() throws Exception {
+        String corpo = """
+                {
+                  "dataInicio": "2026-10-01",
+                  "cnpjEmpresa": "11.222.333/0001-80",
+                  "tipoEstagioId": %d,
+                  "nomeEmpresa": "Empresa Teste"
+                }
+                """.formatted(tipoEstagio.getId());
+
+        mockMvc.perform(post("/api/v1/aluno/estagio")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.cnpjEmpresa").value("CNPJ inválido. Confira os números digitados"));
+
+        mockMvc.perform(get("/api/v1/aluno/estagio/cnpj/{cnpj}", "11222333000180")
+                        .with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isBadRequest());
+
+        verify(consultaCnpjService, never()).consultar(anyString());
+    }
+
+    // Data de encerramento das entregas e aviso de prazo, pela API e nas páginas
+
+    @Test
+    @DisplayName("GET do estágio ativo devolve a data de encerramento das entregas, os dias que faltam e o aviso amarelo")
+    void deveDevolverAvisoDePrazoPelaApi() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
+        LocalDate encerramento = LocalDate.now().plusDays(20);
+        matricula.getTurma().setDataEncerramentoEntregas(encerramento);
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dataEncerramentoEntregas").value(encerramento.toString()))
+                .andExpect(jsonPath("$.diasParaEncerramentoEntregas").value(20))
+                .andExpect(jsonPath("$.avisoPrazo").value("AMARELO"));
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra o aviso FINALIZAÇÃO DO PRAZO quando faltam 5 dias")
+    void deveMostrarAvisoNoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
+        entityManager.flush();
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("FINALIZAÇÃO DO PRAZO")))
+                .andExpect(content().string(containsString("Faltam 5 dias para a data de encerramento das entregas")))
+                .andExpect(content().string(containsString("Carga horária restante")));
+    }
+
+    @Test
+    @DisplayName("Página do orientador lista os estágios ativos com o aviso de prazo de cada aluno")
+    void deveMostrarEstagiosAtivosNaPaginaDoOrientador() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now());
+        entityManager.flush();
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Estágios ativos")))
+                .andExpect(content().string(containsString("Aluno Teste")))
+                .andExpect(content().string(containsString("Hoje é o último dia para entregar")));
+    }
+
+    @Test
+    @DisplayName("Turma sem data de encerramento das entregas não quebra o painel do aluno")
+    void naoDeveQuebrarPainelSemDataDeEncerramento() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("ainda não informada pela coordenação")));
+    }
+
+    /*
+       O estágio pendente mostra os campos com os mesmos rótulos e a mesma data (dd/MM/yyyy) do
+       estágio ativo, para a tela não mudar quando o orientador aprovar. O estágio de teste é do
+       tipo Estagiário, com 30h semanais, começa em 01/08/2026 e não tem CNPJ gravado
+    */
+    @Test
+    @DisplayName("Página Meu Estágio mostra o estágio pendente com os mesmos nomes da F2")
+    void deveMostrarEstagioPendenteComOsNomesDaF2NaPaginaMeuEstagio() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+        mockMvc.perform(get("/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Prof. orientador:")))
+                .andExpect(content().string(containsString("Orientador Teste")))
+                .andExpect(content().string(containsString("Tipo de estágio:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Empresa a estagiar:")))
+                .andExpect(content().string(containsString("CNPJ da empresa:")))
+                .andExpect(content().string(containsString("Não informado")))
+                .andExpect(content().string(containsString("Início do estágio:")))
+                .andExpect(content().string(containsString("01/08/2026")))
+                .andExpect(content().string(not(containsString("<strong>Tipo:</strong>"))));
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra o estágio pendente com os mesmos nomes da F2")
+    void deveMostrarEstagioPendenteComOsNomesDaF2NoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Aguardando aprovação do orientador")))
+                .andExpect(content().string(containsString("Prof. orientador:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Empresa a estagiar:")))
+                .andExpect(content().string(containsString("CNPJ da empresa:")))
+                .andExpect(content().string(containsString("01/08/2026")))
+                .andExpect(content().string(not(containsString("<strong>Tipo:</strong>"))))
+                .andExpect(content().string(not(containsString("<strong>Orientador:</strong>"))));
+    }
+
+    @Test
+    @DisplayName("Página de validações mostra o estágio pendente com os mesmos nomes da F2")
+    void deveMostrarEstagioPendenteComOsNomesDaF2NasValidacoes() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.PENDENTE);
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Aluno Teste")))
+                .andExpect(content().string(containsString("Tipo de estágio:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Empresa a estagiar:")))
+                .andExpect(content().string(containsString("CNPJ da empresa:")))
+                .andExpect(content().string(containsString("Início do estágio:")))
+                .andExpect(content().string(containsString("01/08/2026")))
+                .andExpect(content().string(not(containsString("<strong>Tipo:</strong>"))));
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra o estágio rejeitado como Rejeitado pelo orientador")
+    void deveMostrarEstagioRejeitadoNoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.REJEITADO);
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Rejeitado pelo orientador")))
+                .andExpect(content().string(not(containsString("Reprovado pelo orientador"))));
+    }
+
+    /*
+       Telas com a linha das atividades e os avisos. O aviso de prazo só aparece enquanto houver
+       atividade sem aprovação, por isso os testes do aviso criam uma trilha com tarefas
+    */
+
+    // Cria a trilha do tipo de estágio do aluno com a quantidade de tarefas informada, sem nenhuma entrega
+    private void criarTrilhaComTarefas(int quantidade) {
+        Trilha trilha = new Trilha();
+        trilha.setTipoEstagio(tipoEstagio);
+        trilha.setNome("Trilha " + tipoEstagio.getNome());
+        entityManager.persist(trilha);
+        for (int ordem = 1; ordem <= quantidade; ordem++) {
+            Tarefa tarefa = new Tarefa();
+            tarefa.setTrilha(trilha);
+            tarefa.setNome("Tarefa " + ordem);
+            tarefa.setOrdem(ordem);
+            entityManager.persist(tarefa);
+        }
+    }
+
+    @Test
+    @DisplayName("Painel do aluno mostra as atividades restantes e o aviso PRAZO VENCEU em roxo depois da data")
+    void deveMostrarAtividadesEPrazoVencidoNoPainelDoAluno() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(1);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().minusDays(3));
+        entityManager.flush();
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("0 atividades aprovadas, 1 atividade restante")))
+                .andExpect(content().string(containsString("PRAZO VENCEU")))
+                .andExpect(content().string(containsString("Há 3 dias")))
+                .andExpect(content().string(containsString("#6f42c1")))
+                .andExpect(content().string(containsString("Conclusão prevista do estágio:")));
+    }
+
+    @Test
+    @DisplayName("Página do orientador mostra PRAZO VENCE HOJE no último dia e a linha das atividades do aluno")
+    void deveMostrarPrazoVenceHojeNaPaginaDoOrientador() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        criarTrilhaComTarefas(3);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now());
+        entityManager.flush();
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("PRAZO VENCE HOJE")))
+                .andExpect(content().string(containsString("0 atividades aprovadas, 3 atividades restantes")));
+    }
+
+    @Test
+    @DisplayName("Trilha sem tarefas não mostra a linha das atividades nem o aviso de prazo no painel do aluno")
+    void naoDeveMostrarAtividadesNemAvisoComTrilhaSemTarefas() throws Exception {
+        criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        matricula.getTurma().setDataEncerramentoEntregas(LocalDate.now().plusDays(5));
+        entityManager.flush();
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Encerramento das entregas:")))
+                .andExpect(content().string(not(containsString("Atividades da trilha:"))))
+                .andExpect(content().string(not(containsString("FINALIZAÇÃO DO PRAZO"))));
+    }
+
+    // Cálculo da carga horária com a conta das semanas
+
+    @Test
+    @DisplayName("Cálculo da carga horária: 3 semanas de Estagiário aparecem como 3 semanas × 30h = 90h de 270h (CA01)")
+    void deveMostrarCalculoDaCargaParaAlunoEOrientador() throws Exception {
+        Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(3));
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.semanasContadas").value(3));
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("3 semanas × 30h = 90h de 270h")));
+
+        mockMvc.perform(get("/orientador/validacoes").with(user(EMAIL_ORIENTADOR).roles("ORIENTADOR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("3 semanas × 30h = 90h de 270h")));
+    }
+
+    @Test
+    @DisplayName("Depois de atingir a carga, o cálculo para nas semanas necessárias e mostra a carga total atingida")
+    void deveMostrarCargaTotalAtingidaSemPassarDasSemanasNecessarias() throws Exception {
+        // começou há 20 semanas, mas 9 semanas de 30h já cumprem as 270h do Estagiário
+        Estagio estagio = criarEstagio(matricula, orientador, tipoEstagio, StatusEstagio.ATIVO);
+        estagio.setDataInicio(LocalDate.now().minusWeeks(20));
+        entityManager.flush();
+
+        mockMvc.perform(get("/api/v1/aluno/estagio").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.semanasContadas").value(9));
+
+        mockMvc.perform(get("/aluno/dashboard").with(user(EMAIL_ALUNO).roles("ALUNO")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("9 semanas × 30h = carga total de 270h atingida")))
+                .andExpect(content().string(containsString("Carga horária exigida:")))
+                .andExpect(content().string(containsString("Estagiario (30h semanais)")))
+                .andExpect(content().string(containsString("Prof. orientador:")));
+    }
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Link Inválido</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/paginas/primeiro-acesso-erro.css}" rel="stylesheet">
+</head>
+<body class="py-5">
+
+<div class="container" style="max-width: 500px;">
+    <div class="card-principal">
+
+        <!-- Header azul -->
+        <div class="header-azul text-center">
+            <div class="d-flex align-items-center gap-2 mb-4 justify-content-center">
+                <img th:src="@{/css/img/logo-aprova-completo.png}" class="logo-cabecalho" alt="Aprova+">
+            </div>
+
+            <div class="icone-erro">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                     stroke="white" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+
+            <h4 class="text-white fw-bold mb-1">Link inválido ou expirado</h4>
+            <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+                Este link de acesso não pode ser utilizado.
+            </p>
+        </div>
+
+        <!-- Corpo -->
+        <div class="p-4 text-center">
+
+            <!-- Mensagem de erro do backend -->
+            <div class="alert alert-warning text-start mb-4"
+                 th:if="${erro}" th:text="${erro}">
+            </div>
+
+            <!-- Mensagem padrão quando não há erro específico -->
+            <div th:unless="${erro}">
+                <p class="text-muted mb-4">
+                    O link pode ter expirado, já sido utilizado ou sido cancelado
+                    pela secretaria.
+                </p>
+            </div>
+
+            <div class="bg-light rounded p-3 mb-4 text-start">
+                <p class="fw-semibold mb-2" style="font-size: 0.9rem;">O que fazer agora?</p>
+                <ul class="mb-0 ps-3" style="font-size: 0.88rem; color: #4B5563;">
+                    <li>Entre em contato com a secretaria da sua instituição</li>
+                    <li>Solicite o reenvio do convite de acesso</li>
+                    <li>Verifique se o link não foi alterado ao copiar</li>
+                </ul>
+            </div>
+
+            <a href="/login" class="btn btn-voltar w-100">
+                Voltar para o login
+            </a>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

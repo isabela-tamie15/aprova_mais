@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+
+<nav th:fragment="navbar(ativo)" class="navbar navbar-expand navbar-dark navbar-aprovamais px-3 mb-4 flex-wrap">
+    <a class="navbar-brand fw-bold" href="/coordenador/dashboard">
+        <img th:src="@{/css/img/logo-aprova-completo.png}" class="logo-navbar" alt="Aprova+">
+    </a>
+    <ul class="navbar-nav me-auto flex-wrap">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'painel'} ? 'active'" href="/coordenador/dashboard">Painel</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'cursos'} ? 'active'" href="/coordenador/cursos">Cursos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'turmas'} ? 'active'" href="/coordenador/turmas">Turmas</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'tipos'} ? 'active'" href="/coordenador/tipos-estagio">Tipos de estágio</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'trilhas'} ? 'active'" href="/coordenador/trilhas">Trilhas</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'pre-cadastros'} ? 'active'" href="/coordenador/pre-cadastros">Pré-cadastro</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'estagios'} ? 'active'" href="/coordenador/estagios">Estágios</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'solicitacoes'} ? 'active'" href="/coordenador/solicitacoes">Solicitações</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${ativo == 'convites'} ? 'active'" href="/coordenador/convites">Convites</a>
+        </li>
+    </ul>
+    <div class="d-flex align-items-center">
+        <span th:if="${usuarioLogado}" class="navbar-text small text-end lh-sm me-3 py-0">
+            <span class="d-block fw-semibold text-white" th:text="${usuarioLogado.nome}"></span>
+            <span class="d-block text-white-50" th:text="${usuarioLogado.email}"></span>
+        </span>
+        <a href="/conta/seguranca" class="btn btn-outline-light btn-sm me-2">Segurança</a>
+        <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
+    </div>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Primeiro Acesso</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <script defer th:src="@{/js/mostrar-senha.js}"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+    <link th:href="@{/css/paginas/primeiro-acesso.css}" rel="stylesheet">
+</head>
+<body class="py-5">
+
+<div class="container" style="max-width: 600px;">
+
+    <div class="card-principal">
+
+        <!-- Header azul -->
+        <div class="header-azul">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <img th:src="@{/css/img/logo-aprova-completo.png}" class="logo-cabecalho" alt="Aprova+">
+            </div>
+            <span class="badge-portal">Primeiro Acesso</span>
+            <h4 class="text-white fw-bold mt-2 mb-1">Bem-vindo ao Aprova+</h4>
+            <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+                Para concluir seu cadastro, leia e aceite os termos abaixo e defina sua senha.
+            </p>
+        </div>
+
+        <!-- Corpo do formulário -->
+        <div class="p-4" x-data="primeiroAcessoForm()" th:attr="data-pede-rgm=${pedeRgm}">
+
+            <!-- Alerta de erro -->
+            <div class="alerta-erro mb-3" role="alert" x-show="erro" x-text="erro" x-cloak></div>
+
+            <!-- Email do usuário (somente leitura) -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">E-mail</label>
+                <input type="email" class="form-control bg-light"
+                       th:value="${email}" readonly>
+            </div>
+
+            <!-- Resumo dos termos -->
+            <div class="resumo-termos mb-3">
+                <p class="mb-2">
+                    A <a href="/privacidade" target="_blank">Política de Privacidade</a> explica quais dados o
+                    Aprova+ usa para acompanhar o seu estágio e como você pode exercer os seus direitos.
+                </p>
+                <p class="mb-0">
+                    Os <a href="/termos" target="_blank">Termos de Uso</a> trazem as regras de uso do sistema.
+                </p>
+            </div>
+
+            <!-- Checkbox de aceite -->
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" id="aceite" x-model="aceitou">
+                <label class="form-check-label" for="aceite">
+                    Li a <strong>Política de Privacidade</strong>
+                    e aceito os <strong>Termos de Uso</strong>
+                </label>
+            </div>
+
+            <!-- Formulário de senha: só aparece após aceitar -->
+            <div x-show="aceitou" x-cloak>
+                <hr class="mb-4">
+
+                <!-- Só para aluno: o RGM precisa ser o mesmo do pré-cadastro feito pela coordenação -->
+                <div class="mb-4" x-show="pedeRgm" x-cloak>
+                    <h6 class="fw-bold mb-2">Confirme seu RGM</h6>
+                    <label for="rgm" class="form-label fw-semibold">RGM</label>
+                    <input id="rgm" type="text" class="form-control" inputmode="numeric"
+                           placeholder="Somente números" maxlength="50" autocomplete="off"
+                           x-model="rgm">
+                    <div class="form-text">Informe seu RGM para confirmarmos que o convite é seu. Depois de 5 tentativas erradas, o convite é
+                        cancelado e você precisa pedir um novo à secretaria.</div>
+                </div>
+
+                <h6 class="fw-bold mb-3">Defina sua senha</h6>
+
+                <!-- Alerta de senhas diferentes -->
+                <div class="alerta-senha mb-3"
+                     x-show="senha && confirmacaoSenha && senha !== confirmacaoSenha"
+                     x-cloak>
+                    As senhas não coincidem.
+                </div>
+
+                <div class="mb-3">
+                    <label for="senha" class="form-label fw-semibold">Senha</label>
+                    <input id="senha" type="password" class="form-control"
+                           placeholder="Mínimo 8 caracteres"
+                           x-model="senha" minlength="8" maxlength="72" autocomplete="new-password">
+                    <!-- Requisitos da senha, os mesmos que o backend confere -->
+                    <ul class="list-unstyled small mt-2 mb-0">
+                        <li :class="requisitos().tamanho ? 'text-success' : 'text-muted'">
+                            Entre 8 e 72 caracteres
+                        </li>
+                        <li :class="requisitos().letra ? 'text-success' : 'text-muted'">
+                            Pelo menos uma letra
+                        </li>
+                        <li :class="requisitos().numero ? 'text-success' : 'text-muted'">
+                            Pelo menos um número
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirmacaoSenha" class="form-label fw-semibold">
+                        Confirmar senha
+                    </label>
+                    <input id="confirmacaoSenha" type="password" class="form-control"
+                           placeholder="Digite a senha novamente"
+                           x-model="confirmacaoSenha" maxlength="72" autocomplete="new-password">
+                </div>
+            </div>
+
+            <!-- Botões -->
+            <div class="d-grid gap-2">
+                <button class="btn btn-concluir"
+                        :disabled="!podeConcluir()"
+                        @click="aceitar()">
+                    <span x-show="!enviando">Concluir cadastro</span>
+                    <span x-show="enviando" x-cloak>
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Concluindo...
+                    </span>
+                </button>
+
+                <button class="btn btn-secondary btn-recusar"
+                        @click="recusar()"
+                        :disabled="enviando">
+                    Recusar e cancelar acesso
+                </button>
+            </div>
+
+            <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.8rem;">
+                Ao recusar, seu convite será cancelado. Para obter um novo acesso,
+                entre em contato com a secretaria.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/paginas/primeiro-acesso.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

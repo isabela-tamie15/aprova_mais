@@ -7,7 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 @EntityListeners(AuditingEntityListener.class)
@@ -32,11 +32,15 @@ public class Tarefa {
     @Column(nullable = false)
     private Integer ordem;
 
+    // Link opcional para o material de apoio da tarefa, como o modelo do documento
+    @Column(name = "link_apoio", length = 500)
+    private String linkApoio;
+
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
-    private LocalDateTime criadoEm;
+    private OffsetDateTime criadoEm;
 
     @LastModifiedDate
     @Column(name = "alterado_em", nullable = false)
-    private LocalDateTime alteradoEm;
+    private OffsetDateTime alteradoEm;
 }

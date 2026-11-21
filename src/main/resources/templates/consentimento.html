@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Aceite dos termos</title>
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
+    <link th:href="@{/css/paginas/consentimento.css}" rel="stylesheet">
+</head>
+<body class="pt-5">
+
+<div class="conteudo-centralizado" style="width: 100%; max-width: 480px; padding: 1rem;">
+
+    <div class="text-center mb-4">
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+            <img th:src="@{/css/img/logo-aprova-escuro.png}" class="logo-documento" alt="Aprova+">
+        </div>
+        <p style="font-size: 0.88rem; color: #6B7280; margin: 0;">
+            Antes de continuar, leia os documentos abaixo.
+        </p>
+        <!-- Versão vigente, a mesma que o aceite grava -->
+        <p style="font-size: 0.82rem; color: #374151; margin: 0.4rem 0 0;">
+            Versão <strong th:text="${versaoTermos}"></strong>, vigente desde <span th:text="${vigenciaTermos}"></span>.
+            Se você aceitou uma versão anterior, o histórico de mudanças está no fim de cada documento.
+        </p>
+    </div>
+
+    <div x-data="consentimentoForm()">
+
+        <div class="alerta-erro" x-show="erro" x-text="erro" x-cloak></div>
+
+        <div class="doc-card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="doc-titulo">Termos de Uso</span>
+                <a href="/termos" target="_blank" class="btn-ver">Ler completo</a>
+            </div>
+            <p class="doc-texto mb-0">
+                O Aprova+ é de uso exclusivo de alunos, professores e funcionários da sua
+                instituição de ensino. O acesso é feito por convite. Ao usar o sistema, você se compromete a manter suas
+                credenciais em sigilo, inserir apenas informações verdadeiras e usar o sistema
+                exclusivamente para fins relacionados ao estágio supervisionado.
+            </p>
+        </div>
+
+        <div class="doc-card p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="doc-titulo">Política de Privacidade</span>
+                <a href="/privacidade" target="_blank" class="btn-ver">Ler completo</a>
+            </div>
+            <p class="doc-texto mb-0">
+                Tratamos apenas os dados necessários para a gestão do estágio: nome, e-mail,
+                RGM, curso, turma e dados do estágio, para cumprir a Lei do Estágio
+                (Lei 11.788/2008). Você pode pedir acesso, correção ou a anonimização da sua conta;
+                os registros acadêmicos do estágio são mantidos por obrigação legal. Não
+                compartilhamos dados para fins comerciais.
+            </p>
+        </div>
+
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="aceite" x-model="aceitou"
+                   style="border-color: #D1D5DB; width: 1rem; height: 1rem;">
+            <label class="form-check-label checkbox-label" for="aceite">
+                Li a
+                <a href="/privacidade" target="_blank">Política de Privacidade</a>
+                e aceito os
+                <a href="/termos" target="_blank">Termos de Uso</a>
+                do Aprova+.
+            </label>
+        </div>
+
+        <div class="text-center">
+            <button class="btn btn-primary px-4"
+                    :disabled="!aceitou || carregando"
+                    @click="aceitar()">
+                <span x-show="!carregando">Continuar</span>
+                <span x-show="carregando" x-cloak>
+                    <span class="spinner-border spinner-border-sm me-2" style="width:0.8rem;height:0.8rem;"></span>
+                    Registrando...
+                </span>
+            </button>
+        </div>
+        <!-- Sem o aceite o sistema não abre, mas o tratamento dos dados acadêmicos não depende dele -->
+        <p class="text-center mt-3" style="font-size: 0.8rem; color: #6B7280;">
+            Não concorda? Você pode sair agora. Seus registros acadêmicos continuam guardados pela
+            instituição, e você pode pedir acesso, correção ou exclusão dos seus dados pela Política de
+            Privacidade.
+            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @click="sair()">Sair</button>
+        </p>
+
+    </div>
+
+</div>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/js/paginas/consentimento.js}"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

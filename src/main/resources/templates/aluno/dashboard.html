@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Aprova+ | Dashboard</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar-aluno :: navbar('painel')}"></div>
+
+<div class="container">
+    <h4 class="mb-4">Bem-vindo ao Aprova+</h4>
+
+    <div th:if="${estagio == null and estagioConcluido != null}" class="card p-4 text-center">
+        <span class="badge bg-primary align-self-center mb-2">Concluído</span>
+        <p class="mb-1">Seu estágio foi concluído
+            <span th:if="${estagioConcluido.dataFinalizacao}"
+                  th:text="${'em ' + #temporals.format(estagioConcluido.dataFinalizacao, 'dd/MM/yyyy')}"></span>.
+        </p>
+        <p class="text-muted mb-0" th:text="${estagioConcluido.nomeTipoEstagio + ' - ' + estagioConcluido.nomeEmpresa}"></p>
+    </div>
+
+    <div th:if="${estagio == null and estagioConcluido == null}" class="card p-4 text-center">
+        <p class="text-muted">Você não possui um estágio em andamento.</p>
+        <a href="/estagio" class="btn btn-primary mt-2">Cadastrar estágio</a>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'PENDENTE'}" class="card p-4">
+        <h5 class="card-title mb-3">Meu Estágio</h5>
+        <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
+        <!-- Mesmos nomes e mesma ordem do estágio ativo, para a tela não mudar de nome quando o estágio for aprovado -->
+        <p><strong>Aluno:</strong> <span th:text="${estagio.nomeAluno + (estagio.rgmAluno != null ? ' (RGM ' + estagio.rgmAluno + ')' : '')}"></span></p>
+        <p><strong>Prof. orientador:</strong>
+            <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+            <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
+        </p>
+        <p><strong>Tipo de estágio:</strong>
+            <span th:text="${estagio.nomeTipoEstagio + (estagio.jornadaSemanal != null
+                    ? ' (' + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
+        </p>
+        <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>CNPJ da empresa:</strong>
+            <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
+        </p>
+        <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'SUSPENSO'}" class="card p-4">
+        <h5 class="card-title mb-3">Meu Estágio</h5>
+        <span class="badge bg-secondary mb-3 align-self-start">Suspenso por trancamento</span>
+        <p><strong>Tipo de estágio:</strong> <span th:text="${estagio.nomeTipoEstagio}"></span></p>
+        <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+        <p><strong>Carga horária mantida:</strong>
+            <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0) + 'h de ' + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
+        </p>
+        <p class="mb-0">A matrícula está trancada. Dentro do prazo de arrependimento, você pode pedir a reabertura, e o estágio volta de onde parou.</p>
+        <a href="/aluno/solicitacoes" class="btn btn-success mt-3">Ver solicitações</a>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="card p-4">
+        <h5 class="card-title mb-3">Meu Estágio</h5>
+        <span class="badge bg-danger mb-3">Rejeitado pelo orientador</span>
+        <p><strong>Justificativa:</strong> <span th:text="${estagio.justificativaRejeicao}"></span></p>
+        <a href="/estagio" class="btn btn-warning mt-2">Reenviar estágio para aprovação</a>
+    </div>
+
+    <div th:if="${estagio != null and estagio.status == 'ATIVO'}" class="card p-4">
+        <!-- Título com a situação ao lado, no mesmo padrão da tela Meu estágio -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title mb-0">Meu Estágio</h5>
+            <span class="badge bg-success">Ativo</span>
+        </div>
+
+        <!-- Informações em duas colunas para ocupar a tela: à esquerda os dados do estágio, à direita a carga e as entregas -->
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Aluno:</strong> <span th:text="${estagio.nomeAluno + (estagio.rgmAluno != null ? ' (RGM ' + estagio.rgmAluno + ')' : '')}"></span></p>
+                <p><strong>Prof. orientador:</strong>
+                    <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
+                    <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
+                </p>
+                <p><strong>Tipo de estágio:</strong>
+                    <span th:text="${estagio.nomeTipoEstagio + (estagio.jornadaSemanal != null
+                            ? ' (' + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h semanais)' : '')}"></span>
+                </p>
+                <p><strong>Empresa a estagiar:</strong> <span th:text="${estagio.nomeEmpresa}"></span></p>
+                <!-- CNPJ em linha própria. Estágios antigos podem não ter o CNPJ gravado -->
+                <p><strong>CNPJ da empresa:</strong>
+                    <span th:text="${estagio.cnpjEmpresa != null ? estagio.cnpjEmpresa : 'Não informado'}"></span>
+                </p>
+                <p><strong>Início do estágio:</strong> <span th:text="${#temporals.format(estagio.dataInicio, 'dd/MM/yyyy')}"></span></p>
+                <p th:if="${estagio.dataPrevistaConclusao}"><strong>Conclusão prevista do estágio:</strong>
+                    <span th:text="${#temporals.format(estagio.dataPrevistaConclusao, 'dd/MM/yyyy')}"></span>
+                </p>
+            </div>
+
+            <div class="col-md-6">
+                <div class="mb-4">
+                    <!-- Carga total que o tipo de estágio exige, para o cálculo abaixo ficar claro -->
+                    <p><strong>Carga horária exigida:</strong>
+                        <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
+                    </p>
+                    <p><strong>Carga horária cumprida:</strong>
+                        <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0) + 'h'}"></span>
+                    </p>
+                    <p><strong>Carga horária restante:</strong>
+                        <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaRestante, 1, 0) + 'h'}"></span>
+                    </p>
+                    <!--
+                       Cálculo da carga, com a conta feita pelo sistema (semanas completas vezes a jornada).
+                       Depois de atingir a carga total, as semanas param nas semanas necessárias (o service limita)
+                    -->
+                    <p th:if="${estagio.semanasContadas != null and estagio.jornadaSemanal != null}"><strong>Cálculo da carga horária:</strong>
+                        <span th:if="${estagio.cargaHorariaCumprida < estagio.cargaHorariaNecessaria}"
+                              th:text="${estagio.semanasContadas + (estagio.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                                      + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h = '
+                                      + #numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0) + 'h de '
+                                      + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
+                        <span th:unless="${estagio.cargaHorariaCumprida < estagio.cargaHorariaNecessaria}"
+                              th:text="${estagio.semanasContadas + (estagio.semanasContadas == 1 ? ' semana' : ' semanas') + ' × '
+                                      + #numbers.formatDecimal(estagio.jornadaSemanal, 1, 0) + 'h = carga total de '
+                                      + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h atingida'}"></span>
+                    </p>
+                    <p th:if="${estagio.diasSuspensos != null and estagio.diasSuspensos > 0}" class="small text-muted"
+                       th:text="${'Não contam os ' + estagio.diasSuspensos + ' dias em que o estágio ficou suspenso por trancamento.'}"></p>
+                </div>
+
+                <!-- Atividades da trilha, já contadas no Java. A linha só aparece quando a trilha tem tarefas cadastradas -->
+                <p th:if="${estagio.atividadesTotal != null and estagio.atividadesTotal > 0}"><strong>Atividades da trilha:</strong>
+                    <span th:text="${estagio.atividadesAprovadas + (estagio.atividadesAprovadas == 1 ? ' atividade aprovada' : ' atividades aprovadas') + ', '
+                            + estagio.atividadesRestantes + (estagio.atividadesRestantes == 1 ? ' atividade restante' : ' atividades restantes')}"></span>
+                </p>
+                <!-- Data em que as entregas do semestre fecham, informada pelo coordenador na turma -->
+                <p th:if="${estagio.dataEncerramentoEntregas}"><strong>Encerramento das entregas:</strong>
+                    <span th:text="${#temporals.format(estagio.dataEncerramentoEntregas, 'dd/MM/yyyy')}"></span>
+                </p>
+                <p th:unless="${estagio.dataEncerramentoEntregas}" class="text-muted">
+                    Data de encerramento das entregas ainda não informada pela coordenação.
+                </p>
+
+                <!--
+                   Aviso de prazo, só enquanto houver atividade sem aprovação. O nome do aviso fica na primeira linha (d-block) e os dias na linha de baixo. Amarelo e vermelho conforme os dias definidos
+                   nas configurações do sistema, vermelho também no último dia, e roxo depois da data. Depois da data os dias vêm
+                   negativos do Java, por isso só tiramos o sinal para exibir
+                -->
+                <div th:if="${estagio.avisoPrazo == 'AMARELO'}" class="alert alert-warning mb-3" role="alert">
+                    <strong class="d-block">FINALIZAÇÃO DO PRAZO</strong>
+                    <span th:text="${'Faltam ' + estagio.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
+                </div>
+                <div th:if="${estagio.avisoPrazo == 'VERMELHO'}" class="alert alert-danger mb-3" role="alert">
+                    <strong class="d-block">FINALIZAÇÃO DO PRAZO</strong>
+                    <span th:text="${estagio.diasParaEncerramentoEntregas == 1
+                            ? 'Falta 1 dia para a data de encerramento das entregas'
+                            : 'Faltam ' + estagio.diasParaEncerramentoEntregas + ' dias para a data de encerramento das entregas'}"></span>
+                </div>
+                <div th:if="${estagio.avisoPrazo == 'ULTIMO_DIA'}" class="alert alert-danger mb-3" role="alert">
+                    <strong class="d-block">PRAZO VENCE HOJE</strong> Hoje é o último dia para entregar
+                </div>
+                <div th:if="${estagio.avisoPrazo == 'ENCERRADO'}" class="alert mb-3" role="alert"
+                     style="background-color: #e2d9f3; border-color: #6f42c1; color: #432874;">
+                    <strong class="d-block">PRAZO VENCEU</strong>
+                    <span th:text="${-estagio.diasParaEncerramentoEntregas == 1
+                            ? 'Há 1 dia'
+                            : 'Há ' + (-estagio.diasParaEncerramentoEntregas) + ' dias'}"></span>
+                </div>
+            </div>
+        </div>
+
+        <a href="/aluno/trilha" class="btn btn-success mt-2">Ver minha trilha de tarefas</a>
+    </div>
+
+    <!-- Estágios anteriores da matrícula, concluídos ou encerrados -->
+    <div th:if="${estagiosAnteriores != null and !#lists.isEmpty(estagiosAnteriores)}" class="card p-4 mt-3">
+        <h6 class="card-title mb-3">Estágios anteriores</h6>
+        <ul class="list-group list-group-flush">
+            <li th:each="anterior : ${estagiosAnteriores}" class="list-group-item px-0">
+                <span th:if="${anterior.status == 'CONCLUIDO'}" class="badge bg-primary me-2">Concluído</span>
+                <span th:if="${anterior.status == 'ENCERRADO'}" class="badge bg-secondary me-2">Encerrado</span>
+                <span th:text="${anterior.nomeTipoEstagio + ' - ' + anterior.nomeEmpresa}"></span>
+                <span class="text-muted">desde <span th:text="${#temporals.format(anterior.dataInicio, 'dd/MM/yyyy')}"></span></span>
+                <span class="text-muted" th:if="${anterior.dataFinalizacao}">
+                    até <span th:text="${#temporals.format(anterior.dataFinalizacao, 'dd/MM/yyyy')}"></span>
+                </span>
+                <div th:if="${anterior.motivoEncerramento}" class="small text-muted mt-1">
+                    Motivo: <span th:switch="${anterior.motivoEncerramento}">
+                        <span th:case="'REPROVACAO'">Reprovação</span>
+                        <span th:case="'DESLIGAMENTO'">Desligamento</span>
+                        <span th:case="'TROCA_MODALIDADE'">Troca de modalidade</span>
+                        <span th:case="'TRANCAMENTO'">Trancamento</span>
+                    </span>
+                </div>
+                <div th:if="${anterior.observacaoEncerramento}" class="small mt-1" style="white-space: pre-line;"
+                     th:text="${anterior.observacaoEncerramento}"></div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Histórico das decisões do orientador -->
+    <div th:if="${historico != null and !#lists.isEmpty(historico)}" class="card p-4 mt-3">
+        <h6 class="card-title mb-3">Histórico de validações</h6>
+        <ul class="list-group list-group-flush">
+            <li th:each="decisao : ${historico}" class="list-group-item px-0">
+                <span th:if="${decisao.aprovado}" class="badge bg-success me-2">Aprovado</span>
+                <span th:unless="${decisao.aprovado}" class="badge bg-danger me-2">Rejeitado</span>
+                <span th:text="${#temporals.format(decisao.dataDecisao, 'dd/MM/yyyy HH:mm')}"></span>
+                <span class="text-muted">por <span th:text="${decisao.nomeOrientador}"></span></span>
+                <div th:if="${decisao.justificativa}" class="small mt-1" th:text="${decisao.justificativa}"></div>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<script th:src="@{/js/comum.js}"></script>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

@@ -20,6 +20,8 @@
 
 	<properties>
 		<java.version>25</java.version>
+		<!-- Muda para true quando a cobertura tiver que travar o build -->
+		<jacoco.travar>false</jacoco.travar>
 	</properties>
 
 	<dependencies>
@@ -61,10 +63,6 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
 
 		<!-- ===== BANCO DE DADOS ===== -->
 
@@ -79,7 +77,14 @@
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
 
-		<!-- ===== SEGURANÇA ===== -->
+        <!-- ====== H2 é só para testes -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ===== SEGURANÇA ===== -->
 
 		<!-- JJWT — jjwt-gson substitui jjwt-jackson por incompatibilidade com Jackson 3 do Spring Boot 4 -->
 		<dependency>
@@ -98,6 +103,13 @@
 			<artifactId>jjwt-gson</artifactId>
 			<version>0.12.6</version>
 			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Resend para envio de e-mails -->
+		<dependency>
+			<groupId>com.resend</groupId>
+			<artifactId>resend-java</artifactId>
+			<version>4.1.1</version>
 		</dependency>
 
 		<!-- Google Authenticator — 2FA via TOTP -->
@@ -206,6 +218,56 @@
 									<artifactId>lombok</artifactId>
 								</path>
 							</annotationProcessorPaths>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Cobertura dos testes (JaCoCo). O ./mvnw test gera o relatório em target/site/jacoco/index.html -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.14</version>
+				<configuration>
+					<excludes>
+						<exclude>tcc/ges/aprovamais/dto/**</exclude>
+						<exclude>tcc/ges/aprovamais/entity/**</exclude>
+						<exclude>tcc/ges/aprovamais/AprovamaisApplication*</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>preparar-agente</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>relatorio</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>conferir-minimo</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<haltOnFailure>${jacoco.travar}</haltOnFailure>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.50</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
 						</configuration>
 					</execution>
 				</executions>
