@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Painel de correção</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
     <link th:href="@{/css/paginas/entregas.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/navbar-orientador :: navbar('correcoes')}"></div>
 
@@ -63,7 +65,7 @@
         </div>
         <div class="d-flex gap-2 mt-2">
             <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @click="limparFiltros()">Limpar</button>
+            <button type="button" class="btn btn-sm btn-secondary" @click="limparFiltros()">Limpar</button>
         </div>
     </form>
 
@@ -94,7 +96,7 @@
                         <td><span class="badge" :class="classeStatus(item.status)" x-text="nomeStatus(item.status)"></span></td>
                         <td class="text-end">
                             <a class="btn btn-sm" :href="'/orientador/correcoes/' + item.entregaId"
-                               :class="aguardando(item.status) ? 'btn-primary' : 'btn-outline-secondary'"
+                               :class="aguardando(item.status) ? 'btn-primary' : 'btn-success'"
                                x-text="aguardando(item.status) ? 'Avaliar' : 'Ver'"></a>
                         </td>
                     </tr>
@@ -107,11 +109,11 @@
     <!-- Paginação -->
     <div x-cloak x-show="painel && painel.totalPaginas > 1">
     <div class="d-flex justify-content-between align-items-center mt-3">
-        <button class="btn btn-sm btn-outline-secondary" :disabled="painel && painel.pagina === 0"
+        <button class="btn btn-sm btn-secondary" :disabled="painel && painel.pagina === 0"
                 @click="irPara(painel.pagina - 1)">Anterior</button>
         <span class="small text-muted"
               x-text="painel && ('Página ' + (painel.pagina + 1) + ' de ' + painel.totalPaginas)"></span>
-        <button class="btn btn-sm btn-outline-secondary" :disabled="painel && painel.pagina >= painel.totalPaginas - 1"
+        <button class="btn btn-sm btn-secondary" :disabled="painel && painel.pagina >= painel.totalPaginas - 1"
                 @click="irPara(painel.pagina + 1)">Próxima</button>
     </div>
     </div>

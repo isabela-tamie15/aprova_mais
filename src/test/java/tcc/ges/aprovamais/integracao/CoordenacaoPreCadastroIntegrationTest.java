@@ -124,4 +124,42 @@ class CoordenacaoPreCadastroIntegrationTest extends CoordenacaoTestBase {
         mockMvc.perform(get("/coordenador/pre-cadastros").with(user(EMAIL_ALUNO).roles("ALUNO")))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @DisplayName("CA04: RGM de aluno com letras volta 400 com o erro no campo do identificador")
+    void deveRecusarRgmComLetras() throws Exception {
+        incluir(corpoAluno("maria@teste.com", "1123A00001", turma.getId()), EMAIL_COORDENADOR)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos.identificadorInstitucional").value("O RGM do aluno deve conter apenas números"));
+    }
+
+    @Test
+    @DisplayName("Matrícula de orientador pode ter letras")
+    void matriculaDeOrientadorAceitaLetras() throws Exception {
+        incluir("{\"nome\":\"Paulo Lima\",\"email\":\"paulo@teste.com\",\"perfil\":\"ORIENTADOR\","
+                + "\"identificadorInstitucional\":\"ORI-123\"}", EMAIL_COORDENADOR)
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("A secretaria vê os pré-cadastrados de todos os coordenadores que ainda não têm conta")
+    void secretariaListaPreCadastrados() throws Exception {
+        incluir(corpoAluno("maria@teste.com", "11230000001", turma.getId()), EMAIL_COORDENADOR)
+                .andExpect(status().isCreated());
+        incluir(corpoAluno("joao@teste.com", "11230000002", turmaDoOutro.getId()), EMAIL_OUTRO_COORDENADOR)
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/secretaria/pre-cadastros").with(user("secretaria@teste.com").roles("SECRETARIA")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].nome").value("Maria Souza"))
+                .andExpect(jsonPath("$[0].situacao").value("AGUARDANDO_CONVITE"));
+    }
+
+    @Test
+    @DisplayName("Só a secretaria consulta a lista de pré-cadastro para convite")
+    void listaParaConviteSoParaSecretaria() throws Exception {
+        mockMvc.perform(get("/api/v1/secretaria/pre-cadastros").with(user(EMAIL_COORDENADOR).roles("COORDENADOR")))
+                .andExpect(status().isForbidden());
+    }
 }

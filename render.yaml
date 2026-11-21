@@ -43,7 +43,7 @@ services:
         generateValue: true
       - key: ENCRYPTION_SECRET
         generateValue: true
-      # Endereço público, por exemplo https://aprovamais.onrender.com
+      # Endereço público
       - key: APP_URL
         sync: false
       - key: RESEND_API_KEY
@@ -63,13 +63,6 @@ services:
       - key: ADMIN_INICIAL_SENHA
         sync: false
       - key: ADMIN_INICIAL_NOME
-        sync: false
-      # Secretaria inicial
-      - key: SECRETARIA_INICIAL_EMAIL
-        sync: false
-      - key: SECRETARIA_INICIAL_SENHA
-        sync: false
-      - key: SECRETARIA_INICIAL_NOME
         sync: false
 
   # Redis da lista de tokens revogados, acessível só pelos serviços do Render

@@ -5,12 +5,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tcc.ges.aprovamais.dto.FiltroPainel;
+import tcc.ges.aprovamais.dto.OpcaoFiltroResponse;
 import tcc.ges.aprovamais.dto.PainelCoordenadorResponse;
 import tcc.ges.aprovamais.entity.Entrega;
 import tcc.ges.aprovamais.entity.Estagio;
+import tcc.ges.aprovamais.entity.Orientador;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
+import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.PainelCoordenadorRepository;
 
 import java.time.LocalDate;
@@ -27,32 +31,49 @@ public class PainelCoordenadorService {
 
     private static final Logger log = LoggerFactory.getLogger(PainelCoordenadorService.class);
 
-    // Status que entram no painel, PENDENTE nos cartões 1 e 2 e ATIVO nos cartões 3, 4 e 6
-    private static final Set<StatusEstagio> STATUS_DO_PAINEL = EnumSet.of(StatusEstagio.PENDENTE, StatusEstagio.ATIVO);
+    /*
+       Status que entram no painel, PENDENTE nos cartões 1 e 2, ATIVO nos cartões 3, 4 e 6 e
+       CONCLUIDO só no resumo acima dos cartões
+    */
+    private static final Set<StatusEstagio> STATUS_DO_PAINEL =
+            EnumSet.of(StatusEstagio.PENDENTE, StatusEstagio.ATIVO, StatusEstagio.CONCLUIDO);
+
+    // Status dos 6 cartões e dos gráficos
+    private static final Set<StatusEstagio> STATUS_DOS_CARTOES = EnumSet.of(StatusEstagio.PENDENTE, StatusEstagio.ATIVO);
 
     private final PainelCoordenadorRepository painelCoordenadorRepository;
     private final CursoService cursoService;
 
     /*
-       Monta o painel do coordenador logado. Sem o cursoId entram todos os cursos dele, e com o cursoId
-       só aquele curso. O curso de outro coordenador recebe 404 do CursoService
+       Monta o painel do coordenador logado com os filtros escolhidos. O curso de outro coordenador
+       recebe 404 do CursoService, e a turma de outro coordenador também recebe 404
     */
     @Transactional(readOnly = true)
-    public PainelCoordenadorResponse montarPainel(String emailCoordenador, Long cursoId) {
-        if (cursoId != null) {
-            cursoService.buscarCursoDoCoordenador(cursoId, emailCoordenador);
+    public PainelCoordenadorResponse montarPainel(String emailCoordenador, FiltroPainel filtro) {
+        if (filtro.cursoId() != null) {
+            cursoService.buscarCursoDoCoordenador(filtro.cursoId(), emailCoordenador);
+        }
+        List<Turma> turmasDosCursos = painelCoordenadorRepository.listarTurmasDosCursos(emailCoordenador);
+        if (filtro.turmaId() != null && turmasDosCursos.stream().noneMatch(t -> filtro.turmaId().equals(t.getId()))) {
+            throw new ResourceNotFoundException("Turma não encontrada");
         }
         LocalDate hoje = LocalDate.now();
 
         /*
-           Passo 1, as consultas do painel. Estágios PENDENTE e ATIVO dos cursos do coordenador,
-           só do curso escolhido quando há filtro
+           Passo 1, as consultas do painel. Estágios PENDENTE, ATIVO e CONCLUIDO dos cursos do
+           coordenador, só os que passam nos filtros escolhidos
         */
         List<Estagio> estagiosDosCursos = painelCoordenadorRepository
                 .listarEstagiosDosCursos(emailCoordenador, STATUS_DO_PAINEL);
         List<Estagio> estagios = new ArrayList<>();
+        long concluidos = 0;
         for (Estagio estagio : estagiosDosCursos) {
-            if (doCursoEscolhido(estagio, cursoId)) {
+            if (!filtro.aceita(estagio)) {
+                continue;
+            }
+            if (estagio.getStatus() == StatusEstagio.CONCLUIDO) {
+                concluidos++;
+            } else if (STATUS_DOS_CARTOES.contains(estagio.getStatus())) {
                 estagios.add(estagio);
             }
         }
@@ -68,7 +89,7 @@ public class PainelCoordenadorService {
                 .listarEntregasDosCursos(emailCoordenador, CorrecaoService.AGUARDANDO_ANALISE);
         List<Entrega> entregasAguardando = new ArrayList<>();
         for (Entrega entrega : entregasDosCursos) {
-            if (doCursoEscolhido(entrega.getEstagio(), cursoId)) {
+            if (filtro.aceita(entrega.getEstagio())) {
                 entregasAguardando.add(entrega);
             }
         }
@@ -88,10 +109,10 @@ public class PainelCoordenadorService {
             Turma turma = estagio.getMatricula().getTurma();
 
             // Gráfico 1, cada turma é uma barra, criada na primeira vez que a turma aparece
-            LinhaSituacao situacao = situacaoPorTurma.get(turma.getId());   // procura a barra da turma
-            if (situacao == null) {                                         // primeiro estágio dessa turma? a barra não existe
-                situacao = new LinhaSituacao(turma);                        //   cria a barra, com tudo zerado
-                situacaoPorTurma.put(turma.getId(), situacao);              //   guarda a barra no mapa, pelo id da turma
+            LinhaSituacao situacao = situacaoPorTurma.get(turma.getId());
+            if (situacao == null) {
+                situacao = new LinhaSituacao(turma);
+                situacaoPorTurma.put(turma.getId(), situacao);
             }
 
             // Cartões 1 e 2. O estágio PENDENTE fica sem orientador quando a turma não tem orientador
@@ -161,13 +182,13 @@ public class PainelCoordenadorService {
             String orientador = estagio.getOrientador() != null ? estagio.getOrientador().getNome() : "Sem orientador";
 
             // Gráfico 2, cada dupla de turma e orientador é uma barra, criada na primeira vez que aparece
-            String chave = turma.getId() + "-" + orientadorId;                 // chave = "3-7" (turma 3 com orientador 7)
-            LinhaCorrecao linhaCorrecao = correcaoPorTurma.get(chave);         // procura a barra "3-7"
-            if (linhaCorrecao == null) {                                       // primeira entrega dessa dupla? a barra não existe
-                linhaCorrecao = new LinhaCorrecao(turma, orientador);          //   cria a barra, com quantidade 0
-                correcaoPorTurma.put(chave, linhaCorrecao);                    //   guarda a barra no mapa
+            String chave = turma.getId() + "-" + orientadorId;
+            LinhaCorrecao linhaCorrecao = correcaoPorTurma.get(chave);
+            if (linhaCorrecao == null) {
+                linhaCorrecao = new LinhaCorrecao(turma, orientador);
+                correcaoPorTurma.put(chave, linhaCorrecao);
             }
-            linhaCorrecao.quantidade++;                                        // soma 1 entrega nessa barra
+            linhaCorrecao.quantidade++;
         }
 
         log.debug("Painel do coordenador montado: {} estágios e {} entregas aguardando correção",
@@ -184,6 +205,8 @@ public class PainelCoordenadorService {
                 .retaFinalSoTarefas(soTarefas)
                 .retaFinalSoHoras(soHoras)
                 .retaFinalDuasPendencias(duasPendencias)
+                .estagiosConcluidos(concluidos)
+                .opcoesFiltro(montarOpcoes(turmasDosCursos, estagiosDosCursos, entregasDosCursos))
                 .situacaoPorTurma(montarSituacao(situacaoPorTurma.values()))
                 .correcaoPorTurma(montarCorrecao(correcaoPorTurma.values()))
                 .prazoPorTurma(montarPrazo(prazoPorTurma.values()))
@@ -381,24 +404,65 @@ public class PainelCoordenadorService {
                 estagio.getCargaHorariaNecessaria(), estagio.getJornadaSemanal());
     }
 
-    // Sem curso escolhido entram todos os cursos do coordenador, e com curso só os estágios dele
-    private static boolean doCursoEscolhido(Estagio estagio, Long cursoId) {
-        return cursoId == null || cursoId.equals(estagio.getMatricula().getTurma().getCurso().getId());
+    /*
+       Opções dos filtros, de todos os cursos do coordenador. Os semestres e as turmas vêm das turmas
+       cadastradas, e os orientadores, dos estágios e das entregas que entram no painel
+    */
+    private static PainelCoordenadorResponse.OpcoesFiltro montarOpcoes(List<Turma> turmas, List<Estagio> estagios,
+                                                                       List<Entrega> entregas) {
+        Set<String> semestres = new TreeSet<>(Comparator.reverseOrder());
+        List<PainelCoordenadorResponse.OpcaoTurma> opcoesTurma = new ArrayList<>();
+        for (Turma turma : turmas) {
+            semestres.add(turma.getSemestre());
+            opcoesTurma.add(PainelCoordenadorResponse.OpcaoTurma.builder()
+                    .id(turma.getId())
+                    .nome(turma.getIdentificador() + " · " + turma.getSemestre() + " · " + turma.getCurso().getNome())
+                    .turma(turma.getIdentificador())
+                    .cursoId(turma.getCurso().getId())
+                    .semestre(turma.getSemestre())
+                    .build());
+        }
+
+        // Um orientador por id, em ordem alfabética
+        Map<Long, String> orientadores = new HashMap<>();
+        for (Estagio estagio : estagios) {
+            adicionarOrientador(orientadores, estagio.getOrientador());
+        }
+        for (Entrega entrega : entregas) {
+            adicionarOrientador(orientadores, entrega.getEstagio().getOrientador());
+        }
+        List<OpcaoFiltroResponse> opcoesOrientador = new ArrayList<>();
+        for (Map.Entry<Long, String> orientador : orientadores.entrySet()) {
+            opcoesOrientador.add(new OpcaoFiltroResponse(orientador.getKey(), orientador.getValue()));
+        }
+        opcoesOrientador.sort(Comparator.comparing(OpcaoFiltroResponse::nome));
+
+        return PainelCoordenadorResponse.OpcoesFiltro.builder()
+                .semestres(new ArrayList<>(semestres))
+                .turmas(opcoesTurma)
+                .orientadores(opcoesOrientador)
+                .build();
+    }
+
+    private static void adicionarOrientador(Map<Long, String> orientadores, Orientador orientador) {
+        if (orientador != null) {
+            orientadores.put(orientador.getId(), orientador.getNome());
+        }
     }
 
     /*
        Conta quantas vezes cada id aparece na lista. Serve para saber quantas tarefas tem a trilha
        de cada tipo de estágio e quantas entregas aprovadas tem cada estágio, porque o banco devolve
-       o id uma vez por item. Por exemplo, [3, 3, 5] vira {3: 2, 5: 1}
+       o id uma vez por item
     */
     private static Map<Long, Long> contarRepeticoes(List<Long> ids) {
         Map<Long, Long> quantidadePorId = new HashMap<>();
         for (Long id : ids) {
             if (quantidadePorId.containsKey(id)) {
-                long quantidadeAnterior = quantidadePorId.get(id);      // já apareceu antes e soma 1
-                quantidadePorId.put(id, quantidadeAnterior + 1);        //   e somamos 1
+                long quantidadeAnterior = quantidadePorId.get(id);
+                quantidadePorId.put(id, quantidadeAnterior + 1);
             } else {
-                quantidadePorId.put(id, 1L);                            // primeira vez que aparece, começa com 1
+                quantidadePorId.put(id, 1L);
             }
         }
         return quantidadePorId;

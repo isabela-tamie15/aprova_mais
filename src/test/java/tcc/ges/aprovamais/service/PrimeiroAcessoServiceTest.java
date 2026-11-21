@@ -17,6 +17,7 @@ import tcc.ges.aprovamais.entity.PreCadastro;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
+import tcc.ges.aprovamais.exception.RgmNaoConfereException;
 import tcc.ges.aprovamais.repository.MatriculaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
@@ -24,6 +25,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,7 +105,7 @@ class PrimeiroAcessoServiceTest {
         when(matriculaRepository.findByAlunoIdAndTurmaId(7L, 5L)).thenReturn(Optional.empty());
         when(matriculaRepository.save(any(Matricula.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        primeiroAcessoService.concluirCadastro(TOKEN, SENHA, IP);
+        primeiroAcessoService.concluirCadastro(TOKEN, SENHA, "11230000001", IP);
 
         assertTrue(aluno.getAtivo());
         assertFalse(aluno.getPrimeiroAcesso());
@@ -124,7 +128,7 @@ class PrimeiroAcessoServiceTest {
         when(preCadastroService.buscarPorEmail(EMAIL)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO, "11230000001")));
         when(matriculaRepository.findByAlunoIdAndTurmaId(7L, 5L)).thenReturn(Optional.of(new Matricula()));
 
-        primeiroAcessoService.concluirCadastro(TOKEN, SENHA, IP);
+        primeiroAcessoService.concluirCadastro(TOKEN, SENHA, "11230000001", IP);
 
         verify(matriculaRepository, never()).save(any());
     }
@@ -141,10 +145,59 @@ class PrimeiroAcessoServiceTest {
         when(passwordEncoder.encode(SENHA)).thenReturn("hash");
         when(preCadastroService.buscarPorEmail(EMAIL)).thenReturn(Optional.of(preCadastro(PerfilDestino.ORIENTADOR, "ORI-123")));
 
-        primeiroAcessoService.concluirCadastro(TOKEN, SENHA, IP);
+        primeiroAcessoService.concluirCadastro(TOKEN, SENHA, null, IP);
 
         assertEquals("ORI-123", orientador.getMatriculaInstitucional());
         assertEquals("Maria Souza", orientador.getNome());
         verify(matriculaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Aluno com RGM diferente do pré-cadastro não conclui o cadastro e a tentativa fica registrada")
+    void rgmErradoNaoConcluiCadastro() {
+        Convite convite = convite(PerfilDestino.ALUNO);
+        when(conviteService.validarToken(TOKEN)).thenReturn(convite);
+        when(preCadastroService.buscarPorEmail(EMAIL)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO, "11230000001")));
+        when(conviteService.registrarRgmIncorreto(convite, PrimeiroAcessoService.LIMITE_TENTATIVAS_RGM)).thenReturn(1);
+
+        RgmNaoConfereException erro = assertThrows(RgmNaoConfereException.class,
+                () -> primeiroAcessoService.concluirCadastro(TOKEN, SENHA, "11239999999", IP));
+
+        assertTrue(erro.getMessage().contains("Restam 4 tentativas"));
+        verify(auditoriaService).registrarTentativa(eq(EMAIL), eq("PRIMEIRO_ACESSO_RGM_INCORRETO"), anyString(), eq(IP));
+        verify(usuarioRepository, never()).save(any());
+        verify(conviteService, never()).aceitarConvite(TOKEN);
+    }
+
+    @Test
+    @DisplayName("Na quinta tentativa com RGM errado o convite é cancelado")
+    void quintaTentativaCancelaConvite() {
+        Convite convite = convite(PerfilDestino.ALUNO);
+        when(conviteService.validarToken(TOKEN)).thenReturn(convite);
+        when(preCadastroService.buscarPorEmail(EMAIL)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO, "11230000001")));
+        when(conviteService.registrarRgmIncorreto(convite, PrimeiroAcessoService.LIMITE_TENTATIVAS_RGM)).thenReturn(5);
+
+        RgmNaoConfereException erro = assertThrows(RgmNaoConfereException.class,
+                () -> primeiroAcessoService.concluirCadastro(TOKEN, SENHA, "", IP));
+
+        assertTrue(erro.getMessage().contains("convite foi cancelado"));
+        verify(auditoriaService).registrarTentativa(eq(EMAIL), eq("PRIMEIRO_ACESSO_RGM_INCORRETO"), argThat(detalhes -> detalhes.contains("Convite cancelado")), eq(IP));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("O RGM é conferido sem diferenciar maiúsculas e ignorando espaços nas pontas")
+    void rgmComEspacosConfere() {
+        Aluno aluno = alunoPendente();
+        when(conviteService.validarToken(TOKEN)).thenReturn(convite(PerfilDestino.ALUNO));
+        when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.of(aluno));
+        when(passwordEncoder.encode(SENHA)).thenReturn("hash");
+        when(preCadastroService.buscarPorEmail(EMAIL)).thenReturn(Optional.of(preCadastro(PerfilDestino.ALUNO, "11230000001")));
+        when(matriculaRepository.findByAlunoIdAndTurmaId(7L, 5L)).thenReturn(Optional.of(new Matricula()));
+
+        primeiroAcessoService.concluirCadastro(TOKEN, SENHA, " 11230000001 ", IP);
+
+        assertTrue(aluno.getAtivo());
+        verify(conviteService, never()).registrarRgmIncorreto(any(), org.mockito.ArgumentMatchers.anyInt());
     }
 }

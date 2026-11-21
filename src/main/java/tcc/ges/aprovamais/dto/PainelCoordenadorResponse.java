@@ -30,12 +30,38 @@ public class PainelCoordenadorResponse {
     private final long retaFinalSoHoras;
     private final long retaFinalDuasPendencias;
 
+    // Estágios CONCLUIDO com os mesmos filtros, para o resumo acima dos cartões
+    private final long estagiosConcluidos;
+
+    // Opções dos filtros, sempre de todos os cursos do coordenador, para a tela montar os seletores
+    private final OpcoesFiltro opcoesFiltro;
+
     // Gráfico 1, os cartões 1, 2 e 3 separados por turma
     private final List<SituacaoTurma> situacaoPorTurma;
     // Gráfico 2, o cartão 5 separado por turma e orientador, do maior para o menor
     private final List<CorrecaoTurma> correcaoPorTurma;
     // Gráfico 3, o cartão 6 separado por turma, com a faixa do prazo
     private final List<PrazoTurma> prazoPorTurma;
+
+    // Opções dos seletores. A tela mostra só as turmas do curso e do semestre escolhidos
+    @Getter
+    @Builder
+    public static class OpcoesFiltro {
+        private final List<String> semestres;
+        private final List<OpcaoTurma> turmas;
+        private final List<OpcaoFiltroResponse> orientadores;
+    }
+
+    @Getter
+    @Builder
+    public static class OpcaoTurma {
+        private final Long id;
+        // Identificador, semestre e curso, como "8B · 2026/2 · Engenharia de Software"
+        private final String nome;
+        private final String turma;
+        private final Long cursoId;
+        private final String semestre;
+    }
 
     /*
        Uma linha do gráfico 1. O percentualBarra é o tamanho da barra comparado com a maior turma,

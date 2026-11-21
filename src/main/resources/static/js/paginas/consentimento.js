@@ -24,6 +24,11 @@ function consentimentoForm() {
             } finally {
                 this.carregando = false;
             }
+        },
+        // Encerra a sessão de quem não quer aceitar a versão vigente
+        async sair() {
+            await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = '/login';
         }
     }
 }

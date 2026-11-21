@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Política de Privacidade</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
     <link th:href="@{/css/main.css}" rel="stylesheet">
     <link th:href="@{/css/paginas/privacidade.css}" rel="stylesheet">
 </head>
@@ -14,23 +14,17 @@
 
     <div class="text-center mb-4">
         <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-            <div class="logo-icon">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="#2B4ECC" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
-            <span class="logo-nome" style="color: #111827; font-size: 1.05rem;">Aprova+</span>
+            <img th:src="@{/css/img/logo-aprova-escuro.png}" class="logo-documento" alt="Aprova+">
         </div>
         <span class="badge-doc">Política de Privacidade</span>
-        <p class="doc-versao" style="margin-top: 0.5rem;">Versão 1.1, novembro de 2026 · Conforme LGPD (Lei nº 13.709/2018)</p>
+        <p class="doc-versao" style="margin-top: 0.5rem;">Versão <span th:text="${versaoTermos}"></span>, vigente desde <span th:text="${vigenciaTermos}"></span> · Conforme LGPD (Lei nº 13.709/2018)</p>
         <p class="doc-subtitulo" style="font-size: 0.9rem; color: #6B7280; margin-top: 0.5rem;">Dados coletados, finalidades, tratamento realizado e direitos do titular no Aprova+.</p>
     </div>
 
     <p class="doc-intro">
-        O Aprova+ foi desenvolvido por alunos do curso de Engenharia de Software da UMC como
-        Projeto Final de Curso (PFC). A Universidade, como responsável institucional pelo sistema,
-        trata os dados pessoais dos usuários com cuidado e transparência, em observância à Lei
-        Geral de Proteção de Dados (Lei nº 13.709/2018, "LGPD") e às demais legislações aplicáveis.
+        A instituição de ensino que utiliza o Aprova+ trata os dados pessoais dos usuários com
+        cuidado e transparência, em observância à Lei Geral de Proteção de Dados (Lei nº
+        13.709/2018, "LGPD") e às demais leis aplicáveis.
     </p>
     <p class="doc-intro">
         Esta Política explica quais dados coletamos quando você usa o Aprova+, por que os
@@ -44,26 +38,27 @@
 
     <div class="doc-section">
         <h2>Quem é o responsável pelos seus dados</h2>
-        <p><strong>Controlador:</strong> Universidade de Mogi das Cruzes (UMC), representada pela coordenação do curso de Bacharelado em Engenharia de Software. Em uma implantação real, a UMC é a controladora dos dados acadêmicos tratados pelo sistema.</p>
-        <p><strong>Encarregado (DPO):</strong> Coordenação do Curso de Engenharia de Software da UMC, contato <strong>secretaria@umc.br</strong>. O encarregado é o canal de contato entre o Aprova+, os titulares dos dados e a Autoridade Nacional de Proteção de Dados (ANPD), conforme o art. 41 da LGPD.</p>
+        <p><strong>Controlador:</strong> a instituição de ensino que utiliza o Aprova+, representada pela coordenação de cada curso. É ela quem decide sobre o tratamento dos dados acadêmicos feito no sistema (art. 5º, VI, da LGPD).</p>
+        <p><strong>Encarregado (DPO):</strong> Leonardo Valdir Silva, contato <strong>dpo.aprova_mais@yahoo.com</strong>. O encarregado é o canal de contato entre o Aprova+, os titulares dos dados e a Autoridade Nacional de Proteção de Dados (ANPD), conforme o art. 41 da LGPD.</p>
     </div>
     <hr class="doc-divider">
 
     <div class="doc-section">
         <h2>Quais dados tratamos</h2>
         <ul>
-            <li>Nome completo e e-mail institucional de todos os usuários</li>
+            <li>Nome completo e e-mail de todos os usuários</li>
             <li>Senha, armazenada apenas como hash BCrypt</li>
             <li>Identificador institucional: RGM (aluno) ou matrícula institucional e departamento (orientador); setor (secretaria)</li>
             <li>Curso, turma e período do aluno</li>
-            <li>Dados do estágio: nome e CNPJ da empresa, tipo de estágio, data de início, situação e justificativa de rejeição, quando houver (a justificativa é armazenada cifrada)</li>
+            <li>Dados do estágio: nome, CNPJ e cidade da empresa, tipo de estágio, data de início, situação e justificativa de rejeição, quando houver (a justificativa é armazenada cifrada)</li>
             <li>Entregas do estágio: arquivos enviados, comentário do aluno, feedback do orientador e resultado e observação de cada critério do checklist de avaliação (o comentário, o feedback e as observações são armazenados cifrados)</li>
-            <li>Solicitações sobre o estágio (troca de modalidade, trancamento e reabertura) e encerramento do estágio: tipo, motivo, decisão e observação (o motivo, a justificativa e a observação são armazenados cifrados)</li>
-            <li>Data e versão do aceite dos Termos de Uso e desta Política</li>
+            <li>Solicitações sobre o estágio (troca de modalidade, trancamento, reabertura e exclusão de anexo) e encerramento do estágio: tipo, motivo, decisão e observação (o motivo, a justificativa e a observação são armazenados cifrados)</li>
+            <li>Pedidos de liberação da verificação em duas etapas: motivo informado e decisão</li>
+            <li>Histórico de aceites: versão e data de cada aceite dos Termos de Uso e desta Política</li>
             <li>Registros de auditoria: ação realizada, data e hora, resultado e endereço IP de origem</li>
             <li>Dados da verificação em duas etapas: chave do aplicativo autenticador, armazenada cifrada com AES-256-GCM</li>
         </ul>
-        <p>O Aprova+ não coleta dados pessoais sensíveis (art. 5º, II, da LGPD), CPF, endereço residencial, dados financeiros ou dados de geolocalização.</p>
+        <p>O Aprova+ não solicita dados pessoais sensíveis (art. 5º, II, da LGPD), CPF, endereço residencial, dados financeiros ou dados de geolocalização.</p>
     </div>
     <hr class="doc-divider">
 
@@ -78,28 +73,70 @@
             </tr>
             </thead>
             <tbody>
-            <tr><td>Nome, identificador institucional, curso, turma, período e dados do estágio e das entregas</td><td>Identificação nos registros acadêmicos e controle do estágio supervisionado</td><td>Cumprimento de obrigação legal (art. 7º, II), pois o estágio é regido pela Lei nº 11.788/2008</td></tr>
-            <tr><td>E-mail e senha</td><td>Autenticação na conta e envio dos e-mails do sistema (convites, recuperação de senha, decisões sobre o estágio, resultado das entregas e andamento das solicitações)</td><td>Legítimo interesse (art. 7º, IX), limitado ao funcionamento do sistema</td></tr>
-            <tr><td>Registros de auditoria e IP de origem</td><td>Segurança da informação e rastreabilidade das operações críticas</td><td>Legítimo interesse (art. 7º, IX), com acesso restrito ao administrador do sistema</td></tr>
+            <tr><td>Nome, identificador institucional, curso, turma, período e dados do estágio e das entregas</td><td>Identificação nos registros acadêmicos e controle do estágio supervisionado</td><td>Cumprimento de obrigação legal (art. 7º, II): a Lei nº 11.788/2008 (art. 7º) obriga a instituição a celebrar o termo de compromisso, indicar o professor orientador e exigir os relatórios do estágio</td></tr>
+            <tr><td>E-mail e senha</td><td>Autenticação na conta e envio dos e-mails do sistema (convites, recuperação de senha, decisões sobre o estágio, resultado das entregas e andamento das solicitações)</td><td>Legítimo interesse (art. 7º, IX, e art. 10, II), limitado ao funcionamento do sistema</td></tr>
+            <tr><td>Registros de auditoria e IP de origem</td><td>Segurança da informação e rastreabilidade das operações críticas</td><td>Legítimo interesse (art. 7º, IX), com acesso restrito ao administrador do sistema e e-mail e IP mascarados na consulta</td></tr>
             <tr><td>Dados da verificação em duas etapas</td><td>Proteção da conta contra acessos indevidos</td><td>Legítimo interesse (art. 7º, IX)</td></tr>
-            <tr><td>Data e versão do aceite</td><td>Comprovação da manifestação do titular, que o art. 8º, § 2º, atribui ao controlador</td><td>Cumprimento de obrigação legal (art. 7º, II)</td></tr>
+            <tr><td>Histórico de aceites</td><td>Comprovação de que o usuário foi informado sobre esta Política e aceitou as regras dos Termos de Uso, em cada versão</td><td>Exercício regular de direitos em processo judicial, administrativo ou arbitral (art. 7º, VI), para comprovar o aceite se for preciso</td></tr>
             </tbody>
         </table>
+        <p><strong>O aceite não é a base legal do tratamento.</strong> Os dados são tratados pelas hipóteses da tabela, e não pelo consentimento do art. 7º, I. O aceite registra que você foi informado sobre o tratamento, como exige o art. 9º da LGPD, e que concorda com as regras de uso do sistema descritas nos Termos de Uso.</p>
+        <p>Nos tratamentos por legítimo interesse, o sistema usa apenas os dados mínimos para a finalidade, com acesso restrito (art. 10, § 1º). Se você entender que algum tratamento descumpre a LGPD, pode se opor a ele pelo canal do encarregado (art. 18, § 2º).</p>
+        <p>O sistema calcula automaticamente a carga horária cumprida e os avisos de prazo, mas a aprovação do estágio, a avaliação das entregas e a conclusão são sempre decididas por uma pessoa. Não há decisão tomada unicamente por tratamento automatizado (art. 20).</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Quem tem acesso aos seus dados</h2>
+        <p>Ninguém tem acesso livre a todos os dados. Cada perfil vê somente o que o seu papel exige, e essa conferência é feita no servidor a cada pedido, e não apenas na tela.</p>
+        <table class="table table-bordered table-doc mt-3">
+            <thead>
+            <tr>
+                <th>Perfil</th>
+                <th>O que vê</th>
+                <th>O que pode fazer</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr><td>Aluno</td><td>Os próprios dados, o próprio estágio, as entregas e os arquivos que enviou</td><td>Cadastrar o estágio, enviar as entregas, baixar os próprios arquivos, cancelar um envio, pedir a exclusão de um anexo, fazer solicitações e exercer os direitos desta Política</td></tr>
+            <tr><td>Orientador</td><td>Nome, RGM, e-mail, estágio e entregas dos alunos das turmas que orienta</td><td>Validar o estágio, abrir e baixar os arquivos enviados por esses alunos, avaliar as entregas e concluir ou reprovar o estágio</td></tr>
+            <tr><td>Coordenador</td><td>Dados dos cursos que coordena: pré-cadastro (nome, e-mail, RGM ou matrícula e turma), estágios dos alunos (nome, RGM, e-mail, empresa, situação e carga horária), solicitações e pedidos de liberação da verificação em duas etapas feitos por administradores</td><td>Manter o pré-cadastro, organizar turmas e trilhas, decidir solicitações, inclusive os pedidos de exclusão de anexo, e pedidos de liberação e encerrar estágios por desligamento. Não abre os arquivos das entregas</td></tr>
+            <tr><td>Secretaria</td><td>Pré-cadastro (nome, e-mail, RGM ou matrícula e turma) e solicitações</td><td>Enviar os convites de acesso e decidir as solicitações, inclusive os pedidos de exclusão de anexo. Não abre os arquivos das entregas</td></tr>
+            <tr><td>Administrador</td><td>Registros de auditoria, com e-mails e IPs mascarados, pedidos de liberação da verificação em duas etapas e, quando precisa corrigir um estágio, os dados desse estágio</td><td>Ajustar os parâmetros do sistema, liberar a verificação em duas etapas e fazer correções excepcionais. Não abre os arquivos das entregas, e cada correção fica registrada na auditoria</td></tr>
+            </tbody>
+        </table>
+        <p>O sistema não tem função de exportação em massa de dados. Quem tem acesso aos dados de outras pessoas só pode usá-los para o acompanhamento do estágio, e copiá-los, repassá-los ou divulgá-los para outros fins é proibido pelos Termos de Uso.</p>
+    </div>
+    <hr class="doc-divider">
+
+    <div class="doc-section">
+        <h2>Arquivos enviados nas entregas</h2>
+        <ul>
+            <li><strong>O que é aceito:</strong> arquivos PDF, DOCX, XLSX, PPTX, JPG, JPEG ou PNG, de até 10 MB. O sistema confere o tipo e o tamanho do arquivo, mas não lê nem extrai o seu conteúdo.</li>
+            <li><strong>Onde ficam:</strong> no serviço de armazenamento Cloudflare R2. Os arquivos não têm endereço público: só são entregues pelo próprio sistema, depois de conferir quem está pedindo.</li>
+            <li><strong>Quem acessa:</strong> apenas o aluno que enviou e o orientador do estágio, e os dois podem baixar o arquivo. Coordenação, secretaria e administração não abrem os arquivos. Cada download fica registrado na auditoria, com quem baixou e quando.</li>
+            <li><strong>Versões:</strong> cada novo envio de uma tarefa cria uma nova versão, e as anteriores ficam guardadas no histórico da entrega.</li>
+            <li><strong>Conteúdo:</strong> os documentos, como o termo de compromisso, podem conter outros dados pessoais impressos neles, como os do aluno e do supervisor da empresa. Envie apenas o que a tarefa pede.</li>
+        </ul>
+        <p><strong>Se você enviou um arquivo errado</strong>, há dois caminhos, os dois pela própria tarefa, na sua trilha:</p>
+        <ol>
+            <li><strong>Cancelar o envio:</strong> enquanto o orientador ainda não abriu a entrega, você pode cancelar o último envio. A versão sai do histórico, o arquivo é apagado na hora, e você pode enviar o arquivo correto.</li>
+            <li><strong>Pedir a exclusão do anexo:</strong> depois que o orientador abriu ou avaliou a entrega, você pode pedir a exclusão do anexo de qualquer versão, informando o motivo. O pedido é decidido pela secretaria ou pela coordenação do curso, o que acontecer primeiro.</li>
+        </ol>
+        <p>A partir do pedido de exclusão, o anexo fica bloqueado: ninguém no sistema consegue abri-lo ou baixá-lo, nem você, nem o orientador, nem quem decide o pedido, e a avaliação da entrega fica parada até a decisão. Se o pedido for aprovado, o arquivo é apagado do armazenamento automaticamente, sem nenhuma etapa manual em que alguém precise abri-lo. A versão continua no histórico, sem o nome do arquivo, com a data da exclusão e o nome de quem aprovou, e, se era a versão em análise ou aprovada, a tarefa volta para você enviar o arquivo correto. Se o pedido for recusado ou cancelado, o anexo volta a ficar disponível. Cada etapa fica registrada na auditoria (art. 18, IV, da LGPD).</p>
     </div>
     <hr class="doc-divider">
 
     <div class="doc-section">
         <h2>Com quem compartilhamos seus dados</h2>
-        <p>Dentro do sistema, os dados são acessíveis apenas aos perfis autorizados, e cada perfil vê somente o que o seu papel exige. Os registros de auditoria são consultados apenas pelo administrador.</p>
         <p>Fora do sistema, o Aprova+ utiliza os seguintes serviços:</p>
         <ul>
             <li><strong>Resend:</strong> serviço de envio de e-mails usado para os convites de acesso, a recuperação de senha, as decisões sobre o estágio, o resultado das entregas e o andamento das solicitações. Recebe o e-mail e o nome do destinatário e o conteúdo da mensagem.</li>
-            <li><strong>Cloudflare R2:</strong> serviço de armazenamento de arquivos, usado, quando configurado, para guardar os arquivos das entregas.</li>
+            <li><strong>Cloudflare R2:</strong> serviço de armazenamento de arquivos, onde ficam guardados os arquivos das entregas.</li>
             <li><strong>BrasilAPI:</strong> serviço público de consulta de dados abertos, que recebe apenas o CNPJ da empresa concedente do estágio, para confirmar a razão social e a situação.</li>
-            <li><strong>jsDelivr e Google Fonts:</strong> redes de distribuição que fornecem os arquivos de estilo, os scripts e as fontes das páginas. Recebem o endereço IP do navegador ao carregar esses arquivos.</li>
         </ul>
         <p>Nenhum dado é vendido, cedido ou compartilhado para fins comerciais, e não há envio de dados a serviços de inteligência artificial, publicidade ou análise de comportamento.</p>
-        <p><strong>Transferência internacional:</strong> o Resend opera nos Estados Unidos, e o Cloudflare R2, o jsDelivr e o Google Fonts utilizam servidores distribuídos fora do Brasil. Por isso, há transferência internacional de dados pessoais: e-mail, nome e conteúdo da mensagem, no caso do Resend; arquivos das entregas, no caso do Cloudflare R2; e endereço IP, no caso do jsDelivr e do Google Fonts. A transferência é necessária ao funcionamento do sistema e observa o art. 33 da LGPD.</p>
+        <p><strong>Transferência internacional:</strong> o Resend opera nos Estados Unidos, e o Cloudflare R2 utiliza servidores distribuídos fora do Brasil. Por isso, há transferência internacional de dados pessoais: e-mail, nome e conteúdo da mensagem, no caso do Resend, e arquivos das entregas, no caso do Cloudflare R2. A transferência é necessária ao acompanhamento do estágio, que é obrigação legal da instituição, e se apoia no art. 33, IX, da LGPD. Em uma implantação definitiva, a instituição deve firmar com os fornecedores as cláusulas-padrão contratuais da ANPD (art. 33, II, b, e Resolução CD/ANPD nº 19/2024) ou adotar fornecedores com servidores no Brasil.</p>
     </div>
     <hr class="doc-divider">
 
@@ -113,9 +150,11 @@
         <h2>Por quanto tempo guardamos seus dados</h2>
         <ul>
             <li><strong>Dados de conta:</strong> mantidos enquanto o usuário estiver ativo. Quando o titular solicita a exclusão, os identificadores são substituídos por valores neutros: o nome passa a ser "USUÁRIO REMOVIDO", o e-mail passa a ser removido_[código]@anonimizado.br e o RGM ou a matrícula passam a ser REMOVIDO_[código], em que [código] é uma sequência aleatória de 8 caracteres. A conta é desativada.</li>
-            <li><strong>Registros acadêmicos do estágio:</strong> preservados, por força da Lei nº 11.788/2008, mas desvinculados de dados identificáveis após a anonimização.</li>
+            <li><strong>Pré-cadastro:</strong> mantido até a anonimização da conta, quando é apagado.</li>
+            <li><strong>Registros acadêmicos do estágio:</strong> mantidos pelo prazo em que a instituição é obrigada a guardá-los, por cumprimento de obrigação legal (art. 16, I, da LGPD). Após a anonimização, deixam de estar ligados aos dados da conta.</li>
+            <li><strong>Arquivos das entregas:</strong> fazem parte do registro do estágio e são mantidos pelo mesmo prazo, como foram enviados, inclusive depois da anonimização da conta. A exceção é o arquivo enviado por engano, que é apagado quando o envio é cancelado ou quando o pedido de exclusão do anexo é aprovado.</li>
             <li><strong>Registros de auditoria:</strong> mantidos por 6 meses, por padrão, e eliminados após esse prazo. Durante esse período, são preservados mesmo após a anonimização da conta.</li>
-            <li><strong>Registros de consentimento:</strong> mantidos enquanto for necessário comprovar a manifestação do titular.</li>
+            <li><strong>Histórico de aceites:</strong> mantido junto ao registro da conta, inclusive após a anonimização, para comprovar a versão aceita e a data. Ele não é apagado pela eliminação periódica da auditoria.</li>
         </ul>
     </div>
     <hr class="doc-divider">
@@ -123,13 +162,22 @@
     <div class="doc-section">
         <h2>Como protegemos seus dados</h2>
         <p>As medidas adotadas incluem hash BCrypt para senhas, JWT em cookie HttpOnly, verificação em duas etapas (obrigatória para administrador, coordenação e secretaria, e opcional para alunos e orientadores), controle de acesso por perfil no backend, bloqueio temporário da conta por tentativas falhas de login, criptografia AES-256-GCM de dados em repouso, HTTPS em produção e registro de auditoria.</p>
-        <p>Em caso de incidente de segurança que possa acarretar risco ou dano relevante aos titulares, a UMC comunicará a ANPD e os titulares afetados no prazo de até <strong>3 dias úteis</strong> a partir da ciência do incidente, conforme o art. 48 da LGPD e a Resolução CD/ANPD nº 15/2024.</p>
+        <p>Em caso de incidente de segurança que possa acarretar risco ou dano relevante aos titulares, a instituição comunicará a ANPD e os titulares afetados no prazo de até <strong>3 dias úteis</strong> a partir da ciência do incidente, conforme o art. 48 da LGPD e a Resolução CD/ANPD nº 15/2024.</p>
     </div>
     <hr class="doc-divider">
 
     <div class="doc-section">
         <h2>Seus direitos sobre os seus dados</h2>
-        <p>O titular pode, a qualquer momento, solicitar acesso aos seus dados, correção, anonimização, informação sobre compartilhamento e portabilidade, além de revogar o consentimento. As solicitações de acesso e correção são feitas abaixo, registradas no log de auditoria e encaminhadas por e-mail à secretaria acadêmica. A anonimização é executada pelo próprio sistema. Os demais pedidos, e os pedidos do administrador, são feitos pelo e-mail secretaria@umc.br.</p>
+        <p>O titular pode, a qualquer momento, pedir a confirmação do tratamento e o acesso aos seus dados (art. 18, I e II), a correção (III), a anonimização da conta (IV), a portabilidade (V), a informação sobre com quem os dados são compartilhados (VII) e se opor aos tratamentos por legítimo interesse (§ 2º). Como o tratamento não se baseia no consentimento, não há consentimento a revogar.</p>
+        <p>As solicitações de acesso e correção são feitas abaixo, registradas no log de auditoria e encaminhadas por e-mail ao encarregado. A anonimização é executada pelo próprio sistema. Os demais pedidos, e os pedidos do administrador, são feitos pelo e-mail do encarregado, dpo.aprova_mais@yahoo.com.</p>
+        <p><strong>Como funciona a anonimização:</strong> você confirma a senha e, se usar a verificação em duas etapas, o código. A partir daí, na hora:</p>
+        <ul>
+            <li>o nome, o e-mail e o RGM ou a matrícula são trocados por valores neutros, também nos convites e nos registros de auditoria;</li>
+            <li>a conta é desativada, as sessões abertas são encerradas e a verificação em duas etapas é desligada;</li>
+            <li>o seu pré-cadastro é apagado;</li>
+            <li>no caso do aluno, o estágio em andamento é encerrado por desligamento, e os motivos das solicitações são apagados.</li>
+        </ul>
+        <p>Continuam guardados, sem ligação com você, os registros do estágio, os arquivos enviados, os registros de auditoria até o fim do prazo de 6 meses e o histórico de aceites. O coordenador que ainda coordena cursos e a única secretaria ativa precisam passar a função para outra pessoa antes de anonimizar a conta.</p>
     </div>
     <hr class="doc-divider">
 
@@ -147,7 +195,7 @@
         </div>
 
         <div x-show="direito === 'acesso' || direito === 'correcao'" x-cloak>
-            <p>Clique no botão abaixo para registrar sua solicitação e enviá-la por e-mail à secretaria acadêmica da UMC. Você receberá uma resposta em até 15 dias, conforme o art. 19 da LGPD.</p>
+            <p>Clique no botão abaixo para registrar sua solicitação e enviá-la por e-mail ao encarregado pelo tratamento de dados pessoais (DPO). Você receberá uma resposta em até 15 dias, conforme o art. 19 da LGPD.</p>
             <button class="btn-doc-ver" @click="enviarSolicitacao()">
                 Enviar solicitação por e-mail
             </button>
@@ -161,7 +209,7 @@
 
         <div x-show="direito === 'exclusao'" x-cloak>
             <div class="alert alert-warning mt-2">
-                <strong>Importante:</strong> pela Lei 11.788/2008, os registros acadêmicos do estágio não podem ser deletados. Por isso, aplicamos a <strong>anonimização</strong>: seus dados pessoais identificáveis (nome, e-mail e identificador institucional) são substituídos por valores neutros. Você deixa de ser identificável, mas os registros do estágio permanecem intactos para fins legais.
+                <strong>Importante:</strong> os registros do estágio fazem parte do acervo acadêmico e são mantidos para cumprimento de obrigação legal (art. 16, I, da LGPD). Por isso, aplicamos a <strong>anonimização</strong>: seus dados pessoais identificáveis (nome, e-mail e identificador institucional) são substituídos por valores neutros. Você deixa de ser identificável, mas os registros do estágio permanecem intactos para fins legais.
             </div>
             <p class="mt-2">Ao anonimizar, você perde o acesso a esta conta e o vínculo com o seu estágio. Se voltar a usar o sistema, um novo cadastro começa do zero, a partir de um novo convite.</p>
             <div class="mb-2">
@@ -182,22 +230,23 @@
 
     <div class="doc-section">
         <h2>Alterações nesta Política</h2>
-        <p>Quando houver alteração relevante, a nova versão será publicada nesta página e será solicitado um novo aceite. A versão aceita por cada usuário fica registrada junto à data do aceite.</p>
+        <p>Cada versão desta Política tem número e data de vigência, exibidos no topo da página. Quando uma versão nova é publicada, todos os usuários passam pela tela de aceite antes de continuar usando o sistema, e cada aceite fica registrado no histórico com a versão e a data. Quem não concordar pode deixar de usar o sistema e pedir a anonimização da conta.</p>
+        <p><strong>Histórico de versões</strong></p>
+        <ul>
+            <li><strong>1.2 (19/11/2026):</strong> esclarece que o aceite não é a base legal do tratamento; troca a base do histórico de aceites para exercício regular de direitos; informa o que cada perfil vê e pode fazer, onde ficam os arquivos das entregas e quem pode baixá-los; inclui o cancelamento do envio e o pedido de exclusão de anexo, com o bloqueio do arquivo durante a análise e a exclusão automática; detalha a anonimização da conta; informa o mascaramento da auditoria, a base da transferência internacional e a ausência de decisões automatizadas; detalha os direitos do art. 18; indica o encarregado e o canal de atendimento; deixa de citar a instituição pelo nome; deixa de usar redes de distribuição externas para os arquivos das páginas.</li>
+            <li><strong>1.1:</strong> versão anterior.</li>
+        </ul>
     </div>
     <div class="mt-4 text-center">
-        <a href="/consentimento" class="btn-voltar">Voltar para aceite</a>
+        <a href="/inicio" class="btn-voltar" data-acao="voltar">Voltar</a>
     </div>
-
-    <p class="mt-4 text-center" style="font-size: 0.78rem; color: #9CA3AF;">
-        © 2026 Aprova+ · Universidade de Mogi das Cruzes
-    </p>
 
 </div>
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 <script th:src="@{/js/comum.js}"></script>
 <script th:src="@{/js/paginas/privacidade.js}"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </body>
 </html>

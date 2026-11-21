@@ -4,23 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Segurança da conta</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
     <link th:href="@{/css/main.css}" rel="stylesheet">
     <!-- Gera o QR Code do 2FA no próprio navegador (o segredo não é enviado a terceiros).
          integrity (SRI): o navegador recusa o arquivo se o conteúdo do CDN for alterado -->
-    <script defer src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"
-            integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
-            crossorigin="anonymous"></script>
+    <script defer th:src="@{/vendor/qrcodejs/qrcode.min.js}"></script>
     <script defer th:src="@{/js/comum.js}"></script>
     <script defer th:src="@{/js/app.js}"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-dark bg-dark px-3 mb-4">
-    <span class="navbar-brand fw-bold">Aprova+</span>
-    <div>
-        <a href="javascript:history.back()" class="btn btn-outline-light btn-sm me-2">Voltar</a>
+<nav class="navbar navbar-dark navbar-aprovamais px-3 mb-4">
+    <span class="navbar-brand fw-bold">
+        <img th:src="@{/css/img/logo-aprova-completo.png}" class="logo-navbar" alt="Aprova+">
+    </span>
+    <div class="d-flex align-items-center">
+        <span th:if="${usuarioLogado}" class="navbar-text small text-end lh-sm me-3 py-0">
+            <span class="d-block fw-semibold text-white" th:text="${usuarioLogado.nome}"></span>
+            <span class="d-block text-white-50" th:text="${usuarioLogado.email}"></span>
+        </span>
+        <button type="button" class="btn btn-outline-light btn-sm me-2" data-acao="voltar">Voltar</button>
         <button class="btn btn-outline-light btn-sm" data-acao="sair">Sair</button>
     </div>
 </nav>
@@ -54,7 +59,7 @@
             <button class="btn btn-primary" x-show="!ativo" @click="iniciarAtivacao()" :disabled="processando">
                 Ativar verificação em duas etapas
             </button>
-            <button class="btn btn-outline-danger" x-show="ativo && !obrigatorio" @click="iniciarDesativacao()">
+            <button class="btn btn-danger" x-show="ativo && !obrigatorio" @click="iniciarDesativacao()">
                 Desativar verificação em duas etapas
             </button>
         </div>
@@ -92,10 +97,23 @@
             <button type="button" class="btn btn-link" @click="cancelar()">Cancelar</button>
         </form>
     </div>
+
+    <!-- Troca de senha pelo mesmo link da recuperação, enviado ao e-mail da conta -->
+    <div class="card p-4 mt-3" x-show="carregado" x-cloak th:attr="data-email=${usuarioLogado != null ? usuarioLogado.email : ''}" x-ref="cartaoSenha">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <strong>Senha</strong>
+                <p class="text-muted small mb-0">Enviamos para o seu e-mail um link para criar uma nova senha.</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" @click="enviarLinkSenha()" :disabled="processando">
+                Alterar senha
+            </button>
+        </div>
+    </div>
 </div>
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

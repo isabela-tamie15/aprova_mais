@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tcc.ges.aprovamais.dto.FiltroPainel;
 import tcc.ges.aprovamais.dto.PainelCoordenadorResponse;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
@@ -147,7 +148,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(estagios, List.of(), List.of(), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert
         assertEquals(2, painel.getEstagiosSemOrientador());
@@ -174,7 +175,7 @@ class PainelCoordenadorServiceTest {
 
         // act
         List<PainelCoordenadorResponse.SituacaoTurma> linhas =
-                painelCoordenadorService.montarPainel(EMAIL, null).getSituacaoPorTurma();
+                painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro()).getSituacaoPorTurma();
 
         // assert: a 8A vem primeiro e fica com a barra cheia; a 6A tem 3 de 5 = 60
         assertEquals(2, linhas.size());
@@ -208,7 +209,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(estagios, List.of(), List.of(), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert: a 8B conta uma vez só, mesmo com 2 estágios; a 8A não tem ATIVO; a 6A tem data
         assertEquals(1, painel.getTurmasSemDataEncerramento());
@@ -227,7 +228,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(estagio), List.of(), List.of(), List.of(entrega(estagio), emRevisao));
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert: o service pede ao banco exatamente os status do painel de correção
         assertEquals(2, painel.getTarefasAguardandoCorrecao());
@@ -245,7 +246,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(estagio), repetir(TIPO_ESTAGIARIO, 3), repetir(estagio.getId(), 1), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert
         assertEquals(1, painel.getEstagiosRetaFinal());
@@ -264,7 +265,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(estagio), repetir(TIPO_ESTAGIARIO, 3), repetir(estagio.getId(), 3), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert
         assertEquals(1, painel.getEstagiosRetaFinal());
@@ -286,7 +287,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(estagio), repetir(TIPO_ESTAGIARIO, 3), repetir(estagio.getId(), 3), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert
         assertEquals(1, painel.getRetaFinalSoHoras());
@@ -302,7 +303,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(estagio), repetir(TIPO_ESTAGIARIO, 3), List.of(), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert: o estágio entra numa linha só, então as três linhas somam o número do cartão
         assertEquals(1, painel.getEstagiosRetaFinal());
@@ -324,7 +325,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(tudoAprovado, horasNoMesmoDia), repetir(TIPO_ESTAGIARIO, 3), aprovadas, List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert
         assertEquals(0, painel.getEstagiosRetaFinal());
@@ -346,7 +347,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(estagioLonge, estagioPerto), repetir(TIPO_ESTAGIARIO, 3), List.of(), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert
         assertEquals(0, painel.getEstagiosRetaFinal());
@@ -368,7 +369,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(de8a, de8b, de6a), List.of(), List.of(), entregas);
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
         List<PainelCoordenadorResponse.CorrecaoTurma> linhas = painel.getCorrecaoPorTurma();
 
         // assert
@@ -406,7 +407,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(estagios, repetir(TIPO_ESTAGIARIO, 3), List.of(), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
         List<PainelCoordenadorResponse.PrazoTurma> linhas = painel.getPrazoPorTurma();
 
         // Assert: 8B e 8A empatam com 2, e a 8B vem antes porque tem mais dias
@@ -445,7 +446,7 @@ class PainelCoordenadorServiceTest {
         prepararBanco(List.of(), List.of(), List.of(), List.of());
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, null);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, FiltroPainel.semFiltro());
 
         // assert
         assertEquals(0, painel.getEstagiosSemOrientador());
@@ -469,7 +470,7 @@ class PainelCoordenadorServiceTest {
                 .thenThrow(new ResourceNotFoundException("Curso não encontrado"));
 
         // act + assert
-        assertThrows(ResourceNotFoundException.class, () -> painelCoordenadorService.montarPainel(EMAIL, 99L));
+        assertThrows(ResourceNotFoundException.class, () -> painelCoordenadorService.montarPainel(EMAIL, new FiltroPainel(99L, null, null, null)));
         verifyNoInteractions(painelCoordenadorRepository);
     }
 
@@ -487,7 +488,7 @@ class PainelCoordenadorServiceTest {
                 List.of(entrega(deEngenharia), entrega(deSistemas1)));
 
         // act
-        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, 1L);
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL, new FiltroPainel(1L, null, null, null));
 
         // assert
         assertEquals(1, painel.getEstagiosEmAndamento());
@@ -496,5 +497,62 @@ class PainelCoordenadorServiceTest {
         assertEquals(1, painel.getSituacaoPorTurma().size());
         assertEquals("8B", painel.getSituacaoPorTurma().get(0).getTurma());
         verify(cursoService).buscarCursoDoCoordenador(1L, EMAIL);
+    }
+
+    // ---------- Filtros de semestre, turma e orientador ----------
+
+    @Test
+    @DisplayName("Com o filtro de orientador, entram só os estágios e as entregas dele")
+    void deveFiltrarPeloOrientador() {
+        Orientador ana = orientador(21L, "Ana Prado");
+        Turma turma = turma(1L, "8B", engenharia, hoje.plusDays(90));
+        Estagio doCarlos = estagio(turma, StatusEstagio.ATIVO, carlos);
+        Estagio daAna = estagio(turma, StatusEstagio.ATIVO, ana);
+        Estagio semOrientador = estagio(turma, StatusEstagio.PENDENTE, null);
+        prepararBanco(List.of(doCarlos, daAna, semOrientador), List.of(), List.of(),
+                List.of(entrega(doCarlos), entrega(daAna), entrega(daAna)));
+
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL,
+                new FiltroPainel(null, null, null, ana.getId()));
+
+        assertEquals(1, painel.getEstagiosEmAndamento());
+        assertEquals(0, painel.getEstagiosSemOrientador());
+        assertEquals(2, painel.getTarefasAguardandoCorrecao());
+        // As opções continuam com todos os orientadores, em ordem alfabética
+        assertEquals(List.of("Ana Prado", carlos.getNome()),
+                painel.getOpcoesFiltro().getOrientadores().stream().map(o -> o.nome()).toList());
+    }
+
+    @Test
+    @DisplayName("Com o filtro de semestre, entram só as turmas daquele semestre, e os concluídos vão para o resumo")
+    void deveFiltrarPeloSemestreEContarConcluidos() {
+        Turma atual = turma(1L, "8B", engenharia, hoje.plusDays(90));
+        Turma anterior = turma(2L, "8A", engenharia, hoje.plusDays(90));
+        anterior.setSemestre("2026/1");
+        Estagio ativoAtual = estagio(atual, StatusEstagio.ATIVO, carlos);
+        Estagio concluidoAtual = estagio(atual, StatusEstagio.CONCLUIDO, carlos);
+        Estagio ativoAnterior = estagio(anterior, StatusEstagio.ATIVO, carlos);
+        Estagio concluidoAnterior = estagio(anterior, StatusEstagio.CONCLUIDO, carlos);
+        prepararBanco(List.of(ativoAtual, concluidoAtual, ativoAnterior, concluidoAnterior), List.of(), List.of(), List.of());
+        when(painelCoordenadorRepository.listarTurmasDosCursos(EMAIL)).thenReturn(List.of(atual, anterior));
+
+        PainelCoordenadorResponse painel = painelCoordenadorService.montarPainel(EMAIL,
+                new FiltroPainel(null, "2026/2", null, null));
+
+        assertEquals(1, painel.getEstagiosEmAndamento());
+        assertEquals(1, painel.getEstagiosConcluidos());
+        assertEquals(1, painel.getSituacaoPorTurma().size());
+        assertEquals(List.of("2026/2", "2026/1"), painel.getOpcoesFiltro().getSemestres());
+        assertEquals(2, painel.getOpcoesFiltro().getTurmas().size());
+    }
+
+    @Test
+    @DisplayName("Turma que não é dos cursos do coordenador responde 404")
+    void deveRecusarTurmaDeOutroCoordenador() {
+        when(painelCoordenadorRepository.listarTurmasDosCursos(EMAIL))
+                .thenReturn(List.of(turma(1L, "8B", engenharia, hoje.plusDays(90))));
+
+        assertThrows(ResourceNotFoundException.class, () -> painelCoordenadorService.montarPainel(EMAIL,
+                new FiltroPainel(null, null, 99L, null)));
     }
 }

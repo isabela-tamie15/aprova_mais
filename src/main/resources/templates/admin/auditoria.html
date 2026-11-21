@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Auditoria</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
     <link th:href="@{/css/paginas/admin-auditoria.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </head>
 <body>
 
@@ -56,10 +57,10 @@
                 <div class="invalid-feedback" x-text="erros.periodo"></div>
             </div>
             <div class="col-md-4 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-primary fw-semibold flex-grow-1" :disabled="carregando">
+                <button type="submit" class="btn btn-primary px-4" :disabled="carregando">
                     Filtrar
                 </button>
-                <button type="button" class="btn btn-outline-secondary" @click="limpar()" :disabled="carregando">
+                <button type="button" class="btn btn-secondary" @click="limpar()" :disabled="carregando">
                     Limpar
                 </button>
             </div>
@@ -72,6 +73,7 @@
     <div class="card-lista">
         <div class="d-flex justify-content-between align-items-center px-4 py-3 borda-inferior">
             <span class="small text-muted" x-text="resumo()"></span>
+            <span class="small text-muted">Para proteger os dados, e-mails e IPs aparecem ocultos. Clique em Ver para abrir um registro completo.</span>
             <span class="small text-muted" x-show="carregando" x-cloak>Carregando...</span>
         </div>
 
@@ -89,11 +91,12 @@
                     <th>Ação</th>
                     <th>Resultado</th>
                     <th>IP</th>
-                    <th class="pe-4">Detalhes</th>
+                    <th>Detalhes</th>
+                    <th class="pe-4">Dados</th>
                 </tr>
                 </thead>
                 <tbody>
-                <template x-for="registro in registros" :key="registro.id">
+                <template x-for="(registro, indice) in registros" :key="registro.id">
                     <tr>
                         <td class="ps-4 text-nowrap" x-text="formatarData(registro.criadoEm)"></td>
                         <td class="text-nowrap" x-text="registro.email || '-'"></td>
@@ -105,7 +108,20 @@
                                   x-text="registro.sucesso ? 'Sucesso' : 'Falha'"></span>
                         </td>
                         <td class="text-nowrap" x-text="registro.ipOrigem || '-'"></td>
-                        <td class="pe-4 detalhes" x-text="registro.detalhes || '-'"></td>
+                        <td class="detalhes">
+                            <template x-for="linha in linhasDetalhes(registro.detalhes)">
+                                <div x-text="linha"></div>
+                            </template>
+                        </td>
+                        <td class="pe-4">
+                            <button type="button" class="btn btn-sm text-nowrap d-inline-flex align-items-center gap-1"
+                                    :class="registro.mascarado ? 'btn-success' : 'btn-secondary'"
+                                    @click="alternarDados(indice)">
+                                <svg x-show="registro.mascarado" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg x-show="!registro.mascarado" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                <span x-text="registro.mascarado ? 'Ver' : 'Ocultar'"></span>
+                            </button>
+                        </td>
                     </tr>
                 </template>
                 </tbody>
@@ -115,10 +131,10 @@
         <!-- O x-show fica numa div sem d-flex: o display:flex !important do Bootstrap venceria o display:none -->
         <div x-show="totalPaginas > 1" x-cloak>
             <div class="d-flex justify-content-between align-items-center px-4 py-3 borda-superior">
-                <button class="btn btn-outline-secondary btn-sm" @click="irPara(pagina - 1)"
+                <button class="btn btn-secondary btn-sm" @click="irPara(pagina - 1)"
                         :disabled="carregando || pagina === 0">Anterior</button>
                 <span class="small text-muted" x-text="'Página ' + (pagina + 1) + ' de ' + totalPaginas"></span>
-                <button class="btn btn-outline-secondary btn-sm" @click="irPara(pagina + 1)"
+                <button class="btn btn-secondary btn-sm" @click="irPara(pagina + 1)"
                         :disabled="carregando || pagina + 1 >= totalPaginas">Próxima</button>
             </div>
         </div>
@@ -129,6 +145,6 @@
 <script th:src="@{/js/paginas/admin-auditoria.js}"></script>
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

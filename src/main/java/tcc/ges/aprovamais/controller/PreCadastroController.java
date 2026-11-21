@@ -39,7 +39,7 @@ public class PreCadastroController {
         return ResponseEntity.status(HttpStatus.CREATED).body(criado);
     }
 
-    // Altera um pré-cadastro do coordenador logado. O de outro coordenador volta 404
+    // Altera um pré-cadastro do coordenador logado
     @PutMapping("/{id}")
     public ResponseEntity<PreCadastroResponse> atualizar(@PathVariable Long id,
                                                          @Valid @RequestBody PreCadastroRequest request,

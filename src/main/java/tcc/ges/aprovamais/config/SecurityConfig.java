@@ -22,9 +22,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.Http403ForbiddenEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import tcc.ges.aprovamais.exception.GlobalExceptionHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -49,7 +49,7 @@ public class SecurityConfig {
     @Value("${server.port:8080}")
     private int portaHttp;
 
-    // Endereço público do sistema (APP_URL), aceito também no CORS
+    // Endereço público do sistema (APP_URL), aceito no CORS
     @Value("${app.url}")
     private String appUrl;
 
@@ -87,11 +87,14 @@ public class SecurityConfig {
                            estáticos e os endpoints de 2FA, que rodam antes do login terminar
                         */
                         .requestMatchers(
+                                "/",
+                                "/inicio",
                                 "/login",
                                 "/error",
                                 "/favicon.ico",
                                 "/css/**",
                                 "/js/**",
+                                "/vendor/**",
                                 "/.well-known/**",
                                 "/consentimento",
                                 "/termos",
@@ -112,7 +115,6 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/livez",
                                 "/readyz",
-                                // Respondem só na porta de gerenciamento (9090), usada pelo Prometheus
                                 "/actuator/health/**",
                                 "/actuator/prometheus"
                         ).permitAll()
@@ -152,16 +154,16 @@ public class SecurityConfig {
     }
 
     /*
-       Política de segurança de conteúdo. As páginas só carregam scripts do próprio sistema e do jsDelivr,
-       e as fontes do Google Fonts. O Alpine.js avalia as expressões dos atributos das páginas, por isso o
+       Política de segurança de conteúdo. As páginas só carregam scripts, estilos e fontes do próprio
+       sistema. O Alpine.js avalia as expressões dos atributos das páginas, por isso o
        unsafe-eval, e os estilos aceitam o atributo style das telas. Nenhum script inline é aceito, e a
        página não pode ser aberta dentro de um frame de outro site
     */
     private static final String POLITICA_DE_CONTEUDO = String.join("; ",
             "default-src 'self'",
-            "script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net",
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+            "script-src 'self' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline'",
+            "font-src 'self'",
             "img-src 'self' data:",
             "connect-src 'self'",
             "object-src 'none'",
@@ -172,8 +174,8 @@ public class SecurityConfig {
     private void responderNaoAutenticado(HttpServletRequest requisicao,
                                          HttpServletResponse resposta,
                                          AuthenticationException excecao) throws IOException {
-        if (!requisicao.getRequestURI().startsWith("/api/")) {
-            new Http403ForbiddenEntryPoint().commence(requisicao, resposta, excecao);
+        if (!requisicao.getRequestURI().startsWith("/api/") || GlobalExceptionHandler.ehPagina(requisicao)) {
+            resposta.sendRedirect("/login");
             return;
         }
         resposta.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aprova+ | Consentimento</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Aprova+ | Aceite dos termos</title>
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
     <link th:href="@{/css/main.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
     <link th:href="@{/css/paginas/consentimento.css}" rel="stylesheet">
 </head>
-<body class="d-flex align-items-center justify-content-center py-5" style="min-height: 100vh;">
+<body class="pt-5">
 
-<div style="width: 100%; max-width: 480px; padding: 1rem;">
+<div class="conteudo-centralizado" style="width: 100%; max-width: 480px; padding: 1rem;">
 
     <div class="text-center mb-4">
         <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
-            <div class="logo-icon">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="#2B4ECC" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
+            <img th:src="@{/css/img/logo-aprova.png}" class="logo-selo logo-selo-grande" alt="">
             <span class="logo-nome" style="color: #111827;">Aprova+</span>
         </div>
         <p style="font-size: 0.88rem; color: #6B7280; margin: 0;">
-            Antes de continuar, leia e aceite os documentos abaixo.
+            Antes de continuar, leia os documentos abaixo.
+        </p>
+        <!-- Versão vigente, a mesma que o aceite grava -->
+        <p style="font-size: 0.82rem; color: #374151; margin: 0.4rem 0 0;">
+            Versão <strong th:text="${versaoTermos}"></strong>, vigente desde <span th:text="${vigenciaTermos}"></span>.
+            Se você aceitou uma versão anterior, o histórico de mudanças está no fim de cada documento.
         </p>
     </div>
 
@@ -39,7 +40,7 @@
             </div>
             <p class="doc-texto mb-0">
                 O Aprova+ é de uso exclusivo de pessoas vinculadas à UMC. O acesso é feito por
-                convite institucional. Ao usar o sistema, você se compromete a manter suas
+                convite. Ao usar o sistema, você se compromete a manter suas
                 credenciais em sigilo, inserir apenas informações verdadeiras e usar o sistema
                 exclusivamente para fins relacionados ao estágio supervisionado.
             </p>
@@ -51,10 +52,11 @@
                 <a href="/privacidade" target="_blank" class="btn-ver">Ler completo</a>
             </div>
             <p class="doc-texto mb-0">
-                Coletamos apenas os dados necessários para gestão do estágio: nome, e-mail,
-                RGM, curso, turma e dados do estágio, conforme exigido pela Lei do Estágio
-                (Lei 11.788/2008). Você tem direito de acessar, corrigir ou solicitar a remoção
-                dos seus dados a qualquer momento. Não compartilhamos dados para fins comerciais.
+                Tratamos apenas os dados necessários para a gestão do estágio: nome, e-mail,
+                RGM, curso, turma e dados do estágio, para cumprir a Lei do Estágio
+                (Lei 11.788/2008). Você pode pedir acesso, correção ou a anonimização da sua conta;
+                os registros acadêmicos do estágio são mantidos por obrigação legal. Não
+                compartilhamos dados para fins comerciais.
             </p>
         </div>
 
@@ -62,18 +64,16 @@
             <input class="form-check-input" type="checkbox" id="aceite" x-model="aceitou"
                    style="border-color: #D1D5DB; width: 1rem; height: 1rem;">
             <label class="form-check-label checkbox-label" for="aceite">
-                Li e concordo com os
-                <a href="/termos" target="_blank">Termos de Uso</a>
-                e a
+                Li a
                 <a href="/privacidade" target="_blank">Política de Privacidade</a>
+                e aceito os
+                <a href="/termos" target="_blank">Termos de Uso</a>
                 do Aprova+.
             </label>
         </div>
 
         <div class="text-center">
-            <button class="btn-ver"
-                    style="cursor: pointer; padding: 0.25rem 1.2rem;"
-                    :style="(!aceitou || carregando) ? 'opacity: 0.55; cursor: not-allowed;' : ''"
+            <button class="btn btn-primary px-4"
                     :disabled="!aceitou || carregando"
                     @click="aceitar()">
                 <span x-show="!carregando">Continuar</span>
@@ -83,17 +83,21 @@
                 </span>
             </button>
         </div>
+        <!-- Sem o aceite o sistema não abre, mas o tratamento dos dados acadêmicos não depende dele -->
+        <p class="text-center mt-3" style="font-size: 0.8rem; color: #6B7280;">
+            Não concorda? Você pode sair agora. Seus registros acadêmicos continuam guardados pela
+            instituição, e você pode pedir acesso, correção ou exclusão dos seus dados pela Política de
+            Privacidade.
+            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @click="sair()">Sair</button>
+        </p>
 
     </div>
 
-    <p class="text-center mt-4" style="font-size: 0.78rem; color: #9CA3AF; text-align: center;">
-        © 2026 Aprova+ · Universidade de Mogi das Cruzes
-    </p>
-    <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
-
 </div>
 
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
 <script th:src="@{/js/paginas/consentimento.js}"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

@@ -4,18 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Pré-cadastro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
     <link th:href="@{/css/main.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/navbar-coordenador :: navbar('pre-cadastros')}"></div>
 
 <!-- Lista das pessoas autorizadas a receber convite da Secretaria -->
-<div class="container" x-data="preCadastrosPagina()" style="max-width: 1000px;">
+<div class="container" x-data="preCadastrosPagina()" style="max-width: 1100px;">
     <h4 class="fw-bold mb-1">Pré-cadastro</h4>
-    <p class="text-muted mb-4">Só quem está nesta lista pode receber o convite da Secretaria para criar a conta.</p>
+    <p class="text-muted mb-4">Cadastre os alunos e orientadores que vão usar o Aprova+. A secretaria envia o convite de acesso a partir desta lista.</p>
 
     <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
     <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
@@ -61,6 +62,7 @@
                         <label class="form-label" for="identificador"
                                x-text="form.perfil === 'ORIENTADOR' ? 'Matrícula institucional' : 'RGM'"></label>
                         <input id="identificador" type="text" class="form-control" x-model="form.identificadorInstitucional"
+                               :inputmode="form.perfil === 'ALUNO' ? 'numeric' : 'text'"
                                maxlength="50" :class="{ 'is-invalid': erros.identificadorInstitucional }">
                         <div class="invalid-feedback" x-text="erros.identificadorInstitucional"></div>
                     </div>
@@ -90,7 +92,7 @@
                         <span x-show="!salvando" x-text="form.id ? 'Salvar alterações' : 'Incluir na lista'"></span>
                         <span x-show="salvando" x-cloak>Salvando...</span>
                     </button>
-                    <button type="button" class="btn btn-outline-secondary" x-show="form.id" x-cloak
+                    <button type="button" class="btn btn-secondary" x-show="form.id" x-cloak
                             @click="cancelar()">Cancelar</button>
                 </div>
             </form>
@@ -125,7 +127,7 @@
                                       x-text="nomesSituacao[item.situacao]"></span></td>
                             <td class="text-end">
                                 <!-- Depois do cadastro concluído, os dados estão na conta e não mudam mais por aqui -->
-                                <button class="btn btn-sm btn-outline-primary" @click="editar(item)"
+                                <button class="btn btn-sm btn-primary" @click="editar(item)"
                                         x-show="item.situacao !== 'CADASTRO_CONCLUIDO'">Editar</button>
                             </td>
                         </tr>
@@ -143,6 +145,6 @@
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

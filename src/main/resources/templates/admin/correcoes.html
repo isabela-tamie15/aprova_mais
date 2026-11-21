@@ -4,26 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Correções</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
     <link th:href="@{/css/paginas/admin-convites.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/navbar-admin :: navbar('correcoes')}"></div>
 
 <div class="container pb-5" x-data="correcoesAdmin()" style="max-width: 900px;">
     <h4 class="fw-bold mb-1">Correções excepcionais</h4>
-    <p class="text-muted mb-4">Use só fora do fluxo normal. Toda correção exige justificativa e fica na auditoria.</p>
+    <p class="text-muted mb-4">Ajustes manuais para situações que não se resolvem pelo uso normal do sistema.</p>
 
     <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
     <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
 
+    <div th:replace="~{fragments/pedidos-liberacao-2fa :: lista('/api/v1/admin/liberacoes-2fa', false)}"></div>
+
     <!-- 2FA de um usuário que perdeu o celular -->
     <form class="card p-4 mb-4" @submit.prevent="desativarDoisFatores()" novalidate>
         <h5 class="fw-semibold mb-1">Desativar o 2FA de um usuário</h5>
-        <p class="text-muted small mb-3">Para quem perdeu o celular. No próximo login, a pessoa entra com a senha e configura o 2FA de novo.</p>
+        <p class="text-muted small mb-3">Para quem perdeu o celular e não conseguiu fazer o pedido pela tela de login. No próximo acesso, a pessoa configura a verificação em duas etapas de novo.</p>
         <div class="mb-3" style="max-width: 420px;">
             <label class="form-label" for="emailUsuario">E-mail do usuário</label>
             <input id="emailUsuario" type="email" class="form-control" maxlength="150" x-model="doisFatores.email">
@@ -43,7 +46,7 @@
         <p class="text-muted small mb-3">Busque o estágio pelo número, que aparece nos registros da auditoria (Estágio id=...).</p>
         <form class="d-flex gap-2 mb-3" style="max-width: 420px;" @submit.prevent="buscarEstagio()" novalidate>
             <input type="number" min="1" class="form-control" placeholder="Número do estágio" aria-label="Número do estágio" x-model="estagioId">
-            <button type="submit" class="btn btn-outline-primary" :disabled="salvando">Buscar</button>
+            <button type="submit" class="btn btn-primary" :disabled="salvando">Buscar</button>
         </form>
 
         <template x-if="estagio">
@@ -85,6 +88,7 @@
 
 <script th:src="@{/js/comum.js}"></script>
 <script th:src="@{/js/paginas/admin-administracao.js}"></script>
+<script th:src="@{/js/liberacao-2fa.js}"></script>
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 </body>
 </html>

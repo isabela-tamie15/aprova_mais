@@ -4,19 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Coordenação</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
     <link th:href="@{/css/main.css}" rel="stylesheet">
     <link th:href="@{/css/paginas/coordenador-dashboard.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
     <script defer th:src="@{/js/comum.js}"></script>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/navbar-coordenador :: navbar('painel')}"></div>
 
 <div class="container" style="max-width: 900px;">
     <h4 class="fw-bold mb-1">Painel da Coordenação</h4>
-    <p class="text-muted mb-4">Cadastre a estrutura dos seus cursos para os alunos começarem o estágio.</p>
+    <p class="text-muted mb-4">Acompanhe os estágios dos seus cursos e o que precisa da sua atenção.</p>
 
     <!--
         Dashboard do coordenador (Seção 6.11 da monografia). Todos os números vêm prontos da API /api/v1/coordenador/painel,
@@ -24,16 +25,51 @@
     -->
     <div class="painel-coordenador mb-4" x-data="painelPagina()" x-init="init()" x-cloak>
 
-        <!-- Seletor de curso: "Todos os meus cursos" ou um curso do coordenador -->
-        <div class="row mb-4">
-            <div class="col-md-6 col-lg-5">
-                <label for="cursoPainel" class="form-label">Curso</label>
-                <select id="cursoPainel" class="form-select" x-model="cursoId" @change="carregarPainel()">
-                    <option value="">Todos os meus cursos</option>
-                    <template x-for="curso in cursos" :key="curso.id">
-                        <option :value="curso.id" x-text="curso.nome"></option>
-                    </template>
-                </select>
+        <!-- Filtros do painel. Cada um é opcional e combina com os outros -->
+        <div class="card filtros-painel mb-4">
+            <div class="row g-2 align-items-end">
+                <div class="col-sm-6 col-lg-3">
+                    <label for="cursoPainel" class="form-label small fw-semibold mb-1">Curso</label>
+                    <select id="cursoPainel" class="form-select form-select-sm" x-model="filtros.cursoId" @change="trocarCurso()">
+                        <option value="">Todos os meus cursos</option>
+                        <template x-for="curso in cursos" :key="curso.id">
+                            <option :value="curso.id" x-text="curso.nome" :selected="String(curso.id) === String(filtros.cursoId)"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <label for="semestrePainel" class="form-label small fw-semibold mb-1">Semestre</label>
+                    <select id="semestrePainel" class="form-select form-select-sm" x-model="filtros.semestre" @change="trocarSemestre()">
+                        <option value="">Todos</option>
+                        <template x-for="semestre in opcoes.semestres" :key="semestre">
+                            <option :value="semestre" x-text="semestre" :selected="semestre === filtros.semestre"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label for="turmaPainel" class="form-label small fw-semibold mb-1">Turma</label>
+                    <select id="turmaPainel" class="form-select form-select-sm" x-model="filtros.turmaId" @change="carregarPainel()">
+                        <option value="">Todas</option>
+                        <template x-for="turma in turmasDisponiveis()" :key="turma.id">
+                            <option :value="turma.id" x-text="nomeDaTurma(turma)" :selected="String(turma.id) === String(filtros.turmaId)"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-4">
+                    <label for="orientadorPainel" class="form-label small fw-semibold mb-1">Orientador</label>
+                    <select id="orientadorPainel" class="form-select form-select-sm" x-model="filtros.orientadorId" @change="carregarPainel()">
+                        <option value="">Todos</option>
+                        <template x-for="orientador in opcoes.orientadores" :key="orientador.id">
+                            <option :value="orientador.id" x-text="orientador.nome" :selected="String(orientador.id) === String(filtros.orientadorId)"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                <div class="small text-muted" x-text="'Mostrando: ' + descricaoFiltros()"></div>
+                <button type="button" class="btn btn-sm btn-secondary" :disabled="!temFiltro()" @click="limparFiltros()">
+                    Limpar filtros
+                </button>
             </div>
         </div>
 
@@ -42,11 +78,21 @@
 
         <div x-show="!carregando && !erro">
 
+            <!-- Resumo do filtro: estágios acompanhados agora e os já concluídos -->
+            <div class="resumo-painel mb-4">
+                <div><span class="resumo-numero" x-text="totalAcompanhados()"></span>
+                    <span x-text="totalAcompanhados() === 1 ? 'estágio acompanhado agora' : 'estágios acompanhados agora'"></span></div>
+                <div><span class="resumo-numero" x-text="painel.estagiosConcluidos"></span>
+                    <span x-text="painel.estagiosConcluidos === 1 ? 'estágio concluído' : 'estágios concluídos'"></span></div>
+                <div><span class="resumo-numero" x-text="painel.tarefasAguardandoCorrecao"></span>
+                    <span x-text="painel.tarefasAguardandoCorrecao === 1 ? 'tarefa esperando correção' : 'tarefas esperando correção'"></span></div>
+            </div>
+
             <!-- Jornada do estágio: 6 cartões, na ordem em que o estágio acontece -->
             <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
                 <div>
                     <h5 class="fw-bold mb-0">Jornada do estágio</h5>
-                    <span class="text-muted small">números dos cursos que você coordena</span>
+                    <span class="text-muted small">do cadastro do estágio até a reta final</span>
                 </div>
                 <div class="legenda-jornada small">
                     <span><span class="quadrado cor-etapa"></span>etapa</span>
@@ -65,7 +111,8 @@
                             <div class="cartao-rotulo" x-text="painel.estagiosSemOrientador === 1 ? 'Estágio' : 'Estágios'"></div>
                             <div class="cartao-texto">sem orientador</div>
                         </div>
-                        <div class="cartao-rodape">Quem resolve: <strong>coordenador</strong></div>
+                        <div class="cartao-rodape">Responsável: <strong>você</strong>
+                            <a href="/coordenador/turmas" class="link-cartao">Definir o orientador da turma</a></div>
                     </div>
                 </div>
                 <!-- Cartão 2 -->
@@ -77,7 +124,7 @@
                             <div class="cartao-rotulo" x-text="painel.estagiosAguardandoValidacao === 1 ? 'Estágio' : 'Estágios'"></div>
                             <div class="cartao-texto">aguardando validação</div>
                         </div>
-                        <div class="cartao-rodape">Quem resolve: <strong>orientador</strong></div>
+                        <div class="cartao-rodape">Responsável: <strong>orientador</strong></div>
                     </div>
                 </div>
                 <!-- Cartão 3 -->
@@ -89,7 +136,7 @@
                             <div class="cartao-rotulo" x-text="painel.estagiosEmAndamento === 1 ? 'Estágio' : 'Estágios'"></div>
                             <div class="cartao-texto">em andamento</div>
                         </div>
-                        <div class="cartao-rodape">Quem resolve: <strong>ninguém</strong> (fluxo normal)</div>
+                        <div class="cartao-rodape">Tudo certo por aqui</div>
                     </div>
                 </div>
                 <!-- Cartão 4 -->
@@ -100,9 +147,10 @@
                             <div class="cartao-numero" x-text="painel.turmasSemDataEncerramento"></div>
                             <div class="cartao-rotulo" x-text="painel.turmasSemDataEncerramento === 1 ? 'Turma' : 'Turmas'"></div>
                             <div class="cartao-texto">sem data de encerramento das entregas</div>
-                            <div class="cartao-detalhe">aviso de prazo desligado para os alunos</div>
+                            <div class="cartao-detalhe">os alunos não recebem aviso de prazo</div>
                         </div>
-                        <div class="cartao-rodape">Quem resolve: <strong>coordenador</strong></div>
+                        <div class="cartao-rodape">Responsável: <strong>você</strong>
+                            <a href="/coordenador/turmas" class="link-cartao">Informar a data na turma</a></div>
                     </div>
                 </div>
                 <!-- Cartão 5 -->
@@ -114,7 +162,7 @@
                             <div class="cartao-rotulo" x-text="painel.tarefasAguardandoCorrecao === 1 ? 'Tarefa' : 'Tarefas'"></div>
                             <div class="cartao-texto">aguardando correção</div>
                         </div>
-                        <div class="cartao-rodape">Quem resolve: <strong>orientador</strong></div>
+                        <div class="cartao-rodape">Responsável: <strong>orientador</strong></div>
                     </div>
                 </div>
                 <!-- Cartão 6: as três linhas não se repetem e somam o número do cartão -->
@@ -132,8 +180,8 @@
                             </ul>
                         </div>
                         <div class="cartao-rodape">
-                            Resolve tarefas: <strong>aluno e orientador</strong><br>
-                            Resolve horas: <strong>coordenador</strong>
+                            Tarefas: <strong>aluno e orientador</strong><br>
+                            Horas: <strong>você</strong>
                         </div>
                     </div>
                 </div>
@@ -142,7 +190,7 @@
             <!-- Gráfico 1: situação dos estágios por turma (cartões 1, 2 e 3) -->
             <div class="card grafico-painel mb-4">
                 <h6 class="fw-bold mb-1">Situação dos estágios por turma</h6>
-                <p class="text-muted small mb-2">os cartões <span class="numero-etapa">1</span>, <span class="numero-etapa">2</span> e <span class="numero-etapa">3</span> da jornada, separados por turma</p>
+                <p class="text-muted small mb-2">estágios sem orientador, aguardando validação e em andamento</p>
                 <div class="legenda-grafico small mb-3">
                     <span><span class="quadrado cor-sem-orientador"></span><span class="numero-etapa">1</span>sem orientador</span>
                     <span><span class="quadrado cor-aguardando"></span><span class="numero-etapa">2</span>aguardando validação</span>
@@ -153,7 +201,7 @@
                     <div class="linha-grafico">
                         <div class="linha-rotulo">
                             <div x-text="linha.turma + ' · ' + linha.semestre"></div>
-                            <div class="text-muted" x-show="!cursoId" x-text="linha.curso"></div>
+                            <div class="text-muted" x-show="!filtros.cursoId" x-text="linha.curso"></div>
                         </div>
                         <div class="linha-trilho">
                             <div class="progress-stacked barra-painel" :style="'--largura: ' + linha.percentualBarra">
@@ -179,13 +227,13 @@
             <!-- Gráfico 2: tarefas aguardando correção por turma (cartão 5), com o orientador -->
             <div class="card grafico-painel mb-4">
                 <h6 class="fw-bold mb-1">Tarefas aguardando correção por turma</h6>
-                <p class="text-muted small mb-3">o cartão <span class="numero-etapa">5</span> separado por turma, com o orientador de cada uma, do maior para o menor</p>
+                <p class="text-muted small mb-3">turmas com mais tarefas esperando o orientador aparecem primeiro</p>
                 <p x-show="painel.correcaoPorTurma.length === 0" class="text-muted small mb-0">Nenhuma turma para mostrar.</p>
                 <template x-for="linha in painel.correcaoPorTurma" :key="linha.turmaId + '-' + linha.orientador">
                     <div class="linha-grafico">
                         <div class="linha-rotulo">
                             <div x-text="linha.turma + ' · ' + linha.semestre"></div>
-                            <div class="text-muted" x-show="!cursoId" x-text="linha.curso"></div>
+                            <div class="text-muted" x-show="!filtros.cursoId" x-text="linha.curso"></div>
                             <div class="text-muted" x-text="linha.orientador"></div>
                         </div>
                         <div class="linha-trilho">
@@ -203,7 +251,7 @@
             <!-- Gráfico 3: prazo das entregas por turma (cartão 6), com as faixas do aviso de prazo -->
             <div class="card grafico-painel mb-4">
                 <h6 class="fw-bold mb-1">Prazo das entregas por turma</h6>
-                <p class="text-muted small mb-2">o cartão <span class="numero-etapa">6</span> separado por turma: estágios com pendências e quanto falta para o encerramento das entregas</p>
+                <p class="text-muted small mb-2">estágios com pendências e quanto falta para o encerramento das entregas</p>
                 <div class="legenda-grafico small mb-3">
                     <span><span class="quadrado faixa-AMARELO"></span>aviso amarelo</span>
                     <span><span class="quadrado faixa-VERMELHO"></span>aviso vermelho</span>
@@ -215,7 +263,7 @@
                     <div class="linha-grafico">
                         <div class="linha-rotulo">
                             <div x-text="linha.turma + ' · ' + linha.semestre"></div>
-                            <div class="text-muted" x-show="!cursoId" x-text="linha.curso"></div>
+                            <div class="text-muted" x-show="!filtros.cursoId" x-text="linha.curso"></div>
                             <div class="text-muted" x-text="linha.textoPrazo"></div>
                         </div>
                         <div class="linha-trilho">
@@ -266,6 +314,6 @@
 
 <script th:src="@{/js/coordenador.js}"></script>
 <script th:src="@{/js/paginas/coordenador-dashboard.js}"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

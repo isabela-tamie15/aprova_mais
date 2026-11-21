@@ -1,5 +1,6 @@
 package tcc.ges.aprovamais.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,11 +11,15 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tcc.ges.aprovamais.service.BloqueioContaService;
 
@@ -45,6 +50,19 @@ public class GlobalExceptionHandler {
             OffsetDateTime timestamp,
             Map<String, String> campos
     ) {}
+
+    public static boolean ehPagina(HttpServletRequest requisicao) {
+        String aceita = requisicao.getHeader("Accept");
+        return "GET".equals(requisicao.getMethod())
+                && aceita != null && aceita.contains("text/html");
+    }
+
+    private static ModelAndView paginaDeErro(HttpStatus status, String mensagem) {
+        ModelAndView pagina = new ModelAndView("error", status);
+        pagina.addObject("status", status.value());
+        pagina.addObject("mensagem", mensagem);
+        return pagina;
+    }
 
     // Monta a resposta de erro no formato padrão, evitando repetição em cada handler
     private ErroResposta construirErro(HttpStatus status, String mensagem) {
@@ -128,6 +146,7 @@ public class GlobalExceptionHandler {
             case "senhaDentroDoLimiteDoBcrypt" -> "senha";
             case "turmaInformadaParaAluno" -> "turmaId";
             case "perfilDePreCadastro" -> "perfil";
+            case "rgmNumericoParaAluno" -> "identificadorInstitucional";
             case "nomeInformadoParaPerfilAdministrativo" -> "nome";
             default -> campo;
         };
@@ -172,8 +191,11 @@ public class GlobalExceptionHandler {
 
     // 409 regra de negócio violada (exemplo, estágio já pendente, já analisado etc)
     @ExceptionHandler(RegraNegocioException.class)
-    public ResponseEntity<ErroResposta> handleRegraNegocio(RegraNegocioException excecao) {
+    public Object handleRegraNegocio(RegraNegocioException excecao, HttpServletRequest requisicao) {
         log.warn("[EXCEPTION] Regra de negócio violada: {}", excecao.getMessage());
+        if (ehPagina(requisicao)) {
+            return paginaDeErro(HttpStatus.CONFLICT, excecao.getMessage());
+        }
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(construirErro(HttpStatus.CONFLICT, excecao.getMessage()));
@@ -194,8 +216,11 @@ public class GlobalExceptionHandler {
 
     // 403 acesso negado pelo @PreAuthorize, como um aluno abrindo uma página da coordenação
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErroResposta> handleAccessDenied(AccessDeniedException excecao) {
+    public Object handleAccessDenied(AccessDeniedException excecao, HttpServletRequest requisicao) {
         log.warn("[EXCEPTION] Acesso negado: {}", excecao.getMessage());
+        if (ehPagina(requisicao)) {
+            return paginaDeErro(HttpStatus.FORBIDDEN, null);
+        }
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(construirErro(HttpStatus.FORBIDDEN, "Você não tem permissão para acessar este recurso."));
@@ -203,8 +228,11 @@ public class GlobalExceptionHandler {
 
     // 404 recurso não encontrado
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErroResposta> handleNotFound(ResourceNotFoundException excecao) {
+    public Object handleNotFound(ResourceNotFoundException excecao, HttpServletRequest requisicao) {
         log.warn("[EXCEPTION] Recurso não encontrado: {}", excecao.getMessage());
+        if (ehPagina(requisicao)) {
+            return paginaDeErro(HttpStatus.NOT_FOUND, excecao.getMessage());
+        }
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(construirErro(HttpStatus.NOT_FOUND, excecao.getMessage()));
@@ -212,21 +240,50 @@ public class GlobalExceptionHandler {
 
     // 404 endereço que não existe
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErroResposta> handleRotaInexistente(NoResourceFoundException excecao) {
+    public Object handleRotaInexistente(NoResourceFoundException excecao, HttpServletRequest requisicao) {
+        if (ehPagina(requisicao)) {
+            return paginaDeErro(HttpStatus.NOT_FOUND, null);
+        }
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(construirErro(HttpStatus.NOT_FOUND, "Endereço não encontrado."));
     }
 
+    // 400 parâmetro da URL ausente ou em formato errado, como um texto no lugar do código
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
+    public Object handleParametroInvalido(Exception excecao, HttpServletRequest requisicao) {
+        log.warn("[EXCEPTION] Parâmetro inválido: {}", excecao.getMessage());
+        if (ehPagina(requisicao)) {
+            return paginaDeErro(HttpStatus.NOT_FOUND, null);
+        }
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(construirErro(HttpStatus.BAD_REQUEST, "Parâmetro ausente ou inválido na requisição."));
+    }
+
+    // 405 método HTTP que o endereço não aceita
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public Object handleMetodoNaoSuportado(HttpRequestMethodNotSupportedException excecao, HttpServletRequest requisicao) {
+        if (ehPagina(requisicao)) {
+            return paginaDeErro(HttpStatus.NOT_FOUND, null);
+        }
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(construirErro(HttpStatus.METHOD_NOT_ALLOWED, "Método não permitido para este endereço."));
+    }
+
     // 500 erro genérico nao tratado
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErroResposta> handleGeneric(Exception excecao) {
+    public Object handleGeneric(Exception excecao, HttpServletRequest requisicao) {
 
         /*
            Último handler da cadeia, para o que não foi tratado em nenhum outro lugar. Registra o stack
            completo no log e devolve uma mensagem genérica, sem expor detalhes internos
         */
         log.error("[EXCEPTION] Erro inesperado: {}", excecao.getMessage(), excecao);
+        if (ehPagina(requisicao)) {
+            return paginaDeErro(HttpStatus.INTERNAL_SERVER_ERROR, null);
+        }
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(construirErro(

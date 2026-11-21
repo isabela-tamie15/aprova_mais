@@ -61,10 +61,8 @@ public class AlunoEstagioController {
             @Valid @RequestBody EstagioCadastroRequest request,
             HttpServletRequest httpRequest) {
 
-        /*
-           Mesma ideia do buscar, e-mail vem do token. O IP também vai para o
-           service para ficar registrado na auditoria
-        */
+
+        //Mesma ideia do buscar, e-mail vem do token. O IP também vai para o service para ficar registrado na auditoria
         String email = authentication.getName();
 
         // A consulta à BrasilAPI é feita antes, fora da transação do cadastro

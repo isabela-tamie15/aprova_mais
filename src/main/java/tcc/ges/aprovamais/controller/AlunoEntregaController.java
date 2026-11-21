@@ -10,8 +10,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.validation.Valid;
 import tcc.ges.aprovamais.dto.EntregaDetalheResponse;
+import tcc.ges.aprovamais.dto.ExclusaoAnexoRequest;
+import tcc.ges.aprovamais.dto.SolicitacaoResponse;
 import tcc.ges.aprovamais.service.EntregaService;
+import tcc.ges.aprovamais.service.SolicitacaoService;
 
 import java.io.IOException;
 
@@ -24,6 +28,7 @@ import java.io.IOException;
 public class AlunoEntregaController {
 
     private final EntregaService entregaService;
+    private final SolicitacaoService solicitacaoService;
 
     // Envia um arquivo para a tarefa, e cada envio cria uma versão nova. O e-mail vem do token, então ninguém envia no lugar de outro aluno
     @Operation(summary = "Enviar a entrega de uma tarefa (RF33)")
@@ -50,5 +55,23 @@ public class AlunoEntregaController {
                                          HttpServletRequest httpRequest) {
         return ArquivoDownload.resposta(entregaService.baixarDoAluno(
                 authentication.getName(), versaoId, httpRequest.getRemoteAddr()));
+    }
+
+    @Operation(summary = "Cancelar o último envio antes de o orientador abrir a entrega")
+    @DeleteMapping("/entregas/versoes/{versaoId}")
+    public EntregaDetalheResponse cancelarEnvio(@PathVariable Long versaoId, Authentication authentication,
+                                                HttpServletRequest httpRequest) {
+        return entregaService.cancelarEnvio(authentication.getName(), versaoId, httpRequest.getRemoteAddr());
+    }
+
+    @Operation(summary = "Pedir a exclusão do anexo de uma versão")
+    @PostMapping("/entregas/versoes/{versaoId}/exclusao")
+    public ResponseEntity<SolicitacaoResponse> solicitarExclusao(@PathVariable Long versaoId,
+                                                                 @Valid @RequestBody ExclusaoAnexoRequest request,
+                                                                 Authentication authentication,
+                                                                 HttpServletRequest httpRequest) {
+        SolicitacaoResponse resposta = solicitacaoService.solicitarExclusaoAnexo(authentication.getName(), versaoId,
+                request.getMotivo(), httpRequest.getRemoteAddr());
+        return ResponseEntity.status(201).body(resposta);
     }
 }

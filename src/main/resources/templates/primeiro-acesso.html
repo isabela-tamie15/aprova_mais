@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Primeiro Acesso</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <script defer th:src="@{/js/mostrar-senha.js}"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
     <link th:href="@{/css/paginas/primeiro-acesso.css}" rel="stylesheet">
 </head>
 <body class="py-5">
@@ -18,12 +20,7 @@
         <!-- Header azul -->
         <div class="header-azul">
             <div class="d-flex align-items-center gap-2 mb-3">
-                <div style="background: white; border-radius: 8px; width: 36px; height: 36px;
-                            display: flex; align-items: center; justify-content: center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#2B4ECC">
-                        <path d="M12 3L4 7v5c0 5.25 3.4 10.15 8 11.35C16.6 22.15 20 17.25 20 12V7L12 3zm-1 13l-3-3 1.4-1.4 1.6 1.6 4.6-4.6L17 10l-6 6z"/>
-                    </svg>
-                </div>
+                <img th:src="@{/css/img/logo-aprova.png}" class="logo-selo logo-selo-grande" alt="">
                 <span style="color: white; font-weight: 700; font-size: 1.1rem;">Aprova+</span>
             </div>
             <span class="badge-portal">Primeiro Acesso</span>
@@ -34,7 +31,7 @@
         </div>
 
         <!-- Corpo do formulário -->
-        <div class="p-4" x-data="primeiroAcessoForm()">
+        <div class="p-4" x-data="primeiroAcessoForm()" th:attr="data-pede-rgm=${pedeRgm}">
 
             <!-- Alerta de erro -->
             <div class="alerta-erro mb-3" role="alert" x-show="erro" x-text="erro" x-cloak></div>
@@ -49,15 +46,11 @@
             <!-- Resumo dos termos -->
             <div class="resumo-termos mb-3">
                 <p class="mb-2">
-                    Ao continuar, você concorda com os
-                    <a href="/termos" target="_blank">Termos de Uso</a>
-                    e o
-                    <a href="/privacidade" target="_blank">Aviso de Privacidade</a>
-                    do Aprova+.
+                    A <a href="/privacidade" target="_blank">Política de Privacidade</a> explica quais dados o
+                    Aprova+ usa para acompanhar o seu estágio e como você pode exercer os seus direitos.
                 </p>
                 <p class="mb-0">
-                    O sistema coleta seus dados para gestão do estágio supervisionado,
-                    conforme a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018).
+                    Os <a href="/termos" target="_blank">Termos de Uso</a> trazem as regras de uso do sistema.
                 </p>
             </div>
 
@@ -65,14 +58,26 @@
             <div class="form-check mb-4">
                 <input class="form-check-input" type="checkbox" id="aceite" x-model="aceitou">
                 <label class="form-check-label" for="aceite">
-                    Li e concordo com os <strong>Termos de Uso</strong>
-                    e o <strong>Política de Privacidade</strong>
+                    Li a <strong>Política de Privacidade</strong>
+                    e aceito os <strong>Termos de Uso</strong>
                 </label>
             </div>
 
             <!-- Formulário de senha: só aparece após aceitar -->
             <div x-show="aceitou" x-cloak>
                 <hr class="mb-4">
+
+                <!-- Só para aluno: o RGM precisa ser o mesmo do pré-cadastro feito pela coordenação -->
+                <div class="mb-4" x-show="pedeRgm" x-cloak>
+                    <h6 class="fw-bold mb-2">Confirme seu RGM</h6>
+                    <label for="rgm" class="form-label fw-semibold">RGM</label>
+                    <input id="rgm" type="text" class="form-control" inputmode="numeric"
+                           placeholder="Somente números" maxlength="50" autocomplete="off"
+                           x-model="rgm">
+                    <div class="form-text">Informe seu RGM para confirmarmos que o convite é seu. Depois de 5 tentativas erradas, o convite é
+                        cancelado e você precisa pedir um novo à secretaria.</div>
+                </div>
+
                 <h6 class="fw-bold mb-3">Defina sua senha</h6>
 
                 <!-- Alerta de senhas diferentes -->
@@ -123,7 +128,7 @@
                     </span>
                 </button>
 
-                <button class="btn btn-outline-secondary btn-recusar"
+                <button class="btn btn-secondary btn-recusar"
                         @click="recusar()"
                         :disabled="enviando">
                     Recusar e cancelar acesso
@@ -142,6 +147,6 @@
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

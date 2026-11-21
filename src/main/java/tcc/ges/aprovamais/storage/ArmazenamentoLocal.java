@@ -49,6 +49,16 @@ public class ArmazenamentoLocal implements ArmazenamentoArquivos {
         }
     }
 
+    @Override
+    public void excluir(String chave) {
+        try {
+            Files.deleteIfExists(resolver(chave));
+        } catch (IOException excecao) {
+            log.error("[ARQUIVO] Erro ao excluir {}: {}", chave, excecao.getMessage(), excecao);
+            throw new UncheckedIOException("Não foi possível excluir o arquivo", excecao);
+        }
+    }
+
     //Proteção contra path traversal
     private Path resolver(String chave) {
         Path caminho = pastaBase.resolve(chave).normalize();

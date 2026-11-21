@@ -87,8 +87,6 @@ public class DoisFatoresService {
         usuarioRepository.save(usuario);
     }
 
-    // ===== TOTP =====
-
     // O TOTP troca de código a cada 30 segundos, e cada intervalo é um passo
     private static final long MILISSEGUNDOS_POR_PASSO = 30_000L;
 
@@ -144,7 +142,6 @@ public class DoisFatoresService {
                 "Autenticação de dois fatores ativada", ipOrigem, true);
     }
 
-    // ===== Gestão pela conta (usuário autenticado) =====
 
     // Diz se o usuário já tem 2fa ativado e se o perfil dele exige
     @Transactional(readOnly = true)
@@ -213,8 +210,6 @@ public class DoisFatoresService {
                 "Autenticação de dois fatores desativada", ipOrigem, true);
         return usuario;
     }
-
-    // ===== Auxiliares =====
 
     // Valida o código do 2FA com o mesmo limite de tentativas do login. Depois de 5 erros a conta bloqueia
     private void validarCodigoDaConta(Usuario usuario, String codigo, String ipOrigem) {

@@ -40,6 +40,13 @@ public class PreCadastroRequest {
         return perfil == null || perfil == PerfilDestino.ALUNO || perfil == PerfilDestino.ORIENTADOR;
     }
 
+    // O RGM do aluno tem só números. A matrícula do orientador segue o formato geral do identificador
+    @AssertTrue(message = "O RGM do aluno deve conter apenas números")
+    public boolean isRgmNumericoParaAluno() {
+        return perfil != PerfilDestino.ALUNO || identificadorInstitucional == null
+                || identificadorInstitucional.isBlank() || identificadorInstitucional.trim().matches("\\d+");
+    }
+
     // Aluno sem turma é recusado
     @AssertTrue(message = "Escolha a turma do aluno")
     public boolean isTurmaInformadaParaAluno() {

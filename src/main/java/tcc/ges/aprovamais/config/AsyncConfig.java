@@ -17,10 +17,6 @@ import java.util.Optional;
 @EnableJpaAuditing(dateTimeProviderRef = "offsetDateTimeProvider")
 public class AsyncConfig {
 
-    /*
-       O JPA Auditing usa LocalDateTime por padrão, e o projeto usa OffsetDateTime.
-       Este bean devolve o formato certo, e sem ele a aplicação não sobe
-    */
     @Bean
     public DateTimeProvider offsetDateTimeProvider() {
         return () -> Optional.of(OffsetDateTime.now());

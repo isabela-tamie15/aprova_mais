@@ -22,6 +22,10 @@ public class PrimeiroAcessoRequest {
     @NotBlank(message = "A confirmação de senha é obrigatória")
     private String confirmacaoSenha;
 
+    // Só para aluno, conferido com o RGM do pré-cadastro
+    @Size(max = 50, message = "O RGM deve ter no máximo 50 caracteres")
+    private String rgm;
+
     // A conferência da tela pode ser contornada chamando o endpoint direto, por isso ela se repete aqui
     @AssertTrue(message = "A senha e a confirmação de senha não conferem")
     public boolean isSenhasConferem() {

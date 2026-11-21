@@ -15,7 +15,7 @@ public class MascaraEmailConverter extends MessageConverter {
         return mascarar(super.convert(evento));
     }
 
-    static String mascarar(String mensagem) {
+    public static String mascarar(String mensagem) {
         if (mensagem == null || mensagem.indexOf('@') < 0) {
             return mensagem;
         }

@@ -18,6 +18,13 @@ public interface SolicitacaoRepository extends JpaRepository<Solicitacao, Long> 
     // Indica se o estágio já tem um pedido em análise
     boolean existsByEstagioIdAndStatusIn(Long estagioId, Collection<StatusSolicitacao> statuses);
 
+    // Mesma conferência, ignorando um tipo de pedido
+    boolean existsByEstagioIdAndStatusInAndTipoNot(Long estagioId, Collection<StatusSolicitacao> statuses,
+                                                   TipoSolicitacao tipo);
+
+    // Indica se a versão já teve algum pedido de exclusão de anexo
+    boolean existsByVersaoId(Long versaoId);
+
     // Pedidos da matrícula do aluno, do mais recente para o mais antigo
     List<Solicitacao> findByEstagioMatriculaIdOrderByCriadoEmDescIdDesc(Long matriculaId);
 

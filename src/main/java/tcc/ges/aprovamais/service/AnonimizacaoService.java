@@ -17,6 +17,7 @@ import tcc.ges.aprovamais.entity.Solicitacao;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.MotivoEncerramento;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.entity.enums.SituacaoArquivo;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusSolicitacao;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
@@ -199,6 +200,9 @@ public class AnonimizacaoService {
             solicitacao.setMotivo("REMOVIDO");
             if (SolicitacaoService.STATUS_EM_ANALISE.contains(solicitacao.getStatus())) {
                 solicitacao.setStatus(StatusSolicitacao.CANCELADA);
+                if (solicitacao.getVersao() != null) {
+                    solicitacao.getVersao().setSituacaoArquivo(SituacaoArquivo.DISPONIVEL);
+                }
             }
             solicitacaoRepository.save(solicitacao);
         }

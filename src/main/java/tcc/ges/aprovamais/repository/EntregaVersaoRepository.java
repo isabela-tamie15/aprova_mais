@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import tcc.ges.aprovamais.entity.EntregaVersao;
+import tcc.ges.aprovamais.entity.enums.SituacaoArquivo;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 
 import java.time.OffsetDateTime;
@@ -24,6 +25,12 @@ public interface EntregaVersaoRepository extends JpaRepository<EntregaVersao, Lo
     Optional<EntregaVersao> findFirstByEntregaIdOrderByNumeroDesc(Long entregaId);
 
     long countByEntregaId(Long entregaId);
+
+    // Indica se outra versão aponta para o mesmo arquivo, como nos dados de demonstração
+    boolean existsByChaveArquivoAndIdNot(String chaveArquivo, Long id);
+
+    // Indica se alguma versão da entrega está com o anexo na situação informada
+    boolean existsByEntregaIdAndSituacaoArquivo(Long entregaId, SituacaoArquivo situacaoArquivo);
 
     // Download pelo aluno, só versões de entregas do estágio dele
     Optional<EntregaVersao> findByIdAndEntregaEstagioMatriculaAlunoEmail(Long id, String emailAluno);

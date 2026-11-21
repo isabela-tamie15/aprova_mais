@@ -78,3 +78,21 @@ async function mensagemErroApi(resposta, padrao) {
     }
     return { mensagem: dados.mensagem || padrao, campos: dados.campos || {} };
 }
+
+// O anexo só pode ser aberto enquanto não houver pedido de exclusão
+function anexoDisponivel(versao) {
+    return !versao.situacaoArquivo || versao.situacaoArquivo === 'DISPONIVEL';
+}
+
+// Texto mostrado no lugar do link quando o anexo está bloqueado ou foi excluído
+function textoSituacaoAnexo(versao) {
+    if (versao.situacaoArquivo === 'EXCLUIDO') {
+        const quando = formatarDataHoraEntrega(versao.arquivoExcluidoEm);
+        const quem = versao.nomeQuemAprovouExclusao ? ', aprovado por ' + versao.nomeQuemAprovouExclusao : '';
+        return 'Anexo excluído a pedido do aluno em ' + quando + quem + '.';
+    }
+    if (versao.situacaoArquivo === 'EXCLUSAO_EM_ANALISE') {
+        return 'Anexo bloqueado: o aluno pediu a exclusão, e ninguém consegue abri-lo enquanto o pedido é analisado.';
+    }
+    return '';
+}

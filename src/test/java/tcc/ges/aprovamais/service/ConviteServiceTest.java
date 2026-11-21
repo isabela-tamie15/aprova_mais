@@ -322,4 +322,32 @@ class ConviteServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> conviteService.validarToken(""));
         assertThrows(ResourceNotFoundException.class, () -> conviteService.validarToken("x".repeat(201)));
     }
+
+    @Test
+    @DisplayName("Cada RGM errado soma uma tentativa e o convite continua pendente antes do limite")
+    void rgmErradoSomaTentativa() {
+        Convite convite = new Convite();
+        convite.setStatus(StatusConvite.PENDENTE);
+        convite.setTentativasRgm(3);
+
+        int tentativas = conviteService.registrarRgmIncorreto(convite, 5);
+
+        assertEquals(4, tentativas);
+        assertEquals(StatusConvite.PENDENTE, convite.getStatus());
+        verify(conviteRepository).save(convite);
+    }
+
+    @Test
+    @DisplayName("Ao chegar no limite de RGM errado o convite é cancelado, e o convite antigo sem contador começa do zero")
+    void rgmErradoNoLimiteCancelaConvite() {
+        Convite antigo = new Convite();
+        antigo.setStatus(StatusConvite.PENDENTE);
+        assertEquals(1, conviteService.registrarRgmIncorreto(antigo, 5));
+
+        Convite convite = new Convite();
+        convite.setStatus(StatusConvite.PENDENTE);
+        convite.setTentativasRgm(4);
+        assertEquals(5, conviteService.registrarRgmIncorreto(convite, 5));
+        assertEquals(StatusConvite.CANCELADO, convite.getStatus());
+    }
 }

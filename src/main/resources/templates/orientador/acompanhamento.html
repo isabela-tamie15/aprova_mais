@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Acompanhamento do aluno</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
     <link th:href="@{/css/paginas/entregas.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/navbar-orientador :: navbar('validacoes')}"></div>
 
 <!-- Visão consolidada do aluno: progresso e tarefas da trilha com status, versões e último feedback -->
 <div class="container pb-5" th:attr="x-data=${'acompanhamentoAluno(' + estagioId + ')'}" x-init="carregar()">
-    <a href="/orientador/validacoes" class="btn btn-outline-secondary btn-sm mb-3">← Voltar aos estágios</a>
+    <a href="/orientador/validacoes" class="btn btn-secondary btn-sm mb-3">← Voltar aos estágios</a>
 
     <div class="text-muted" x-show="carregando">Carregando...</div>
     <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
@@ -89,7 +91,7 @@
                                     <span class="text-muted" x-show="!tarefa.ultimoFeedback">-</span>
                                 </td>
                                 <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-secondary" x-show="tarefa.entregaId"
+                                    <a class="btn btn-sm btn-success" x-show="tarefa.entregaId"
                                        :href="'/orientador/correcoes/' + tarefa.entregaId">Ver entrega</a>
                                 </td>
                             </tr>
@@ -113,7 +115,7 @@
                         <div x-show="confirmandoConclusao" x-cloak>
                             <p class="small text-muted mb-2">Depois de concluído, o estágio não volta a nenhum outro status.</p>
                             <button class="btn btn-success me-2" :disabled="processando" @click="concluir()">Confirmar conclusão</button>
-                            <button class="btn btn-outline-secondary" :disabled="processando" @click="confirmandoConclusao = false">Cancelar</button>
+                            <button class="btn btn-secondary" :disabled="processando" @click="confirmandoConclusao = false">Cancelar</button>
                         </div>
                     </div>
                 </template>
@@ -124,7 +126,7 @@
                 </template>
 
                 <div class="border-top pt-3">
-                    <button class="btn btn-outline-danger" x-show="!confirmandoReprovacao" @click="confirmandoReprovacao = true">
+                    <button class="btn btn-danger" x-show="!confirmandoReprovacao" @click="confirmandoReprovacao = true">
                         Reprovar estágio
                     </button>
                     <div x-show="confirmandoReprovacao" x-cloak>
@@ -134,7 +136,7 @@
                         <div class="form-text mb-2" x-text="observacao.length + '/1000'"></div>
                         <p class="small text-muted mb-2">O estágio será encerrado por reprovação, e o aluno poderá cadastrar um novo.</p>
                         <button class="btn btn-danger me-2" :disabled="processando" @click="reprovar()">Confirmar reprovação</button>
-                        <button class="btn btn-outline-secondary" :disabled="processando" @click="confirmandoReprovacao = false">Cancelar</button>
+                        <button class="btn btn-secondary" :disabled="processando" @click="confirmandoReprovacao = false">Cancelar</button>
                     </div>
                 </div>
             </div>

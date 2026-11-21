@@ -5,20 +5,13 @@ import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 import tcc.ges.aprovamais.entity.Entrega;
 import tcc.ges.aprovamais.entity.Estagio;
+import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 
 import java.util.Collection;
 import java.util.List;
 
-/*
-   Consultas do dashboard do coordenador. O repositório é só de leitura, por isso estende o
-   Repository e não o JpaRepository, e não herda métodos de salvar ou apagar.
-   Todas as consultas filtram pelo e-mail do coordenador do curso, então um coordenador nunca
-   recebe dados de outro. O filtro de um curso só é feito depois, no PainelCoordenadorService.
-   O join fetch traz o aluno da matrícula mesmo sem o painel mostrar, porque o @ManyToOne é
-   carregado junto por padrão e sem ele o Hibernate faria uma consulta extra para cada aluno
-*/
 public interface PainelCoordenadorRepository extends Repository<Estagio, Long> {
 
     /*
@@ -81,4 +74,13 @@ public interface PainelCoordenadorRepository extends Repository<Estagio, Long> {
             """)
     List<Entrega> listarEntregasDosCursos(@Param("email") String email,
                                           @Param("status") Collection<StatusEntrega> status);
+
+    // Turmas dos cursos do coordenador, com o curso, para as opções dos filtros do painel
+    @Query("""
+            select t from Turma t
+            join fetch t.curso c
+            where c.coordenador.email = :email
+            order by t.semestre desc, t.identificador asc
+            """)
+    List<Turma> listarTurmasDosCursos(@Param("email") String email);
 }

@@ -31,12 +31,24 @@ window.fetch = async function (...argumentos) {
     return resposta;
 };
 
-// Liga o botão Sair das barras de navegação. O clique é tratado aqui porque a política de conteúdo não aceita onclick no HTML
+// Liga os botões Sair e Voltar das barras de navegação. O clique é tratado aqui porque a política de conteúdo não aceita onclick nem links javascript: no HTML
 document.addEventListener('click', (evento) => {
     if (evento.target.closest('[data-acao="sair"]')) {
         logout();
+    } else if (evento.target.closest('[data-acao="voltar"]')) {
+        evento.preventDefault();
+        voltarParaPaginaAnterior();
     }
 });
+
+function voltarParaPaginaAnterior() {
+    if (history.length > 1) {
+        history.back();
+        return;
+    }
+    window.close();
+    setTimeout(() => { window.location.href = '/inicio'; }, 200);
+}
 
 /*
    Janela de confirmação no lugar do confirm() do navegador, com os estilos do Bootstrap. Devolve uma
@@ -71,7 +83,7 @@ function abrirJanela(mensagem, textoConfirmar, classeBotao, comCancelar) {
             '  <div class="modal-content border-0 shadow">' +
             '    <div class="modal-body p-4"><p class="mb-0 janela-mensagem"></p></div>' +
             '    <div class="modal-footer border-0 pt-0">' +
-            '      <button type="button" class="btn btn-outline-secondary janela-cancelar">Cancelar</button>' +
+            '      <button type="button" class="btn btn-secondary janela-cancelar">Cancelar</button>' +
             '      <button type="button" class="btn janela-confirmar"></button>' +
             '    </div>' +
             '  </div>' +

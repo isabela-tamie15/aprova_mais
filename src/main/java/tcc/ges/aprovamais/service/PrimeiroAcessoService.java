@@ -11,8 +11,10 @@ import tcc.ges.aprovamais.entity.Orientador;
 import tcc.ges.aprovamais.entity.PreCadastro;
 import tcc.ges.aprovamais.entity.Turma;
 import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.exception.RgmNaoConfereException;
 import tcc.ges.aprovamais.repository.MatriculaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
@@ -23,6 +25,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class PrimeiroAcessoService {
 
+    // Tentativas com RGM errado que cancelam o convite do aluno
+    public static final int LIMITE_TENTATIVAS_RGM = 5;
+
     private final ConviteService conviteService;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -31,10 +36,19 @@ public class PrimeiroAcessoService {
     private final PreCadastroService preCadastroService;
     private final MatriculaRepository matriculaRepository;
 
-    // Conclui o cadastro com a senha definida e o aceite dos termos
-    @Transactional
-    public void concluirCadastro(String token, String senha, String ip) {
+    /*
+       Conclui o cadastro com a senha definida e o aceite dos termos. Para aluno, o RGM informado precisa
+       ser o do pré-cadastro. A RgmNaoConfereException não desfaz a transação, para a tentativa errada
+       e o registro na auditoria ficarem gravados
+    */
+    @Transactional(noRollbackFor = RgmNaoConfereException.class)
+    public void concluirCadastro(String token, String senha, String rgm, String ip) {
         Convite convite = conviteService.validarToken(token);
+
+        Optional<PreCadastro> preCadastro = preCadastroService.buscarPorEmail(convite.getEmail());
+        if (convite.getPerfilDestino() == PerfilDestino.ALUNO && preCadastro.isPresent()) {
+            conferirRgm(convite, preCadastro.get(), rgm, ip);
+        }
 
         Usuario usuario = usuarioRepository.findByEmail(convite.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
@@ -46,7 +60,6 @@ public class PrimeiroAcessoService {
         usuario.setAtivo(true);
 
         // Aluno e orientador recebem os dados do pré-cadastro no lugar dos valores provisórios do convite
-        Optional<PreCadastro> preCadastro = preCadastroService.buscarPorEmail(convite.getEmail());
         if (preCadastro.isPresent()) {
             aplicarPreCadastro(usuario, preCadastro.get());
         }
@@ -86,6 +99,35 @@ public class PrimeiroAcessoService {
         );
 
         conviteService.recusarConvite(token);
+    }
+
+    /*
+       Confere o RGM do aluno com o do pré-cadastro. Errado, soma a tentativa no convite, registra na
+       auditoria e recusa. Na última tentativa o convite é cancelado
+    */
+    private void conferirRgm(Convite convite, PreCadastro preCadastro, String rgm, String ip) {
+        String informado = rgm == null ? "" : rgm.trim();
+        if (informado.equalsIgnoreCase(preCadastro.getIdentificadorInstitucional())) {
+            return;
+        }
+
+        int tentativas = conviteService.registrarRgmIncorreto(convite, LIMITE_TENTATIVAS_RGM);
+        boolean cancelado = tentativas >= LIMITE_TENTATIVAS_RGM;
+        auditoriaService.registrarTentativa(
+                convite.getEmail(),
+                "PRIMEIRO_ACESSO_RGM_INCORRETO",
+                "RGM não confere com o pré-cadastro (tentativa " + tentativas + " de " + LIMITE_TENTATIVAS_RGM + ")"
+                        + (cancelado ? ". Convite cancelado" : ""),
+                ip
+        );
+
+        if (cancelado) {
+            throw new RgmNaoConfereException("O RGM não conferiu em " + LIMITE_TENTATIVAS_RGM
+                    + " tentativas e o convite foi cancelado. Peça um novo convite à secretaria");
+        }
+        int restantes = LIMITE_TENTATIVAS_RGM - tentativas;
+        throw new RgmNaoConfereException("O RGM informado não confere com o cadastro da instituição. "
+                + (restantes == 1 ? "Resta 1 tentativa" : "Restam " + restantes + " tentativas"));
     }
 
     // Copia do pré-cadastro os dados que identificam a pessoa na instituição

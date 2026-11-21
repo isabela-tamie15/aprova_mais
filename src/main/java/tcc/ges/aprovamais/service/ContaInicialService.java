@@ -7,17 +7,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.entity.Administrador;
-import tcc.ges.aprovamais.entity.Secretaria;
 import tcc.ges.aprovamais.entity.Usuario;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
 
-/*
-   Cria as contas iniciais na primeira vez que o sistema sobe. A conta do administrador é a
-   definitiva. A da secretaria inicial garante o acesso enquanto o coordenador não convida
-   secretarias pela tela
-*/
+
+// Cria a conta do administrador na primeira vez que o sistema sobe. As demais contas entram por convite
 @Service
 @RequiredArgsConstructor
 public class ContaInicialService {
@@ -47,24 +43,6 @@ public class ContaInicialService {
                 "Administrador inicial criado na inicialização do sistema", null, true);
 
         log.info("[CONTA INICIAL] Administrador inicial criado: {}", email);
-    }
-
-    // Cria a secretaria inicial se ainda não existir nenhuma (provisório, veja o comentário da classe lá em cima)
-    @Transactional
-    public void criarSecretariaInicialSeNecessario(String email, String senha, String nome) {
-        if (!podeCriar(PerfilUsuario.SECRETARIA, email, senha, "SECRETARIA_INICIAL")) {
-            return;
-        }
-
-        Secretaria secretaria = new Secretaria();
-        preencherConta(secretaria, PerfilUsuario.SECRETARIA, email, senha, nome);
-        secretaria.setSetor("Secretaria Acadêmica");
-        usuarioRepository.save(secretaria);
-
-        auditoriaService.registrar(secretaria, "CONTA_INICIAL_CRIADA",
-                "Secretaria inicial criada na inicialização do sistema", null, true);
-
-        log.info("[CONTA INICIAL] Secretaria inicial criada: {}", email);
     }
 
     /*

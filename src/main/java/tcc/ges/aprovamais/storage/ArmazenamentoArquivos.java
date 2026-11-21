@@ -12,4 +12,7 @@ public interface ArmazenamentoArquivos {
 
     // Lê o conteúdo de uma chave gravada antes
     byte[] ler(String chave);
+
+    // Apaga o arquivo da chave. Se ele já não existir, não faz nada
+    void excluir(String chave);
 }

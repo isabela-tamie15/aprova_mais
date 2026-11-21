@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -44,5 +45,14 @@ public class ArmazenamentoR2 implements ArmazenamentoArquivos {
             log.warn("[ARQUIVO] Arquivo não encontrado no R2: {}", chave);
             throw new ResourceNotFoundException("Arquivo não encontrado.");
         }
+    }
+
+    @Override
+    public void excluir(String chave) {
+        cliente.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(chave)
+                .build());
+        log.info("[ARQUIVO] Excluído do R2: {}", chave);
     }
 }

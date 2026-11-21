@@ -20,6 +20,8 @@ public class SolicitacaoResponse {
     private final String nomeCurso;
     private final String nomeTipoEstagioAtual;
     private final String nomeNovoTipoEstagio;
+    private final String nomeTarefa;
+    private final Integer numeroVersao;
     private final String nomeAnalistaSecretaria;
     private final OffsetDateTime analisadaSecretariaEm;
     private final String nomeAnalistaCoordenacao;

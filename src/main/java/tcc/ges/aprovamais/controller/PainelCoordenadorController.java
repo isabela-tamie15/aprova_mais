@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import tcc.ges.aprovamais.dto.FiltroPainel;
 import tcc.ges.aprovamais.dto.PainelCoordenadorResponse;
 import tcc.ges.aprovamais.service.PainelCoordenadorService;
 
@@ -26,11 +27,15 @@ public class PainelCoordenadorController {
 
     private final PainelCoordenadorService painelCoordenadorService;
 
-    // O cursoId é opcional, e sem ele o painel mostra todos os cursos do coordenador logado
-    @Operation(summary = "Consultar os números do dashboard do coordenador (Seção 6.11)")
+    // Todos os filtros são opcionais, e sem eles o painel mostra todos os cursos do coordenador logado
+    @Operation(summary = "Consultar os números do dashboard do coordenador, com filtros de curso, semestre, turma e orientador")
     @GetMapping
     public ResponseEntity<PainelCoordenadorResponse> consultar(@RequestParam(required = false) Long cursoId,
+                                                               @RequestParam(required = false) String semestre,
+                                                               @RequestParam(required = false) Long turmaId,
+                                                               @RequestParam(required = false) Long orientadorId,
                                                                Authentication authentication) {
-        return ResponseEntity.ok(painelCoordenadorService.montarPainel(authentication.getName(), cursoId));
+        FiltroPainel filtro = new FiltroPainel(cursoId, semestre, turmaId, orientadorId);
+        return ResponseEntity.ok(painelCoordenadorService.montarPainel(authentication.getName(), filtro));
     }
 }

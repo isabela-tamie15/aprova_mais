@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import tcc.ges.aprovamais.dto.RegistroAuditoriaResponse;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,6 +39,16 @@ public class AuditoriaController {
         return ResponseEntity.ok(consultaAuditoriaService.consultar(filtro, authentication.getName(),
                 request.getRemoteAddr()));
 
+    }
+
+    // Um registro sem máscara, aberto pelo botão da linha. A visualização fica auditada
+    @Operation(summary = "Mostra um registro da auditoria com o e-mail e o IP completos")
+    @GetMapping("/{id}")
+    public ResponseEntity<RegistroAuditoriaResponse> revelar(@PathVariable Long id,
+                                                             Authentication authentication,
+                                                             HttpServletRequest request) {
+        return ResponseEntity.ok(consultaAuditoriaService.revelar(id, authentication.getName(),
+                request.getRemoteAddr()));
     }
 
     // Devolve as ações já registradas, para montar o filtro da tela

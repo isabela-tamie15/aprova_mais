@@ -30,7 +30,8 @@ import java.util.Set;
 
 /*
    Solicitações do aluno sobre o estágio. A troca de modalidade vai direto para a coordenação. O
-   trancamento passa pela secretaria e depois pela coordenação, e a reabertura só pela secretaria
+   trancamento passa pela secretaria e depois pela coordenação, e a reabertura só pela secretaria.
+   A exclusão de anexo pode ser decidida pela secretaria ou pela coordenação, quem analisar primeiro
 */
 @Service
 @RequiredArgsConstructor
@@ -53,6 +54,8 @@ public class SolicitacaoService {
     private final OrientadorTurmaRepository orientadorTurmaRepository;
     private final UsuarioRepository usuarioRepository;
     private final EstagioService estagioService;
+    private final EntregaService entregaService;
+    private final EntregaVersaoRepository entregaVersaoRepository;
     private final CursoService cursoService;
     private final AuditoriaService auditoriaService;
     private final EmailService emailService;
@@ -77,7 +80,11 @@ public class SolicitacaoService {
                         matricula.getId(), EstagioService.STATUS_EM_ABERTO)
                 .orElseThrow(() -> new RegraNegocioException("Você não tem um estágio em aberto"));
 
-        if (solicitacaoRepository.existsByEstagioIdAndStatusIn(estagio.getId(), STATUS_EM_ANALISE)) {
+        if (request.getTipo() == TipoSolicitacao.EXCLUSAO_ANEXO) {
+            throw new RegraNegocioException("Peça a exclusão do anexo pela tarefa, na sua trilha");
+        }
+        if (solicitacaoRepository.existsByEstagioIdAndStatusInAndTipoNot(
+                estagio.getId(), STATUS_EM_ANALISE, TipoSolicitacao.EXCLUSAO_ANEXO)) {
             throw new RegraNegocioException(
                     "Já existe uma solicitação em análise para este estágio. Aguarde a decisão ou cancele o pedido");
         }
@@ -118,6 +125,8 @@ public class SolicitacaoService {
                 }
                 solicitacao.setStatus(StatusSolicitacao.PENDENTE);
             }
+            case EXCLUSAO_ANEXO -> {
+            }
         }
 
         Solicitacao salva = solicitacaoRepository.save(solicitacao);
@@ -134,6 +143,47 @@ public class SolicitacaoService {
         return paraResponse(salva);
     }
 
+    /*
+       Pedido de exclusão do anexo de uma versão. A partir daqui o anexo fica bloqueado para todos, e
+       a entrega fica parada até a decisão da secretaria ou da coordenação
+    */
+    @Transactional
+    public SolicitacaoResponse solicitarExclusaoAnexo(String emailAluno, Long versaoId, String motivo, String ipOrigem) {
+        Aluno aluno = buscarAluno(emailAluno);
+        EntregaVersao versao = entregaVersaoRepository.findByIdAndEntregaEstagioMatriculaAlunoEmail(versaoId, emailAluno)
+                .orElseThrow(() -> new ResourceNotFoundException("Versão não encontrada"));
+        Estagio estagio = versao.getEntrega().getEstagio();
+        exigirStatus(estagio, StatusEstagio.ATIVO, "A exclusão de anexo só pode ser pedida com o estágio ativo");
+        if (!versao.arquivoDisponivel()) {
+            throw new RegraNegocioException("Este anexo já foi excluído ou já tem um pedido de exclusão em análise");
+        }
+        if (entregaVersaoRepository.existsByEntregaIdAndSituacaoArquivo(versao.getEntrega().getId(),
+                SituacaoArquivo.EXCLUSAO_EM_ANALISE)) {
+            throw new RegraNegocioException("Já existe um pedido de exclusão em análise para esta tarefa");
+        }
+
+        versao.setSituacaoArquivo(SituacaoArquivo.EXCLUSAO_EM_ANALISE);
+        entregaVersaoRepository.save(versao);
+
+        Solicitacao solicitacao = new Solicitacao();
+        solicitacao.setEstagio(estagio);
+        solicitacao.setTipo(TipoSolicitacao.EXCLUSAO_ANEXO);
+        solicitacao.setStatus(StatusSolicitacao.PENDENTE);
+        solicitacao.setVersao(versao);
+        solicitacao.setMotivo(motivo.trim());
+        Solicitacao salva = solicitacaoRepository.save(solicitacao);
+
+        auditoriaService.registrar(aluno, "EXCLUSAO_ANEXO_SOLICITADA",
+                "Solicitação id=" + salva.getId() + " para a versão " + versao.getNumero() + " da entrega id="
+                        + versao.getEntrega().getId(), ipOrigem, true);
+        avisarCoordenador(salva, "Pedido de exclusão de anexo",
+                "O aluno " + aluno.getNome() + " pediu a exclusão de um anexo enviado na tarefa "
+                        + versao.getEntrega().getTarefa().getNome() + ". O anexo está bloqueado até a decisão, "
+                        + "que pode ser dada pela coordenação ou pela secretaria.");
+        log.info("[SOLICITAÇÃO] Exclusão do anexo da versão {} pedida por {}", versao.getId(), emailAluno);
+        return paraResponse(salva);
+    }
+
     // O aluno cancela o próprio pedido enquanto ele ainda está em análise
     @Transactional
     public SolicitacaoResponse cancelar(Long solicitacaoId, String emailAluno, String ipOrigem) {
@@ -147,6 +197,7 @@ public class SolicitacaoService {
         }
 
         solicitacao.setStatus(StatusSolicitacao.CANCELADA);
+        liberarAnexo(solicitacao);
         Solicitacao salva = solicitacaoRepository.save(solicitacao);
         auditoriaService.registrar(aluno, "SOLICITACAO_CANCELADA",
                 "Solicitação id=" + solicitacaoId + " cancelada pelo aluno", ipOrigem, true);
@@ -158,7 +209,7 @@ public class SolicitacaoService {
     @Transactional(readOnly = true)
     public List<SolicitacaoResponse> listarDaSecretaria() {
         return paraResponses(solicitacaoRepository.findByTipoInOrderByCriadoEmDescIdDesc(
-                List.of(TipoSolicitacao.TRANCAMENTO, TipoSolicitacao.REABERTURA)));
+                List.of(TipoSolicitacao.TRANCAMENTO, TipoSolicitacao.REABERTURA, TipoSolicitacao.EXCLUSAO_ANEXO)));
     }
 
     /*
@@ -173,7 +224,9 @@ public class SolicitacaoService {
         solicitacao.setAnalistaSecretaria(secretaria);
         solicitacao.setAnalisadaSecretariaEm(OffsetDateTime.now());
 
-        if (solicitacao.getTipo() == TipoSolicitacao.TRANCAMENTO) {
+        if (solicitacao.getTipo() == TipoSolicitacao.EXCLUSAO_ANEXO) {
+            aprovarExclusaoAnexo(solicitacao, secretaria, "pela secretaria");
+        } else if (solicitacao.getTipo() == TipoSolicitacao.TRANCAMENTO) {
             exigirStatus(solicitacao.getEstagio(), StatusEstagio.ATIVO, "O estágio não está mais ativo");
             solicitacao.setStatus(StatusSolicitacao.EM_ANALISE_COORDENACAO);
             avisarAluno(solicitacao, "Trancamento validado pela secretaria",
@@ -211,6 +264,7 @@ public class SolicitacaoService {
         solicitacao.setAnalisadaSecretariaEm(OffsetDateTime.now());
         solicitacao.setStatus(StatusSolicitacao.REPROVADA);
         solicitacao.setJustificativaReprovacao(justificativa.trim());
+        liberarAnexo(solicitacao);
         Solicitacao salva = solicitacaoRepository.save(solicitacao);
 
         auditoriaService.registrar(secretaria, "SOLICITACAO_REPROVADA",
@@ -247,6 +301,16 @@ public class SolicitacaoService {
         Usuario coordenador = buscarUsuario(emailCoordenador);
         Solicitacao solicitacao = buscarDaCoordenacao(solicitacaoId, emailCoordenador);
         Estagio estagio = solicitacao.getEstagio();
+
+        if (solicitacao.getTipo() == TipoSolicitacao.EXCLUSAO_ANEXO) {
+            solicitacao.setAnalistaCoordenacao(coordenador);
+            solicitacao.setAnalisadaCoordenacaoEm(OffsetDateTime.now());
+            aprovarExclusaoAnexo(solicitacao, coordenador, "pela coordenação");
+            Solicitacao salva = solicitacaoRepository.save(solicitacao);
+            auditoriaService.registrar(coordenador, "SOLICITACAO_APROVADA",
+                    "Solicitação id=" + solicitacaoId + " de " + salva.getTipo() + " aprovada pela coordenação", ipOrigem, true);
+            return paraResponse(salva);
+        }
         exigirStatus(estagio, StatusEstagio.ATIVO, "O estágio não está mais ativo");
 
         solicitacao.setAnalistaCoordenacao(coordenador);
@@ -283,6 +347,7 @@ public class SolicitacaoService {
         solicitacao.setAnalisadaCoordenacaoEm(OffsetDateTime.now());
         solicitacao.setStatus(StatusSolicitacao.REPROVADA);
         solicitacao.setJustificativaReprovacao(justificativa.trim());
+        liberarAnexo(solicitacao);
         Solicitacao salva = solicitacaoRepository.save(solicitacao);
 
         auditoriaService.registrar(coordenador, "SOLICITACAO_REPROVADA",
@@ -303,7 +368,8 @@ public class SolicitacaoService {
                 TipoSolicitacao.TRANCAMENTO, StatusSolicitacao.APROVADA, hoje(), StatusEstagio.SUSPENSO);
         for (Solicitacao trancamento : vencidos) {
             Estagio estagio = trancamento.getEstagio();
-            if (solicitacaoRepository.existsByEstagioIdAndStatusIn(estagio.getId(), STATUS_EM_ANALISE)) {
+            if (solicitacaoRepository.existsByEstagioIdAndStatusInAndTipoNot(
+                    estagio.getId(), STATUS_EM_ANALISE, TipoSolicitacao.EXCLUSAO_ANEXO)) {
                 continue;
             }
             efetivarTrancamento(estagio);
@@ -320,6 +386,27 @@ public class SolicitacaoService {
     }
 
     // Regras dos efeitos de cada decisão
+
+    // O anexo é apagado na hora, sem passar pela tela de ninguém, e o aluno é avisado
+    private void aprovarExclusaoAnexo(Solicitacao solicitacao, Usuario quemAprovou, String origem) {
+        solicitacao.setStatus(StatusSolicitacao.APROVADA);
+        entregaService.excluirAnexo(solicitacao.getVersao(), quemAprovou);
+        auditoriaService.registrar(quemAprovou, "ANEXO_EXCLUIDO",
+                "Anexo da versão " + solicitacao.getVersao().getNumero() + " da entrega id="
+                        + solicitacao.getVersao().getEntrega().getId() + " excluído " + origem, null, true);
+        avisarAluno(solicitacao, "Exclusão do anexo aprovada",
+                "O pedido de exclusão do anexo da tarefa " + solicitacao.getVersao().getEntrega().getTarefa().getNome()
+                        + " foi aprovado, e o arquivo foi apagado. Se a tarefa voltou para você, envie o arquivo correto pela trilha.");
+    }
+
+    // Pedido de exclusão reprovado ou cancelado: o anexo volta a ficar disponível
+    private void liberarAnexo(Solicitacao solicitacao) {
+        if (solicitacao.getTipo() == TipoSolicitacao.EXCLUSAO_ANEXO && solicitacao.getVersao() != null
+                && solicitacao.getVersao().getSituacaoArquivo() == SituacaoArquivo.EXCLUSAO_EM_ANALISE) {
+            solicitacao.getVersao().setSituacaoArquivo(SituacaoArquivo.DISPONIVEL);
+            entregaVersaoRepository.save(solicitacao.getVersao());
+        }
+    }
 
     private void trocarModalidade(Estagio atual, TipoEstagio novoTipo) {
         atual.setStatus(StatusEstagio.ENCERRADO);
@@ -402,7 +489,7 @@ public class SolicitacaoService {
         }
     }
 
-    // A secretaria só decide os pedidos de trancamento e de reabertura que ainda estão na primeira etapa
+    // A secretaria decide os pedidos de trancamento, de reabertura e de exclusão de anexo que ainda estão na primeira etapa
     private Solicitacao buscarDaSecretaria(Long solicitacaoId) {
         Solicitacao solicitacao = solicitacaoRepository.findById(solicitacaoId)
                 .filter(encontrada -> encontrada.getTipo() != TipoSolicitacao.TROCA_MODALIDADE)
@@ -413,12 +500,17 @@ public class SolicitacaoService {
         return solicitacao;
     }
 
-    // A coordenação só decide os pedidos dos próprios cursos que já estão na etapa dela
+    /*
+       A coordenação só decide os pedidos dos próprios cursos que já estão na etapa dela. A exclusão de
+       anexo pode ser decidida direto, sem passar antes pela secretaria
+    */
     private Solicitacao buscarDaCoordenacao(Long solicitacaoId, String emailCoordenador) {
         Solicitacao solicitacao = solicitacaoRepository
                 .findByIdAndEstagioMatriculaTurmaCursoCoordenadorEmail(solicitacaoId, emailCoordenador)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitação não encontrada"));
-        if (solicitacao.getStatus() != StatusSolicitacao.EM_ANALISE_COORDENACAO) {
+        boolean exclusaoPendente = solicitacao.getTipo() == TipoSolicitacao.EXCLUSAO_ANEXO
+                && solicitacao.getStatus() == StatusSolicitacao.PENDENTE;
+        if (solicitacao.getStatus() != StatusSolicitacao.EM_ANALISE_COORDENACAO && !exclusaoPendente) {
             throw new RegraNegocioException("Esta solicitação não está aguardando a coordenação");
         }
         return solicitacao;
@@ -443,6 +535,7 @@ public class SolicitacaoService {
             case TROCA_MODALIDADE -> "Pedido de troca de modalidade";
             case TRANCAMENTO -> "Pedido de trancamento";
             case REABERTURA -> "Pedido de reabertura";
+            case EXCLUSAO_ANEXO -> "Pedido de exclusão de anexo";
         };
     }
 
@@ -485,6 +578,8 @@ public class SolicitacaoService {
                 .nomeCurso(matricula.getTurma().getCurso().getNome())
                 .nomeTipoEstagioAtual(estagio.getTipoEstagio().getNome())
                 .nomeNovoTipoEstagio(solicitacao.getNovoTipoEstagio() != null ? solicitacao.getNovoTipoEstagio().getNome() : null)
+                .nomeTarefa(solicitacao.getVersao() != null ? solicitacao.getVersao().getEntrega().getTarefa().getNome() : null)
+                .numeroVersao(solicitacao.getVersao() != null ? solicitacao.getVersao().getNumero() : null)
                 .nomeAnalistaSecretaria(solicitacao.getAnalistaSecretaria() != null ? solicitacao.getAnalistaSecretaria().getNome() : null)
                 .analisadaSecretariaEm(solicitacao.getAnalisadaSecretariaEm())
                 .nomeAnalistaCoordenacao(solicitacao.getAnalistaCoordenacao() != null ? solicitacao.getAnalistaCoordenacao().getNome() : null)

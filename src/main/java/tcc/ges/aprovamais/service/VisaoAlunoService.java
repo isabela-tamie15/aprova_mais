@@ -68,7 +68,7 @@ public class VisaoAlunoService {
             entregaPorTarefa.put(entrega.getTarefa().getId(), entrega);
         }
 
-        // Uma linha por tarefa, com a situação da entrega do aluno (ou "sem entrega")
+        // Uma linha por tarefa, com a situação da entrega do aluno (ou sem entrega)
         List<TarefaVisaoAlunoResponse> linhasDasTarefas = new ArrayList<>();
         for (Tarefa tarefa : tarefas) {
             linhasDasTarefas.add(paraTarefa(tarefa, entregaPorTarefa.get(tarefa.getId())));

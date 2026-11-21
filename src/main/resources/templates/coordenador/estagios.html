@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Estágios</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
     <link th:href="@{/css/main.css}" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer th:src="@{/vendor/alpinejs/alpine.min.js}"></script>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/navbar-coordenador :: navbar('estagios')}"></div>
 
 <div class="container" x-data="estagiosPagina()" x-init="init()" style="max-width: 1000px;">
     <h4 class="fw-bold mb-1">Estágios em aberto</h4>
-    <p class="text-muted mb-4">Estágios pendentes, ativos, rejeitados ou suspensos dos alunos do curso. Quando o aluno sai da empresa ou desiste, o estágio é encerrado por desligamento.</p>
+    <p class="text-muted mb-4">Acompanhe os estágios dos alunos do curso. Se um aluno sair da empresa ou desistir, encerre o estágio por desligamento.</p>
 
     <div class="alert alert-danger" x-show="erro" x-text="erro" x-cloak></div>
     <div class="alert alert-success" x-show="sucesso" x-text="sucesso" x-cloak></div>
@@ -61,7 +62,7 @@
                             <td x-text="estagio.nomeOrientador || 'Sem orientador'"></td>
                             <td><span class="badge" :class="classesStatus[estagio.status]" x-text="nomesStatus[estagio.status]"></span></td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-danger" @click="abrirDesligamento(estagio)">Desligar</button>
+                                <button class="btn btn-sm btn-danger" @click="abrirDesligamento(estagio)">Desligar</button>
                             </td>
                         </tr>
                     </template>
@@ -82,7 +83,7 @@
             <p class="small text-muted">O estágio fica no histórico do aluno como encerrado, e ele poderá cadastrar um novo.</p>
             <div>
                 <button class="btn btn-danger me-2" :disabled="salvando" @click="desligar()">Confirmar desligamento</button>
-                <button class="btn btn-outline-secondary" :disabled="salvando" @click="cancelar()">Cancelar</button>
+                <button class="btn btn-secondary" :disabled="salvando" @click="cancelar()">Cancelar</button>
             </div>
         </div>
     </div>
@@ -94,6 +95,6 @@
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

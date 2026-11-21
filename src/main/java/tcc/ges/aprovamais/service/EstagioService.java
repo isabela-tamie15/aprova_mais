@@ -23,6 +23,7 @@ import tcc.ges.aprovamais.repository.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Set;
 public class EstagioService {
 
     private static final Logger log = LoggerFactory.getLogger(EstagioService.class);
+    private static final ZoneId FUSO_BRASILIA = ZoneId.of("America/Sao_Paulo");
 
     // Status de estágio em aberto. Cada matrícula pode ter só um estágio nesses status
     public static final Set<StatusEstagio> STATUS_EM_ABERTO = EnumSet.of(
@@ -238,10 +240,10 @@ public class EstagioService {
         return paraResponse(recarregado);
     }
 
-    // Lista os estágios pendentes do orientador, incluindo os que ele já rejeitou
+    // Lista os estágios pendentes do orientador, incluindo os que ele já rejeitou, do envio mais recente para o mais antigo
     @Transactional(readOnly = true)
     public List<EstagioResponse> listarPendentes(String emailOrientador) {
-        List<Estagio> estagiosParaValidar = estagioRepository.findByOrientadorEmailAndStatusInOrderByAlteradoEmAscIdAsc(
+        List<Estagio> estagiosParaValidar = estagioRepository.findByOrientadorEmailAndStatusInOrderByAlteradoEmDescIdDesc(
                 emailOrientador, List.of(StatusEstagio.PENDENTE, StatusEstagio.REJEITADO));
 
         // Transforma cada estágio do banco na resposta que vai para a tela de validações
@@ -597,6 +599,11 @@ public class EstagioService {
                 .cargaHorariaCumprida(calcularCargaCumprida(estagio))
                 .dataPrevistaConclusao(dataPrevista)
                 .nomeAluno(estagio.getMatricula().getAluno().getNome())
+                .rgmAluno(estagio.getMatricula().getAluno().getRgm())
+                .emailAluno(estagio.getMatricula().getAluno().getEmail())
+                .ultimoEnvio(estagio.getAlteradoEm() != null
+                        ? estagio.getAlteradoEm().atZoneSameInstant(FUSO_BRASILIA).toLocalDateTime()
+                        : null)
                 .nomeEmpresa(estagio.getNomeEmpresa())
                 .cnpjEmpresa(estagio.getCnpjEmpresa() != null
                         ? ValidadorCnpj.formatar(estagio.getCnpjEmpresa())

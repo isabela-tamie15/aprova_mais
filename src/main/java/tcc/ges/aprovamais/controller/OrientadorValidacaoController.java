@@ -29,10 +29,8 @@ public class OrientadorValidacaoController {
     @GetMapping
     public ResponseEntity<List<EstagioResponse>> listarPendentes(Authentication authentication) {
 
-        /*
-           E-mail vem do token, então cada orientador só vê os estágios
-           que estão vinculados a ele mesmo
-        */
+
+        //E-mail vem do token, então cada orientador só vê os estágios que estão vinculados a ele mesmo
         return ResponseEntity.ok(estagioService.listarPendentes(authentication.getName()));
     }
 

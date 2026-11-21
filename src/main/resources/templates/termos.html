@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aprova+ | Termos de Uso</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
     <link th:href="@{/css/main.css}" rel="stylesheet">
     <link th:href="@{/css/paginas/termos.css}" rel="stylesheet">
 </head>
@@ -14,15 +14,11 @@
 
     <div class="text-center mb-4">
         <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-            <div class="logo-icon">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" stroke="#2B4ECC" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
+            <img th:src="@{/css/img/logo-aprova.png}" class="logo-selo logo-selo-grande" alt="">
             <span class="logo-nome" style="color: #111827; font-size: 1.05rem;">Aprova+</span>
         </div>
         <span class="badge-doc">Termos de Uso</span>
-        <p class="doc-versao" style="margin-top: 0.5rem;">Versão 1.1, novembro de 2026</p>
+        <p class="doc-versao" style="margin-top: 0.5rem;">Versão <span th:text="${versaoTermos}"></span>, vigente desde <span th:text="${vigenciaTermos}"></span></p>
     </div>
 
     <p class="doc-intro">
@@ -37,14 +33,14 @@
 
     <div class="doc-section">
         <h2>Quem pode usar o Aprova+</h2>
-        <p>O acesso é restrito a pessoas vinculadas à UMC. Não há cadastro aberto: todo acesso começa com um convite, enviado conforme a hierarquia de perfis. Os perfis são aluno, orientador, coordenador, secretaria e administrador. A primeira conta de administrador é criada na implantação do sistema, a partir de variáveis de ambiente.</p>
+        <p>O acesso é restrito a pessoas vinculadas à UMC. Não há cadastro aberto: todo acesso começa com um convite, enviado conforme a hierarquia de perfis. Os perfis são aluno, orientador, coordenador, secretaria e administrador. A primeira conta de administrador é criada na implantação do sistema, a partir de variáveis de ambiente, assim como, opcionalmente, uma conta inicial de secretaria, usada até que o coordenador convide as secretarias definitivas.</p>
         <p>O público do sistema é formado por estudantes de graduação e servidores da instituição. Caso algum usuário seja menor de 18 anos, o tratamento dos seus dados observará o art. 14 da LGPD, no seu melhor interesse.</p>
     </div>
     <hr class="doc-divider">
 
     <div class="doc-section">
         <h2>Criação e proteção da conta</h2>
-        <p>O usuário recebe por e-mail um link de primeiro acesso de uso único, válido por 24 horas, por padrão. No primeiro acesso, aceita os Termos de Uso e a Política de Privacidade e define sua senha. O usuário é responsável por manter a senha em sigilo e, quando a verificação em duas etapas estiver ativa, por guardar o dispositivo com o aplicativo autenticador. Por padrão, após 5 tentativas de login incorretas, a conta é bloqueada por 5 minutos.</p>
+        <p>O usuário recebe por e-mail um link de primeiro acesso de uso único, válido por 24 horas, por padrão. No primeiro acesso, declara que leu a Política de Privacidade, aceita estes Termos de Uso e define sua senha. O usuário é responsável por manter a senha em sigilo e, quando a verificação em duas etapas estiver ativa, por guardar o dispositivo com o aplicativo autenticador. Por padrão, após 5 tentativas de login incorretas, a conta é bloqueada por 5 minutos.</p>
     </div>
     <hr class="doc-divider">
 
@@ -55,7 +51,8 @@
             <li>Usar o sistema exclusivamente para fins relacionados ao estágio supervisionado</li>
             <li>Inserir apenas informações verdadeiras e atualizadas</li>
             <li>Não tentar acessar dados de outros usuários além dos que seu perfil permite, nem contornar os mecanismos de segurança</li>
-            <li>Comunicar imediatamente a secretaria ou a coordenação se suspeitar que suas credenciais foram comprometidas</li>
+            <li>Comunicar imediatamente o suporte, pelo e-mail atendimentoaprovamais@gmail.com, se suspeitar que suas credenciais foram comprometidas</li>
+            <li>Enviar nas entregas apenas os documentos pedidos pela tarefa e, quando eles tiverem dados de outras pessoas, como do supervisor da empresa, somente os necessários ao estágio</li>
         </ul>
     </div>
     <hr class="doc-divider">
@@ -74,25 +71,28 @@
 
     <div class="doc-section">
         <h2>Encerramento da conta</h2>
-        <p>O usuário pode solicitar a anonimização dos seus dados pessoais a qualquer momento, pela página <a href="/privacidade">Política de Privacidade</a>. Os registros acadêmicos do estágio são preservados por obrigação legal, sem identificação pessoal.</p>
+        <p>O usuário pode solicitar a anonimização dos seus dados pessoais a qualquer momento, pela página <a href="/privacidade">Política de Privacidade</a>. Os registros acadêmicos do estágio são mantidos por obrigação legal, sem ligação com os dados da conta; os arquivos enviados permanecem como foram enviados.</p>
     </div>
     <hr class="doc-divider">
 
     <div class="doc-section">
         <h2>Disponibilidade, alterações e legislação</h2>
-        <p>O sistema é disponibilizado em caráter acadêmico, no estado em que se encontra. Quando houver alteração relevante nos Termos, a nova versão será publicada nesta página e será solicitado um novo aceite. Os Termos são regidos pela legislação brasileira, com foro da Comarca de Mogi das Cruzes, Estado de São Paulo.</p>
+        <p>O sistema é disponibilizado em caráter acadêmico, no estado em que se encontra. Estes Termos são regidos pela legislação brasileira.</p>
+        <p>Cada versão destes Termos tem número e data de vigência, exibidos no topo da página. Quando uma versão nova é publicada, o uso do sistema passa a depender do aceite da nova versão, e cada aceite é registrado com a versão e a data. Quem não concordar pode deixar de usar o sistema e pedir a anonimização da conta; os registros acadêmicos continuam guardados por obrigação legal, e o acompanhamento do estágio segue pelos canais da coordenação do curso.</p>
+        <p><strong>Histórico de versões</strong></p>
+        <ul>
+            <li><strong>1.2 (19/11/2026):</strong> inclui a conta inicial de secretaria, a responsabilidade sobre os dados de terceiros nos documentos enviados e a regra de aceite de novas versões; retira a cláusula de foro; indica o canal de suporte.</li>
+            <li><strong>1.1:</strong> versão anterior.</li>
+        </ul>
     </div>
     <div class="mt-4 text-center">
-        <a href="/consentimento" class="btn-voltar">Voltar para aceite</a>
+        <a href="/inicio" class="btn-voltar" data-acao="voltar">Voltar</a>
     </div>
-
-    <p class="mt-4 text-center" style="font-size: 0.78rem; color: #9CA3AF;">
-        © 2026 Aprova+ · Universidade de Mogi das Cruzes
-    </p>
 
 </div>
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/comum.js}"></script>
 </body>
 </html>

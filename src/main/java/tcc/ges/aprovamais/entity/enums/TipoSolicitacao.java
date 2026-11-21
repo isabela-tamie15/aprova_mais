@@ -3,5 +3,6 @@ package tcc.ges.aprovamais.entity.enums;
 public enum TipoSolicitacao {
     TROCA_MODALIDADE,
     TRANCAMENTO,
-    REABERTURA
+    REABERTURA,
+    EXCLUSAO_ANEXO
 }

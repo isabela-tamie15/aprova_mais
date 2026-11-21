@@ -13,6 +13,9 @@ public interface PreCadastroRepository extends JpaRepository<PreCadastro, Long> 
     // Lista os pré-cadastros do coordenador logado, em ordem alfabética
     List<PreCadastro> findByCoordenadorEmailOrderByNomeAsc(String emailCoordenador);
 
+    // Todos os pré-cadastros, em ordem alfabética, para a tela de convites da secretaria
+    List<PreCadastro> findAllByOrderByNomeAsc();
+
     // Busca o pré-cadastro só se for do coordenador logado. O de outro coordenador volta vazio e vira 404
     Optional<PreCadastro> findByIdAndCoordenadorEmail(Long id, String emailCoordenador);
 

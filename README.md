@@ -65,7 +65,7 @@ Orientador: Prof. Leonardo Torres
 - Carga horária cumprida calculada pelas semanas completas desde o início vezes a jornada semanal, descontadas as semanas de trancamento
 - Painel do aluno e do orientador com horas cumpridas e restantes, o cálculo por semanas, as atividades aprovadas e restantes e a data prevista de conclusão
 - Aviso "FINALIZAÇÃO DO PRAZO" em amarelo (por padrão, de 30 a 11 dias antes do encerramento das entregas da turma) e em vermelho (a partir de 10 dias), "PRAZO VENCE HOJE" no último dia e "PRAZO VENCEU" depois da data
-- Painel do coordenador com indicadores por etapa do estágio e gráficos por turma
+- Painel do coordenador com indicadores por etapa do estágio e gráficos por turma, com filtros de curso, semestre, turma e orientador
 
 ### Feature 3 - Trilha Personalizada de Tarefas
 - Coordenador cadastra cursos, turmas, tipos de estágio e a trilha de cada tipo, com tarefas em ordem, descrição e link de material de apoio
@@ -92,12 +92,12 @@ Orientador: Prof. Leonardo Torres
 
 ### Acesso, Segurança e LGPD
 - Acesso somente por convite, sem cadastro aberto, seguindo a hierarquia: Administrador convida coordenadores, Coordenador convida secretarias, Secretaria convida alunos e orientadores
-- Lista de pré-cadastro mantida pelo coordenador: a secretaria só convida quem está nela, e a matrícula do aluno é criada na turma indicada ao aceitar o convite
-- Primeiro acesso pelo link do convite: definição de senha e aceite dos Termos de Uso e da Política de Privacidade
-- Autenticação de dois fatores (2FA), obrigatória para os perfis administrativos, e tela de segurança da conta
+- Lista de pré-cadastro mantida pelo coordenador, com RGM só com números para aluno: a secretaria só convida quem está nela, vê na tela de convites quem ainda aguarda convite e convida pela própria lista, e a matrícula do aluno é criada na turma indicada ao aceitar o convite
+- Primeiro acesso pelo link do convite: definição de senha, aceite dos Termos de Uso e ciência da Política de Privacidade; o aluno confirma o RGM do pré-cadastro, e 5 tentativas com RGM errado cancelam o convite
+- Autenticação de dois fatores (2FA), obrigatória para os perfis administrativos, e tela de segurança da conta, com a troca de senha
 - Recuperação de senha por link enviado por e-mail
-- Auditoria das ações de acesso e das operações relevantes
-- Páginas de Termos de Uso e Política de Privacidade, com novo aceite quando a versão muda
+- Auditoria das ações de acesso e das operações relevantes, com e-mail e IP mascarados na consulta
+- Páginas de Termos de Uso e Política de Privacidade com versão, vigência e histórico de versões, novo aceite quando a versão muda e histórico de aceites de cada usuário
 - Exercício dos direitos do titular: acesso e correção (com protocolo e prazo de resposta) e anonimização dos dados
 
 ### Solicitações, Encerramento e Administração
@@ -191,18 +191,18 @@ POST /api/v1/auth/login (e-mail e senha)
 - RGM e matrícula institucional não são cifrados por decisão de projeto: são identificadores únicos usados em buscas por secretaria, coordenação e orientador. A cifragem AES-GCM gera um valor diferente a cada gravação, o que impediria a restrição de unicidade e a busca. Esses campos são protegidos pelo controle de acesso por perfil.
 
 ### Auditoria
-Os eventos são gravados na tabela registros_auditoria na mesma transação da operação, com usuário, e-mail, perfil, ação, detalhes, IP de origem, resultado e data/hora. Também são registrados no arquivo logs/auditoria.log. O administrador consulta os registros na tela Auditoria, com filtros por ação, e-mail, resultado e período. Os registros são mantidos por 6 meses (valor padrão, ajustável pelo administrador), e uma rotina diária elimina os mais antigos.
+Os eventos são gravados na tabela registros_auditoria na mesma transação da operação, com usuário, e-mail, perfil, ação, detalhes, IP de origem, resultado e data/hora. Também são registrados no arquivo logs/auditoria.log. O administrador consulta os registros na tela Auditoria, com filtros por ação, e-mail, resultado e período. Na lista, o e-mail, o IP e os e-mails dos detalhes chegam do servidor já mascarados; o registro completo é aberto um de cada vez, pelo botão Ver, e cada abertura gera o evento AUDITORIA_REGISTRO_VISUALIZADO. Os registros são mantidos por 6 meses (valor padrão, ajustável pelo administrador), e uma rotina diária elimina os mais antigos.
 
 | Grupo | Eventos |
 |-------|---------|
 | Login | LOGIN_SUCESSO, LOGIN_FALHA, LOGOUT, RECUPERACAO_SENHA_SOLICITADA, SENHA_REDEFINIDA |
 | 2FA | LOGIN_2FA_REQUERIDO, LOGIN_CONFIGURACAO_2FA_REQUERIDA, LOGIN_2FA_FALHA, DOIS_FATORES_ATIVADO, DOIS_FATORES_DESATIVADO, DOIS_FATORES_FALHA |
-| Acesso ao sistema | CONVITE_ENVIADO, PRIMEIRO_ACESSO_ACEITO, PRIMEIRO_ACESSO_RECUSADO, CONTA_INICIAL_CRIADA, MATRICULA_CRIADA, PRE_CADASTRO_INCLUIDO, PRE_CADASTRO_ALTERADO |
+| Acesso ao sistema | CONVITE_ENVIADO, PRIMEIRO_ACESSO_ACEITO, PRIMEIRO_ACESSO_RECUSADO, PRIMEIRO_ACESSO_RGM_INCORRETO, CONTA_INICIAL_CRIADA, MATRICULA_CRIADA, PRE_CADASTRO_INCLUIDO, PRE_CADASTRO_ALTERADO |
 | Cadastros da coordenação | CURSO_CADASTRADO, CURSO_ALTERADO, TURMA_CADASTRADA, TURMA_ALTERADA, ORIENTADOR_ATRIBUIDO, TIPO_ESTAGIO_CADASTRADO, TIPO_ESTAGIO_ALTERADO, TRILHA_CRIADA, TRILHA_ALTERADA, TAREFA_ADICIONADA, TAREFA_ALTERADA, TAREFA_REMOVIDA, CRITERIO_ADICIONADO, CRITERIO_ALTERADO, CRITERIO_DESATIVADO, CRITERIO_REMOVIDO |
 | Estágio | ESTAGIO_CADASTRADO, ESTAGIO_APROVADO, ESTAGIO_REJEITADO, ESTAGIO_CONCLUIDO, ESTAGIO_REPROVADO, ESTAGIO_DESLIGADO |
 | Entregas | ENTREGA_ENVIADA, ENTREGA_APROVADA, ENTREGA_DEVOLVIDA, ARQUIVO_BAIXADO |
 | Solicitações | SOLICITACAO_CRIADA, SOLICITACAO_CANCELADA, SOLICITACAO_APROVADA_SECRETARIA, SOLICITACAO_APROVADA, SOLICITACAO_REPROVADA, TRANCAMENTO_EFETIVADO |
-| Administração | AUDITORIA_CONSULTADA, CONFIGURACAO_ALTERADA, CORRECAO_DOIS_FATORES, CORRECAO_STATUS_ESTAGIO |
+| Administração | AUDITORIA_CONSULTADA, AUDITORIA_REGISTRO_VISUALIZADO, CONFIGURACAO_ALTERADA, CORRECAO_DOIS_FATORES, CORRECAO_STATUS_ESTAGIO |
 | LGPD | CONSENTIMENTO_ACEITO, SOLICITACAO_ACESSO_DADOS, SOLICITACAO_CORRECAO_DADOS, ANONIMIZACAO_EXECUTADA, ANONIMIZACAO_FALHA |
 
 Consulta rápida:
@@ -213,10 +213,11 @@ FROM registros_auditoria ORDER BY id DESC LIMIT 20;
 
 ### LGPD
 - Termos de Uso (/termos) e Política de Privacidade (/privacidade) disponíveis sem login
-- Consentimento registrado com data e versão do termo aceito (versão atual: 1.1, definida em ConsentimentoService). Quando a versão muda, as páginas e a API exigem um novo aceite antes de continuar
+- Aceite registrado com data e versão (versão atual: 1.2, definida em ConsentimentoService, que também informa a data de vigência às páginas). O aceite não é a base legal do tratamento: os dados são tratados por obrigação legal, legítimo interesse e exercício regular de direitos, e o aceite registra que o titular foi informado (art. 9º da LGPD) e aceita as regras de uso
+- Cada aceite fica no histórico de aceites (tabela aceites_termos), que não é apagado pela eliminação periódica da auditoria. Quando a versão muda, as páginas e a API exigem um novo aceite antes de continuar, e quem não concorda pode sair pela própria tela de aceite
 - Contato do encarregado de proteção de dados (DPO) no rodapé de todas as páginas (art. 41 da LGPD)
 - Direitos do titular na tela de privacidade: solicitar acesso e correção, com protocolo e prazo de resposta de 15 dias, e anonimizar os dados
-- Anonimização substitui nome, e-mail, senha e identificadores por valores neutros, cancela as solicitações em aberto e desativa a conta; os registros acadêmicos de estágio são preservados (Lei 11.788/2008)
+- Anonimização substitui nome, e-mail, senha e identificadores por valores neutros, cancela as solicitações em aberto e desativa a conta; os registros acadêmicos de estágio são conservados para cumprimento de obrigação legal (art. 16, I, da LGPD), sem ligação com a conta, e os arquivos enviados ficam como foram enviados
 
 ### Riscos Residuais e Decisões de Projeto
 - Conta bloqueada por tentativas falhas mantém a sessão já aberta: o bloqueio protege o login contra força bruta. A revogação imediata do acesso é feita desativando a conta (ativo = false)
@@ -439,8 +440,8 @@ Abra o link numa janela anônima do navegador, para não misturar a sessão de q
    - um tipo de estágio (Tipos de estágio), com carga total e jornada semanal;
    - a trilha desse tipo (Trilhas), com algumas tarefas;
    - em Critérios, o checklist de avaliação de uma tarefa.
-4. **Pré-cadastro.** Em Pré-cadastro, inclua um aluno (com RGM e turma) e um orientador (com matrícula institucional).
-5. **Secretaria.** Entre com o SECRETARIA_INICIAL_EMAIL e configure o 2FA. Em Enviar convite, convide o aluno e o orientador do pré-cadastro e aceite os dois convites pelos links do log. O coordenador também pode convidar outras secretarias no menu Convites.
+4. **Pré-cadastro.** Em Pré-cadastro, inclua um aluno (com RGM só com números e turma) e um orientador (com matrícula institucional).
+5. **Secretaria.** Entre com o SECRETARIA_INICIAL_EMAIL e configure o 2FA. Em Enviar convite, clique em Convidar na lista de pré-cadastrados para o aluno e o orientador e aceite os dois convites pelos links do log. No convite do aluno, informe o RGM do pré-cadastro: com um RGM errado, a tela mostra quantas tentativas restam. O coordenador também pode convidar outras secretarias no menu Convites.
 6. **Orientador da turma.** Como coordenador, em Turmas, escolha o orientador na coluna Orientador.
 7. **Cadastro do estágio.** Como aluno, em Meu estágio, cadastre o estágio. Ao digitar um CNPJ válido, o nome da empresa é preenchido pela BrasilAPI.
 8. **Validação.** Como orientador, em Validações, confira a data de início e aprove. Teste também a rejeição com justificativa, que libera o reenvio para o aluno.
@@ -448,11 +449,11 @@ Abra o link numa janela anônima do navegador, para não misturar a sessão de q
 10. **Entregas e checklist.** Como aluno, em Minha trilha, envie um PDF numa tarefa. Como orientador, em Correções, abra a entrega, marque os critérios como Suficiente ou Insuficiente e devolva com feedback. O aluno vê o resultado e envia uma nova versão, que o orientador aprova.
 11. **Solicitações.** Como aluno, em Solicitações, peça a troca de modalidade (decidida pelo coordenador) ou o trancamento (analisado pela secretaria e aprovado pelo coordenador). Com o trancamento aprovado, peça a reabertura dentro do prazo mostrado.
 12. **Encerramento.** O orientador conclui ou reprova o estágio na tela de acompanhamento do aluno (botão Ver acompanhamento, em Validações). O coordenador encerra por desligamento em Estágios.
-13. **Painel do coordenador.** Confira os indicadores por etapa e os gráficos por turma.
+13. **Painel do coordenador.** Confira os indicadores por etapa e os gráficos por turma, e combine os filtros de curso, semestre, turma e orientador.
 14. **Administração.** Como administrador:
     - em Configurações, altere um parâmetro, por exemplo o prazo de arrependimento;
     - em Correções, desative o 2FA de um usuário ou corrija o status de um estágio, com justificativa;
-    - em Auditoria, filtre os registros das ações feitas nos passos anteriores.
+    - em Auditoria, filtre os registros das ações feitas nos passos anteriores e abra um registro pelo botão Ver para ver o e-mail e o IP sem máscara.
 15. **LGPD.** Pelo rodapé, abra a Política de Privacidade:
     - peça acesso ou correção dos dados e confira o protocolo e o prazo;
     - teste a anonimização com uma conta de aluno de teste, informando a senha e o código do 2FA quando ele estiver ativo.
@@ -526,7 +527,7 @@ curl -i http://localhost:8080/api/v1/conta/2fa -H "Cookie: jwt=<token copiado an
 
 | Evidência | Resultado |
 |-----------|-----------|
-| `./mvnw test` | 325 testes, entre testes de unidade dos serviços e testes de integração que sobem a aplicação e chamam a API, sem falhas |
+| `./mvnw test` | 347 testes, entre testes de unidade dos serviços e testes de integração que sobem a aplicação e chamam a API, sem falhas |
 | Cobertura (JaCoCo) | 78,2% das linhas, acima do mínimo de 50% configurado no pom.xml; o relatório fica em `target/site/jacoco/index.html` |
 | CI (GitHub Actions) | `.github/workflows/ci.yml` roda os testes a cada push e pull request para a develop e a main; o selo no topo deste README mostra o último resultado |
 | Regressão da API | 87 respostas da API capturadas antes e depois de cada branch, sem diferenças fora das mudanças previstas |
@@ -708,7 +709,7 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 ### Coordenador
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| GET | /api/v1/coordenador/painel | Indicadores e gráficos do painel (cursoId opcional) |
+| GET | /api/v1/coordenador/painel | Indicadores e gráficos do painel (cursoId, semestre, turmaId e orientadorId opcionais) |
 | GET, POST, PUT | /api/v1/coordenador/cursos | Lista, cadastra e altera os cursos do coordenador |
 | GET, POST, PUT | /api/v1/coordenador/turmas | Lista, cadastra e altera as turmas de um curso |
 | GET | /api/v1/coordenador/turmas/orientadores | Lista os orientadores ativos |
@@ -729,6 +730,7 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 ### Secretaria
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
+| GET | /api/v1/secretaria/pre-cadastros | Lista os pré-cadastrados que ainda não têm conta, com a situação do convite |
 | GET | /api/v1/secretaria/solicitacoes | Lista os pedidos de trancamento e de reabertura |
 | POST | /api/v1/secretaria/solicitacoes/{id}/aprovar | Aprova (o trancamento segue para a coordenação) |
 | POST | /api/v1/secretaria/solicitacoes/{id}/reprovar | Reprova com justificativa |
@@ -738,6 +740,7 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 |--------|----------|-----------|
 | GET | /api/v1/admin/auditoria | Consulta os registros com filtros |
 | GET | /api/v1/admin/auditoria/acoes | Lista as ações registradas, para o filtro |
+| GET | /api/v1/admin/auditoria/{id} | Abre um registro sem máscara e registra a visualização |
 | GET | /api/v1/admin/configuracoes | Lista os parâmetros, com valor, padrão e limites |
 | PUT | /api/v1/admin/configuracoes/{parametro} | Altera um parâmetro dentro dos limites |
 | POST | /api/v1/admin/correcoes/dois-fatores | Desativa o 2FA de um usuário, com justificativa |

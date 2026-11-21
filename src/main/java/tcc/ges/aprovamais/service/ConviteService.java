@@ -262,6 +262,22 @@ public class ConviteService {
         return convite;
     }
 
+    /*
+       Soma uma tentativa com RGM errado no convite. Ao chegar no limite, o convite é cancelado e a
+       secretaria precisa enviar outro. Devolve o total de tentativas erradas
+    */
+    @Transactional
+    public int registrarRgmIncorreto(Convite convite, int limite) {
+        int tentativas = (convite.getTentativasRgm() == null ? 0 : convite.getTentativasRgm()) + 1;
+        convite.setTentativasRgm(tentativas);
+        if (tentativas >= limite) {
+            convite.setStatus(StatusConvite.CANCELADO);
+            log.warn("[CONVITE] Convite para {} cancelado após {} tentativas com RGM errado", convite.getEmail(), tentativas);
+        }
+        conviteRepository.save(convite);
+        return tentativas;
+    }
+
     // Marca o convite como aceito, usado quando o usuário conclui o cadastro pelo primeiro acesso
     @Transactional
     public void aceitarConvite(String token) {

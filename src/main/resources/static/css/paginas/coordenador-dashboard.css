@@ -44,9 +44,9 @@
 }
 
 /* Cores das legendas da jornada */
-.painel-coordenador .cor-etapa   { background-color: #0d6efd; }
-.painel-coordenador .cor-atencao { background-color: #ffc107; }
-.painel-coordenador .cor-alerta  { background-color: #dc3545; }
+.painel-coordenador .cor-etapa   { background-color: #2B4ECC; }
+.painel-coordenador .cor-atencao { background-color: #F59E0B; }
+.painel-coordenador .cor-alerta  { background-color: #DC2626; }
 
 /* =============================================
    Cartões da jornada
@@ -57,13 +57,13 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    border-radius: 0.4rem;
+    border-radius: 12px;
 }
 
 /* Faixa do topo, com o número da etapa. O texto fica em maiúsculas só pelo CSS */
 .painel-coordenador .cartao-faixa {
     padding: 0.35rem 0.7rem;
-    border-radius: 0.4rem 0.4rem 0 0;
+    border-radius: 12px 12px 0 0;
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -112,22 +112,22 @@
 
 .painel-coordenador .cartao-rodape {
     padding: 0.35rem 0.7rem;
-    border-radius: 0 0 0.4rem 0.4rem;
+    border-radius: 0 0 12px 12px;
     font-size: 0.8rem;
 }
 
 /* Cores dos cartões: a faixa e o rodapé são um tom mais escuro do que o corpo */
-.painel-coordenador .cartao-atencao { background-color: #ffc107; color: #212529; }
+.painel-coordenador .cartao-atencao { background-color: #FBBF24; color: #1F2937; }
 .painel-coordenador .cartao-atencao .cartao-faixa,
-.painel-coordenador .cartao-atencao .cartao-rodape { background-color: #ebb105; }
+.painel-coordenador .cartao-atencao .cartao-rodape { background-color: #F59E0B; }
 
-.painel-coordenador .cartao-etapa { background-color: #0d6efd; color: #fff; }
+.painel-coordenador .cartao-etapa { background-color: #2B4ECC; color: #fff; }
 .painel-coordenador .cartao-etapa .cartao-faixa,
-.painel-coordenador .cartao-etapa .cartao-rodape { background-color: #0b5ed7; }
+.painel-coordenador .cartao-etapa .cartao-rodape { background-color: #1E3A8A; }
 
-.painel-coordenador .cartao-alerta { background-color: #dc3545; color: #fff; }
+.painel-coordenador .cartao-alerta { background-color: #DC2626; color: #fff; }
 .painel-coordenador .cartao-alerta .cartao-faixa,
-.painel-coordenador .cartao-alerta .cartao-rodape { background-color: #c82f3e; }
+.painel-coordenador .cartao-alerta .cartao-rodape { background-color: #B91C1C; }
 
 /*
    No computador, os cartões 1 a 5 têm a mesma altura (a do cartão 4, que tem mais texto)
@@ -176,7 +176,7 @@
 
 .painel-coordenador .grafico-painel {
     padding: 1.5rem 1.75rem;
-    border-radius: 0.5rem;
+    border-radius: 12px;
 }
 
 .painel-coordenador .grafico-painel h6 {
@@ -241,14 +241,14 @@
 }
 
 /* Cores do gráfico 1 */
-.painel-coordenador .cor-sem-orientador { background-color: #c98a00; color: #fff; }
-.painel-coordenador .cor-aguardando     { background-color: #5b9bfd; color: #0a2a66; }
-.painel-coordenador .cor-andamento      { background-color: #0a4fbf; color: #fff; }
+.painel-coordenador .cor-sem-orientador { background-color: #D97706; color: #fff; }
+.painel-coordenador .cor-aguardando     { background-color: #93A8F4; color: #0B1437; }
+.painel-coordenador .cor-andamento      { background-color: #1E3A8A; color: #fff; }
 
 /* Cores do gráfico 3: as mesmas faixas do aviso de prazo */
-.painel-coordenador .faixa-AMARELO    { background-color: #c98a00; }
-.painel-coordenador .faixa-VERMELHO   { background-color: #e35d6a; }
-.painel-coordenador .faixa-ULTIMO_DIA { background-color: #a3172b; }
+.painel-coordenador .faixa-AMARELO    { background-color: #D97706; }
+.painel-coordenador .faixa-VERMELHO   { background-color: #EF4444; }
+.painel-coordenador .faixa-ULTIMO_DIA { background-color: #991B1B; }
 .painel-coordenador .faixa-ENCERRADO  { background-color: #6f42c1; }
 
 /* No celular, o nome da turma fica em cima e a barra embaixo */
@@ -270,4 +270,30 @@
     .painel-coordenador .grafico-painel {
         padding: 1.25rem;
     }
+}
+
+/* Filtros e resumo acima dos cartões */
+.filtros-painel {
+    padding: 0.9rem 1rem;
+    border: 1px solid #e5e7eb;
+}
+
+.resumo-painel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.75rem;
+    color: #4b5563;
+}
+
+.resumo-numero {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-right: 0.25rem;
+}
+
+.link-cartao {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
 }
