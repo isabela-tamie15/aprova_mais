@@ -14,27 +14,26 @@
 
     <div class="text-center mb-4">
         <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-            <img th:src="@{/css/img/logo-aprova.png}" class="logo-selo logo-selo-grande" alt="">
-            <span class="logo-nome" style="color: #111827; font-size: 1.05rem;">Aprova+</span>
+            <img th:src="@{/css/img/logo-aprova-escuro.png}" class="logo-documento" alt="Aprova+">
         </div>
         <span class="badge-doc">Termos de Uso</span>
         <p class="doc-versao" style="margin-top: 0.5rem;">Versão <span th:text="${versaoTermos}"></span>, vigente desde <span th:text="${vigenciaTermos}"></span></p>
     </div>
 
     <p class="doc-intro">
-        O Aprova+ é um sistema acadêmico de gestão do estágio supervisionado obrigatório,
-        desenvolvido por alunos do curso de Engenharia de Software da Universidade de Mogi das
-        Cruzes (UMC) como Projeto Final de Curso (PFC). Permite o cadastro, o acompanhamento e a
-        validação de estágios, conforme as regras da Lei nº 11.788/2008. Este Termo descreve as
-        regras de uso, as responsabilidades de cada parte e as condições de uso do sistema.
+        O Aprova+ é um sistema de gestão do estágio supervisionado obrigatório. Permite o
+        cadastro, o acompanhamento e a validação de estágios, conforme as regras da Lei nº
+        11.788/2008, a Lei do Estágio. Este Termo descreve as regras de uso, as responsabilidades
+        de cada parte e as condições de uso do sistema.
     </p>
 
     <hr class="doc-divider">
 
     <div class="doc-section">
         <h2>Quem pode usar o Aprova+</h2>
-        <p>O acesso é restrito a pessoas vinculadas à UMC. Não há cadastro aberto: todo acesso começa com um convite, enviado conforme a hierarquia de perfis. Os perfis são aluno, orientador, coordenador, secretaria e administrador. A primeira conta de administrador é criada na implantação do sistema, a partir de variáveis de ambiente, assim como, opcionalmente, uma conta inicial de secretaria, usada até que o coordenador convide as secretarias definitivas.</p>
-        <p>O público do sistema é formado por estudantes de graduação e servidores da instituição. Caso algum usuário seja menor de 18 anos, o tratamento dos seus dados observará o art. 14 da LGPD, no seu melhor interesse.</p>
+        <p>O acesso é restrito a alunos, professores e funcionários da instituição de ensino que utiliza o Aprova+. Não há cadastro aberto: todo acesso começa com um convite, enviado conforme a hierarquia de perfis. O administrador convida os coordenadores, o coordenador convida as secretarias, e a secretaria convida os alunos e os orientadores. A primeira conta de administrador é criada na implantação do sistema.</p>
+        <p>Alunos e orientadores só recebem o convite se o coordenador do curso os tiver incluído antes no pré-cadastro. No primeiro acesso, o aluno confirma o RGM informado no pré-cadastro.</p>
+        <p>O público do sistema é formado por estudantes de graduação e por professores e funcionários da instituição. Caso algum usuário seja menor de 18 anos, o tratamento dos seus dados observará o art. 14 da LGPD, sempre no seu melhor interesse.</p>
     </div>
     <hr class="doc-divider">
 
@@ -59,13 +58,13 @@
 
     <div class="doc-section">
         <h2>Compromissos da instituição</h2>
-        <p>A UMC se compromete a proteger os dados com mecanismos de segurança adequados, garantir que cada usuário acesse apenas as informações do seu perfil, notificar os usuários em caso de incidente que possa afetar seus dados e manter o sistema disponível durante o período letivo, salvo manutenções ou força maior.</p>
+        <p>A instituição de ensino se compromete a proteger os dados com mecanismos de segurança adequados, garantir que cada usuário acesse apenas as informações do seu perfil, notificar os usuários em caso de incidente que possa afetar seus dados e manter o sistema disponível durante o período letivo, salvo manutenções ou força maior.</p>
     </div>
     <hr class="doc-divider">
 
     <div class="doc-section">
         <h2>Condutas proibidas e consequências</h2>
-        <p>É proibido usar o sistema para fins não relacionados ao estágio, inserir informações falsas sobre a empresa, a carga horária ou as atividades, tentar acessar ou modificar dados de outros usuários, utilizar ferramentas automatizadas sem autorização e divulgar informações do sistema que contenham dados pessoais de terceiros. O descumprimento pode resultar no bloqueio temporário ou permanente do acesso, além das consequências acadêmicas e legais previstas no regulamento da instituição.</p>
+        <p>É proibido usar o sistema para fins não relacionados ao estágio, inserir informações falsas sobre a empresa, a carga horária ou as atividades, tentar acessar ou modificar dados de outros usuários, utilizar ferramentas automatizadas sem autorização e copiar, repassar ou divulgar dados pessoais ou arquivos de outros usuários para fins que não sejam o acompanhamento do estágio. O descumprimento pode resultar no bloqueio temporário ou permanente do acesso, além das consequências acadêmicas e legais previstas no regulamento da instituição.</p>
     </div>
     <hr class="doc-divider">
 
@@ -81,7 +80,7 @@
         <p>Cada versão destes Termos tem número e data de vigência, exibidos no topo da página. Quando uma versão nova é publicada, o uso do sistema passa a depender do aceite da nova versão, e cada aceite é registrado com a versão e a data. Quem não concordar pode deixar de usar o sistema e pedir a anonimização da conta; os registros acadêmicos continuam guardados por obrigação legal, e o acompanhamento do estágio segue pelos canais da coordenação do curso.</p>
         <p><strong>Histórico de versões</strong></p>
         <ul>
-            <li><strong>1.2 (19/11/2026):</strong> inclui a conta inicial de secretaria, a responsabilidade sobre os dados de terceiros nos documentos enviados e a regra de aceite de novas versões; retira a cláusula de foro; indica o canal de suporte.</li>
+            <li><strong>1.2 (19/11/2026):</strong> inclui o pré-cadastro feito pelo coordenador, a responsabilidade sobre os dados de terceiros nos documentos enviados e a regra de aceite de novas versões; proíbe repassar dados e arquivos de outros usuários; deixa de citar a instituição pelo nome; retira a cláusula de foro; indica o canal de suporte.</li>
             <li><strong>1.1:</strong> versão anterior.</li>
         </ul>
     </div>

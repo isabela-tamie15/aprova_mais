@@ -2,15 +2,19 @@
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-
+<!--
+    Rodapé LGPD reutilizado em todas as páginas (th:replace="~{fragments/rodape-lgpd :: rodape}").
+    Art. 41, § 1º da LGPD: a identidade e as informações de contato do encarregado
+    devem ser divulgadas publicamente, de forma clara e objetiva.
+    Para alterar o contato do encarregado, altere apenas este arquivo.
+-->
 <div th:fragment="rodape" class="rodape-site">
 <footer class="rodape-site-faixa">
     <div class="container rodape-site-conteudo">
         <div class="row g-4">
             <div class="col-12 col-lg-4">
                 <div class="rodape-marca">
-                    <img th:src="@{/css/img/logo-aprova.png}" class="rodape-logo" alt="">
-                    <span>Aprova+</span>
+                    <img th:src="@{/css/img/logo-aprova-completo.png}" class="rodape-logo" alt="Aprova+">
                 </div>
                 <p class="rodape-descricao">Gestão de estágios supervisionados, do cadastro à conclusão.</p>
             </div>
