@@ -5,11 +5,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tcc.ges.aprovamais.dto.CriterioChecklistResponse;
 import tcc.ges.aprovamais.dto.EntregaDetalheResponse;
 import tcc.ges.aprovamais.dto.EntregaVersaoResponse;
 import tcc.ges.aprovamais.entity.*;
 import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.entity.enums.SituacaoArquivo;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.StatusEstagio;
 import tcc.ges.aprovamais.entity.enums.StatusMatricula;
@@ -20,6 +23,7 @@ import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.*;
 import tcc.ges.aprovamais.storage.ArmazenamentoArquivos;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +46,7 @@ public class EntregaService {
     private final TarefaRepository tarefaRepository;
     private final EntregaRepository entregaRepository;
     private final EntregaVersaoRepository entregaVersaoRepository;
+    private final SolicitacaoRepository solicitacaoRepository;
     private final ArmazenamentoArquivos armazenamentoArquivos;
     private final AuditoriaService auditoriaService;
     private final ChecklistService checklistService;
@@ -75,6 +80,10 @@ public class EntregaService {
             entrega = new Entrega();
             entrega.setEstagio(estagio);
             entrega.setTarefa(tarefa);
+        }
+        if (entrega.getId() != null
+                && entregaVersaoRepository.existsByEntregaIdAndSituacaoArquivo(entrega.getId(), SituacaoArquivo.EXCLUSAO_EM_ANALISE)) {
+            throw new RegraNegocioException("Aguarde a decisão sobre o pedido de exclusão do anexo desta tarefa.");
         }
         // Com a entrega em análise ou já aprovada, não dá para mandar outra versão
         if (entrega.getStatus() != null && !podeEnviar(entrega.getStatus())) {
@@ -111,6 +120,7 @@ public class EntregaService {
         versao.setTipoArquivo(tipoArquivo);
         versao.setTamanhoBytes((long) conteudo.length);
         versao.setComentarioAluno(comentarioLimpo);
+        versao.setSituacaoArquivo(SituacaoArquivo.DISPONIVEL);
 
         /*
            O saveAndFlush grava as linhas na hora. Se outro envio da mesma tarefa chegou ao mesmo tempo,
@@ -136,6 +146,77 @@ public class EntregaService {
         Entrega entrega = entregaRepository.findByEstagioIdAndTarefaId(estagio.getId(), tarefa.getId())
                 .orElse(null);
         return montarDetalhe(tarefa, entrega);
+    }
+
+    /*
+       Cancela o último envio enquanto o orientador ainda não abriu a entrega. A versão some do
+       histórico, e o arquivo é apagado do armazenamento depois que a transação é gravada
+    */
+    @Transactional
+    public EntregaDetalheResponse cancelarEnvio(String emailAluno, Long versaoId, String ipOrigem) {
+        Estagio estagio = buscarEstagioAtivo(emailAluno);
+        EntregaVersao versao = entregaVersaoRepository.findByIdAndEntregaEstagioMatriculaAlunoEmail(versaoId, emailAluno)
+                .filter(encontrada -> encontrada.getEntrega().getEstagio().getId().equals(estagio.getId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Versão não encontrada."));
+        Entrega entrega = versao.getEntrega();
+        if (!podeCancelarEnvio(versao, ultimaVersao(entrega))) {
+            throw new RegraNegocioException("O envio só pode ser cancelado enquanto o orientador não abriu a entrega. "
+                    + "Se precisar, peça a exclusão do anexo.");
+        }
+
+        if (solicitacaoRepository.existsByVersaoId(versao.getId())) {
+            throw new RegraNegocioException("Este envio já teve um pedido de exclusão e não pode mais ser cancelado. "
+                    + "Se precisar, peça a exclusão do anexo de novo.");
+        }
+
+        String chave = versao.getChaveArquivo();
+        boolean arquivoCompartilhado = entregaVersaoRepository.existsByChaveArquivoAndIdNot(chave, versao.getId());
+        int numero = versao.getNumero();
+        entregaVersaoRepository.delete(versao);
+        entregaVersaoRepository.flush();
+
+        Entrega restante = null;
+        if (entregaVersaoRepository.countByEntregaId(entrega.getId()) == 0) {
+            entregaRepository.delete(entrega);
+        } else {
+            entrega.setStatus(StatusEntrega.DEVOLVIDA);
+            restante = entregaRepository.save(entrega);
+        }
+        if (!arquivoCompartilhado) {
+            excluirArquivoDepoisDeGravar(chave);
+        }
+
+        auditoriaService.registrar(estagio.getMatricula().getAluno(), "ENVIO_CANCELADO",
+                "Versão " + numero + " da entrega id=" + entrega.getId() + " cancelada pelo aluno", ipOrigem, true);
+        log.info("[ENTREGA] Versão {} da entrega {} cancelada por {}", numero, entrega.getId(), emailAluno);
+        return montarDetalhe(entrega.getTarefa(), restante);
+    }
+
+    /*
+       Exclui o anexo de uma versão depois da aprovação do pedido. O nome do arquivo sai, a versão
+       fica no histórico com a data e quem aprovou, e o arquivo é apagado sem ninguém abrir. Se a
+       versão era a última e a entrega ainda contava com ela a entrega volta para o aluno reenviar
+    */
+    @Transactional
+    public void excluirAnexo(EntregaVersao versao, Usuario quemAprovou) {
+        String chave = versao.getChaveArquivo();
+        boolean arquivoCompartilhado = entregaVersaoRepository.existsByChaveArquivoAndIdNot(chave, versao.getId());
+        versao.setSituacaoArquivo(SituacaoArquivo.EXCLUIDO);
+        versao.setNomeArquivo("Anexo excluído");
+        versao.setArquivoExcluidoEm(OffsetDateTime.now());
+        versao.setExclusaoAprovadaPor(quemAprovou);
+        entregaVersaoRepository.save(versao);
+
+        Entrega entrega = versao.getEntrega();
+        boolean ultima = ultimaVersao(entrega).getId().equals(versao.getId());
+        if (ultima && entrega.getStatus() != StatusEntrega.DEVOLVIDA) {
+            entrega.setStatus(StatusEntrega.DEVOLVIDA);
+            entregaRepository.save(entrega);
+        }
+        if (!arquivoCompartilhado) {
+            excluirArquivoDepoisDeGravar(chave);
+        }
+        log.info("[ENTREGA] Anexo da versão {} da entrega {} excluído", versao.getNumero(), entrega.getId());
     }
 
     // Download de uma versão pelo aluno, só das entregas dele, registrado na auditoria
@@ -194,12 +275,23 @@ public class EntregaService {
         // Tarefa sem entrega não tem versões. Com entrega, as versões vão da primeira para a última
         List<EntregaVersaoResponse> versoes = new ArrayList<>();
         if (entrega != null && entrega.getId() != null) {
-            for (EntregaVersao versao : entregaVersaoRepository.findByEntregaIdOrderByNumeroAsc(entrega.getId())) {
-                versoes.add(paraVersaoResponse(versao));
+            List<EntregaVersao> gravadas = entregaVersaoRepository.findByEntregaIdOrderByNumeroAsc(entrega.getId());
+            boolean algumaEmAnalise = gravadas.stream()
+                    .anyMatch(versao -> versao.getSituacaoArquivo() == SituacaoArquivo.EXCLUSAO_EM_ANALISE);
+            EntregaVersao ultima = gravadas.isEmpty() ? null : gravadas.get(gravadas.size() - 1);
+            for (EntregaVersao versao : gravadas) {
+                versoes.add(paraVersaoResponse(versao, podeCancelarEnvio(versao, ultima),
+                        versao.arquivoDisponivel() && !algumaEmAnalise));
             }
         }
 
         StatusEntrega status = entrega == null ? null : entrega.getStatus();
+        boolean exclusaoEmAnalise = false;
+        for (EntregaVersaoResponse versao : versoes) {
+            if (SituacaoArquivo.EXCLUSAO_EM_ANALISE.name().equals(versao.getSituacaoArquivo())) {
+                exclusaoEmAnalise = true;
+            }
+        }
         return EntregaDetalheResponse.builder()
                 .entregaId(entrega == null ? null : entrega.getId())
                 .tarefaId(tarefa.getId())
@@ -207,7 +299,8 @@ public class EntregaService {
                 .descricaoTarefa(tarefa.getDescricao())
                 .nomeAluno(entrega == null ? null : entrega.getEstagio().getMatricula().getAluno().getNome())
                 .status(status == null ? StatusEntrega.PENDENTE.name() : status.name())
-                .podeEnviar(status == null || podeEnviar(status))
+                .podeEnviar((status == null || podeEnviar(status)) && !exclusaoEmAnalise)
+                .exclusaoEmAnalise(exclusaoEmAnalise)
                 .versoes(versoes)
                 .criterios(criteriosParaAvaliar)
                 .build();
@@ -218,7 +311,38 @@ public class EntregaService {
         return status == StatusEntrega.PENDENTE || status == StatusEntrega.DEVOLVIDA;
     }
 
-    private EntregaVersaoResponse paraVersaoResponse(EntregaVersao versao) {
+    // Só a última versão, ainda não aberta pelo orientador e com o anexo disponível
+    private static boolean podeCancelarEnvio(EntregaVersao versao, EntregaVersao ultima) {
+        return ultima != null && ultima.getId().equals(versao.getId())
+                && versao.getEntrega().getStatus() == StatusEntrega.ENVIADA
+                && versao.arquivoDisponivel();
+    }
+
+    private EntregaVersao ultimaVersao(Entrega entrega) {
+        return entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Entrega não encontrada."));
+    }
+
+    // Apaga o arquivo só depois que o banco confirmou a mudança. Uma falha aqui fica no log
+    private void excluirArquivoDepoisDeGravar(String chave) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            armazenamentoArquivos.excluir(chave);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    armazenamentoArquivos.excluir(chave);
+                } catch (RuntimeException excecao) {
+                    log.error("[ARQUIVO] Não foi possível excluir {}: {}", chave, excecao.getMessage(), excecao);
+                }
+            }
+        });
+    }
+
+    private EntregaVersaoResponse paraVersaoResponse(EntregaVersao versao, boolean podeCancelarEnvio,
+                                                     boolean podeSolicitarExclusao) {
         return EntregaVersaoResponse.builder()
                 .id(versao.getId())
                 .numero(versao.getNumero())
@@ -232,10 +356,20 @@ public class EntregaService {
                 .nomeAvaliador(versao.getAvaliador() == null ? null : versao.getAvaliador().getNome())
                 .avaliadaEm(versao.getAvaliadaEm())
                 .checklist(checklistService.listarRespostasDaVersao(versao.getId()))
+                .situacaoArquivo(versao.arquivoDisponivel() ? SituacaoArquivo.DISPONIVEL.name() : versao.getSituacaoArquivo().name())
+                .arquivoExcluidoEm(versao.getArquivoExcluidoEm())
+                .nomeQuemAprovouExclusao(versao.getExclusaoAprovadaPor() == null ? null : versao.getExclusaoAprovadaPor().getNome())
+                .podeCancelarEnvio(podeCancelarEnvio)
+                .podeSolicitarExclusao(podeSolicitarExclusao)
                 .build();
     }
 
     private ArquivoEntrega lerArquivo(EntregaVersao versao) {
+        if (!versao.arquivoDisponivel()) {
+            throw new RegraNegocioException(versao.getSituacaoArquivo() == SituacaoArquivo.EXCLUIDO
+                    ? "Este anexo foi excluído a pedido do aluno."
+                    : "Este anexo está bloqueado enquanto o pedido de exclusão é analisado.");
+        }
         byte[] conteudo = armazenamentoArquivos.ler(versao.getChaveArquivo());
         return new ArquivoEntrega(versao.getNomeArquivo(),
                 ValidadorArquivoEntrega.tipoConteudo(versao.getTipoArquivo()), conteudo);

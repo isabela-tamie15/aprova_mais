@@ -39,35 +39,6 @@ body.pagina-login {
     padding: 2.5rem 3rem;
 }
 
-.logo-area {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
-
-.logo-icon {
-    background: white;
-    border-radius: 10px;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.logo-icon svg {
-    width: 22px;
-    height: 22px;
-    fill: #2B4ECC;
-}
-
-.logo-nome {
-    color: white;
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-}
-
 /* Área central com o texto de boas-vindas, ocupa o espaço que sobra */
 .hero-text {
     flex: 1;
@@ -77,22 +48,20 @@ body.pagina-login {
     padding: 2rem 0;
 }
 
-.hero-text h1 {
-    color: white;
-    font-size: 2.6rem;
-    font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-    margin-bottom: 1.2rem;
-    max-width: 480px;
+.logo-hero {
+    width: min(520px, 90%);
+    height: auto;
+    margin-bottom: 2rem;
 }
 
-.hero-text p {
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 1rem;
-    line-height: 1.6;
-    max-width: 420px;
+.hero-text h1 {
+    color: white;
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
     margin: 0;
+    max-width: 680px;
 }
 
 .rodape-esquerdo {
@@ -199,6 +168,15 @@ body.pagina-login {
     color: #D1D5DB;
 }
 
+.painel-direito textarea.form-control {
+    padding-left: 0.9rem;
+    height: auto;
+}
+
+.painel-direito textarea.form-control::placeholder {
+    color: #9CA3AF;
+}
+
 .link-recuperar {
     font-size: 0.82rem;
     color: #6B7280;
@@ -289,11 +267,434 @@ body.pagina-login {
 }
 
 /* =============================================
-   Navbar - páginas autenticadas
+   Tema das páginas internas
+   Cores da tela de login: azul #2B4ECC sobre fundo branco, com o azul-marinho
+   quase preto na barra de navegação. As variáveis do Bootstrap são trocadas
+   aqui, então btn-primary, bg-primary, links e foco já saem no azul do sistema.
    ============================================= */
 
+:root {
+    --ap-azul: #2B4ECC;
+    --ap-azul-escuro: #2440B0;
+    --ap-azul-profundo: #1E3A8A;
+    --ap-azul-suave: #EEF2FF;
+    --ap-azul-borda: #C7D2FE;
+    --ap-marinho: #0B1437;
+    --ap-marinho-claro: #172A6B;
+    --ap-texto: #111827;
+    --ap-texto-secundario: #374151;
+    --ap-texto-suave: #6B7280;
+    --ap-borda: #E5E7EB;
+    --ap-borda-campo: #D1D5DB;
+    --ap-fundo-suave: #F8FAFC;
+    --ap-sombra: 0 1px 2px rgba(16, 24, 40, 0.04), 0 2px 8px rgba(16, 24, 40, 0.05);
+
+    --bs-body-font-family: 'Inter', sans-serif;
+    --bs-body-color: #1F2937;
+    --bs-body-bg: #FFFFFF;
+    --bs-primary: #2B4ECC;
+    --bs-primary-rgb: 43, 78, 204;
+    --bs-link-color: #2B4ECC;
+    --bs-link-color-rgb: 43, 78, 204;
+    --bs-link-hover-color: #2440B0;
+    --bs-link-hover-color-rgb: 36, 64, 176;
+    --bs-secondary-color: #6B7280;
+    --bs-border-color: #E5E7EB;
+    --bs-border-radius: 0.5rem;
+    --bs-focus-ring-color: rgba(43, 78, 204, 0.15);
+}
+
+body {
+    background-color: #FFFFFF;
+    color: #1F2937;
+}
+
+/* Títulos: o título da página segue o peso do título do login, em tamanho menor */
+h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ap-texto);
+}
+
+h5, h6 {
+    font-weight: 600;
+    color: var(--ap-texto);
+}
+
+h5 {
+    font-size: 1.1rem;
+}
+
+.card-title {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* Logo do Aprova+ nas páginas públicas: a versão escura vai no fundo claro, e a clara, no cabeçalho azul */
+.logo-documento {
+    height: 48px;
+    width: auto;
+}
+
+.logo-cabecalho {
+    height: 40px;
+    width: auto;
+}
+
+.logo-navbar {
+    height: 36px;
+    width: auto;
+}
+
+/* Barra de navegação: azul-marinho com o azul do login no link da página aberta */
 .navbar-aprovamais {
-    background-color: #1E3A8A;
+    background: linear-gradient(90deg, #000000 0%, var(--ap-marinho) 35%, var(--ap-azul) 100%);
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 2px 8px rgba(11, 20, 55, 0.18);
+}
+
+.navbar-aprovamais .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+}
+
+.navbar-aprovamais .nav-link {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    margin: 0 0.1rem;
+}
+
+.navbar-aprovamais .nav-link:hover,
+.navbar-aprovamais .nav-link:focus {
+    color: #FFFFFF;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-aprovamais .nav-link.active {
+    color: #FFFFFF;
+    background-color: var(--ap-azul);
+    font-weight: 600;
+}
+
+.navbar-aprovamais .btn-outline-light {
+    --bs-btn-border-color: rgba(255, 255, 255, 0.35);
+    --bs-btn-hover-bg: rgba(255, 255, 255, 0.12);
+    --bs-btn-hover-border-color: rgba(255, 255, 255, 0.6);
+    --bs-btn-hover-color: #FFFFFF;
+    --bs-btn-active-bg: rgba(255, 255, 255, 0.2);
+    --bs-btn-active-color: #FFFFFF;
+}
+
+.navbar-aprovamais .navbar-text .text-white-50 {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* =============================================
+   Botões: mesmo raio e peso do botão de entrar, em tamanho de tela de trabalho.
+   Todos os botões são preenchidos: azul para a ação principal e editar, vermelho para
+   remover e reprovar, verde para aprovar e ver, cinza para as ações neutras
+   ============================================= */
+
+.btn {
+    --bs-btn-font-weight: 600;
+    --bs-btn-font-size: 0.875rem;
+    --bs-btn-padding-y: 0.45rem;
+    --bs-btn-padding-x: 1rem;
+    --bs-btn-border-radius: 8px;
+    letter-spacing: -0.005em;
+}
+
+.btn-sm {
+    --bs-btn-font-size: 0.8rem;
+    --bs-btn-padding-y: 0.28rem;
+    --bs-btn-padding-x: 0.7rem;
+    --bs-btn-border-radius: 6px;
+}
+
+.btn-primary {
+    --bs-btn-bg: #2B4ECC;
+    --bs-btn-border-color: #2B4ECC;
+    --bs-btn-hover-bg: #2440B0;
+    --bs-btn-hover-border-color: #2440B0;
+    --bs-btn-focus-shadow-rgb: 43, 78, 204;
+    --bs-btn-active-bg: #1E3A8A;
+    --bs-btn-active-border-color: #1E3A8A;
+    --bs-btn-disabled-bg: #2B4ECC;
+    --bs-btn-disabled-border-color: #2B4ECC;
+}
+
+/* Ação neutra (cancelar, voltar, limpar, critérios): cinza com texto escuro */
+.btn-secondary {
+    --bs-btn-color: #111827;
+    --bs-btn-bg: #E5E7EB;
+    --bs-btn-border-color: #E5E7EB;
+    --bs-btn-hover-color: #111827;
+    --bs-btn-hover-bg: #D1D5DB;
+    --bs-btn-hover-border-color: #D1D5DB;
+    --bs-btn-focus-shadow-rgb: 156, 163, 175;
+    --bs-btn-active-color: #111827;
+    --bs-btn-active-bg: #C4C9D1;
+    --bs-btn-active-border-color: #C4C9D1;
+    --bs-btn-disabled-color: #6B7280;
+    --bs-btn-disabled-bg: #F3F4F6;
+    --bs-btn-disabled-border-color: #F3F4F6;
+}
+
+.btn-success {
+    --bs-btn-bg: #15803D;
+    --bs-btn-border-color: #15803D;
+    --bs-btn-hover-bg: #166534;
+    --bs-btn-hover-border-color: #166534;
+    --bs-btn-active-bg: #14532D;
+    --bs-btn-active-border-color: #14532D;
+    --bs-btn-disabled-bg: #15803D;
+    --bs-btn-disabled-border-color: #15803D;
+}
+
+.btn-danger {
+    --bs-btn-bg: #DC2626;
+    --bs-btn-border-color: #DC2626;
+    --bs-btn-hover-bg: #B91C1C;
+    --bs-btn-hover-border-color: #B91C1C;
+    --bs-btn-active-bg: #991B1B;
+    --bs-btn-active-border-color: #991B1B;
+    --bs-btn-disabled-bg: #DC2626;
+    --bs-btn-disabled-border-color: #DC2626;
+}
+
+.btn-warning {
+    --bs-btn-color: #1F2937;
+    --bs-btn-bg: #F59E0B;
+    --bs-btn-border-color: #F59E0B;
+    --bs-btn-hover-color: #111827;
+    --bs-btn-hover-bg: #D97706;
+    --bs-btn-hover-border-color: #D97706;
+    --bs-btn-disabled-bg: #F59E0B;
+    --bs-btn-disabled-border-color: #F59E0B;
+}
+
+.btn-link {
+    --bs-btn-color: #2B4ECC;
+    --bs-btn-hover-color: #2440B0;
+    text-decoration: none;
+}
+
+/* =============================================
+   Cartões: borda clara e sombra leve, para destacar no fundo branco
+   ============================================= */
+
+.card,
+.card-acao,
+.card-form,
+.card-lista,
+.card-filtro {
+    background-color: #FFFFFF;
+    border: 1px solid var(--ap-borda);
+    border-radius: 12px;
+    box-shadow: var(--ap-sombra);
+}
+
+/*
+   O .card do Bootstrap é uma coluna flexível, que estica os filhos na largura toda.
+   Etiquetas e botões soltos no cartão ficam do tamanho do texto, como no resto do sistema
+*/
+.card > .badge,
+.card > .btn {
+    align-self: flex-start;
+}
+
+/* =============================================
+   Campos de formulário: mesmo foco azul do login
+   ============================================= */
+
+.form-control,
+.form-select {
+    border-color: var(--ap-borda-campo);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--ap-texto);
+}
+
+.form-control-sm,
+.form-select-sm {
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--ap-azul);
+    box-shadow: 0 0 0 3px rgba(43, 78, 204, 0.12);
+}
+
+.form-control::placeholder {
+    color: #9CA3AF;
+}
+
+.form-check-input:checked {
+    background-color: var(--ap-azul);
+    border-color: var(--ap-azul);
+}
+
+.form-check-input:focus {
+    border-color: var(--ap-azul);
+    box-shadow: 0 0 0 3px rgba(43, 78, 204, 0.12);
+}
+
+.form-text {
+    color: var(--ap-texto-suave);
+    font-size: 0.8rem;
+}
+
+/* =============================================
+   Tabelas: cabeçalho em azul claro e linha destacada no mesmo tom
+   ============================================= */
+
+.table {
+    --bs-table-hover-bg: #F5F7FF;
+    --bs-table-border-color: #EEF0F4;
+    font-size: 0.9rem;
+}
+
+.table > thead th {
+    background-color: var(--ap-azul-suave);
+    color: var(--ap-azul-profundo);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid var(--ap-azul-borda);
+    white-space: nowrap;
+}
+
+/* Botões pequenos das tabelas com a mesma largura, para ficarem alinhados de uma linha para outra */
+.table .btn-sm {
+    min-width: 5.25rem;
+}
+
+.table-bordered > :not(caption) > * > * {
+    border-color: #EEF0F4;
+}
+
+/* =============================================
+   Etiquetas de status em tons suaves, iguais às das telas de convites e auditoria
+   ============================================= */
+
+.badge {
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.35em 0.65em;
+    letter-spacing: 0.01em;
+}
+
+.badge.bg-success,
+.badge.text-bg-success {
+    background-color: #DCFCE7 !important;
+    color: #166534 !important;
+}
+
+.badge.bg-danger,
+.badge.text-bg-danger {
+    background-color: #FEE2E2 !important;
+    color: #991B1B !important;
+}
+
+.badge.bg-warning,
+.badge.text-bg-warning {
+    background-color: #FEF3C7 !important;
+    color: #92400E !important;
+}
+
+.badge.bg-primary,
+.badge.text-bg-primary {
+    background-color: #E0E7FF !important;
+    color: #1E3A8A !important;
+}
+
+.badge.bg-info,
+.badge.text-bg-info {
+    background-color: #E0F2FE !important;
+    color: #075985 !important;
+}
+
+.badge.bg-secondary,
+.badge.text-bg-secondary {
+    background-color: #F3F4F6 !important;
+    color: #374151 !important;
+}
+
+.badge.bg-dark {
+    background-color: #1F2937 !important;
+}
+
+/* =============================================
+   Alertas do Bootstrap com as cores dos alertas do login
+   ============================================= */
+
+.alert {
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+.alert-danger {
+    --bs-alert-bg: #FEF2F2;
+    --bs-alert-border-color: #FECACA;
+    --bs-alert-color: #B91C1C;
+}
+
+.alert-success {
+    --bs-alert-bg: #F0FDF4;
+    --bs-alert-border-color: #BBF7D0;
+    --bs-alert-color: #15803D;
+}
+
+.alert-warning {
+    --bs-alert-bg: #FFFBEB;
+    --bs-alert-border-color: #FDE68A;
+    --bs-alert-color: #92400E;
+}
+
+.alert-info,
+.alert-primary {
+    --bs-alert-bg: #EEF2FF;
+    --bs-alert-border-color: #C7D2FE;
+    --bs-alert-color: #1E3A8A;
+}
+
+/* =============================================
+   Barras de progresso e rodapé
+   ============================================= */
+
+.progress {
+    --bs-progress-bg: #E5E7EB;
+    --bs-progress-bar-bg: #2B4ECC;
+    border-radius: 999px;
+}
+
+.rodape-lgpd {
+    border-top: 1px solid var(--ap-borda);
+    padding-top: 1.25rem;
+    margin-top: 2.5rem !important;
+    color: var(--ap-texto-suave);
+    font-size: 0.8rem;
+}
+
+.rodape-lgpd a {
+    color: var(--ap-azul);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.rodape-lgpd a:hover {
+    text-decoration: underline;
 }
 
 /* =============================================
@@ -313,7 +714,12 @@ body.pagina-login {
     }
 
     .hero-text h1 {
-        font-size: 1.8rem;
+        font-size: 1.4rem;
+    }
+
+    .logo-hero {
+        width: min(280px, 70%);
+        margin-bottom: 1.25rem;
     }
 
     .painel-direito {
@@ -321,4 +727,97 @@ body.pagina-login {
         padding: 2rem;
         min-height: auto;
     }
+}
+/* Na tela de login o rodapé fica dentro do painel branco, sem a linha de separação */
+.rodape-direito .rodape-lgpd {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 1.5rem !important;
+}
+
+body:not(.pagina-login) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+body:has(> .rodape-site) {
+    padding-bottom: 0 !important;
+}
+
+.conteudo-centralizado {
+    margin: auto;
+}
+
+.rodape-site {
+    margin-top: auto;
+    padding-top: 3rem;
+}
+
+.rodape-site-faixa {
+    background: linear-gradient(180deg, var(--ap-marinho) 0%, #000000 100%);
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.875rem;
+}
+
+.rodape-site-conteudo {
+    padding-top: 3rem;
+    padding-bottom: 1.5rem;
+}
+
+.rodape-site h6 {
+    color: #FFFFFF;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.9rem;
+}
+
+.rodape-site ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.rodape-site li {
+    margin-bottom: 0.55rem;
+    line-height: 1.45;
+}
+
+.rodape-site a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.rodape-site a:hover {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+
+.rodape-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #FFFFFF;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.rodape-logo {
+    height: 40px;
+    width: auto;
+}
+
+.rodape-descricao {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    max-width: 280px;
+}
+
+.rodape-base {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
 }

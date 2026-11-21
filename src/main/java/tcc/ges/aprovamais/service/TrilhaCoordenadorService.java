@@ -27,7 +27,7 @@ import java.util.Optional;
 
 /*
    Montagem das trilhas e tarefas pelo coordenador. A trilha vista pelo aluno fica no TrilhaService.
-   Toda busca filtra pelo coordenador logado, e a trilha de outro coordenador recebe 404
+   Toda busca filtra pelo coordenador logado, e a trilha de outro coordenador vai retornar um 404
 */
 @Service
 @RequiredArgsConstructor

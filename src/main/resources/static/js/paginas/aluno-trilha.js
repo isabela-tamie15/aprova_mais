@@ -16,6 +16,21 @@ function trilhaAluno() {
         statusDe(id, statusServidor) {
             return this.statusTarefas[id] || statusServidor;
         },
+
+        // A tarefa aceita envio quando ainda não foi enviada ou quando o orientador devolveu
+        podeEntregar(status) {
+            return status === 'PENDENTE' || status === 'DEVOLVIDA';
+        },
+
+        // Já existe versão quando o servidor contou alguma ou quando houve envio nesta visita
+        temVersao(id, versoesServidor) {
+            return Number(versoesServidor) > 0 || Boolean(this.statusTarefas[id]);
+        },
+        // Versão com o formulário de pedido de exclusão aberto
+        excluindoId: null,
+        motivoExclusao: '',
+        anexoDisponivel: anexoDisponivel,
+        textoSituacaoAnexo: textoSituacaoAnexo,
         nomeStatus: nomeStatusEntrega,
         classeStatus: classeStatusEntrega,
         nomeResultado: nomeResultadoCriterio,
@@ -23,7 +38,8 @@ function trilhaAluno() {
         formatarDataHora: formatarDataHoraEntrega,
         formatarTamanho: formatarTamanhoArquivo,
 
-        async abrir(id) {
+        // Entregar leva ao formulário de envio; Ver leva ao histórico de versões
+        async abrir(id, destino = 'entregar') {
             this.tarefaId = id;
             this.detalhe = null;
             this.erro = '';
@@ -44,7 +60,64 @@ function trilhaAluno() {
                 this.carregando = false;
             }
             // Espera a tela atualizar antes de rolar até o painel da entrega
-            this.$nextTick(() => document.getElementById('painel-entrega').scrollIntoView({ behavior: 'smooth' }));
+            const alvo = destino === 'ver' ? 'historico-versoes' : 'painel-entrega';
+            this.$nextTick(() => document.getElementById(alvo).scrollIntoView({ behavior: 'smooth' }));
+        },
+
+        async cancelarEnvio(versao) {
+            if (!confirm('Cancelar o envio da versão ' + versao.numero + '? O arquivo será apagado.')) {
+                return;
+            }
+            this.erro = '';
+            this.sucesso = '';
+            try {
+                const resposta = await fetch(`/api/v1/aluno/entregas/versoes/${versao.id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (resposta.ok) {
+                    this.detalhe = await resposta.json();
+                    this.statusTarefas[this.tarefaId] = this.detalhe.status;
+                    this.sucesso = 'Envio cancelado e arquivo apagado. Você já pode enviar o arquivo correto.';
+                } else {
+                    this.erro = (await mensagemErroApi(resposta, 'Não foi possível cancelar o envio.')).mensagem;
+                }
+            } catch (erro) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            }
+        },
+
+        abrirExclusao(versao) {
+            this.excluindoId = versao.id;
+            this.motivoExclusao = '';
+            this.erro = '';
+        },
+
+        async solicitarExclusao(versao) {
+            if (!this.motivoExclusao.trim()) {
+                this.erro = 'Informe o motivo da exclusão.';
+                return;
+            }
+            this.erro = '';
+            this.sucesso = '';
+            try {
+                const resposta = await fetch(`/api/v1/aluno/entregas/versoes/${versao.id}/exclusao`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ motivo: this.motivoExclusao.trim() })
+                });
+                if (resposta.ok) {
+                    this.excluindoId = null;
+                    this.sucesso = 'Pedido de exclusão enviado. O anexo fica bloqueado até a decisão da secretaria ou da coordenação.';
+                    await this.abrir(this.tarefaId, 'ver');
+                    this.sucesso = 'Pedido de exclusão enviado. O anexo fica bloqueado até a decisão da secretaria ou da coordenação.';
+                } else {
+                    this.erro = (await mensagemErroApi(resposta, 'Não foi possível enviar o pedido.')).mensagem;
+                }
+            } catch (erro) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            }
         },
 
         // Mesmas regras do ValidadorArquivoEntrega. O servidor confere de novo, inclusive o conteúdo

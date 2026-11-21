@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.exception.GlobalExceptionHandler;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 import tcc.ges.aprovamais.service.ConsentimentoService;
 
@@ -88,7 +89,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             // Sem o aceite da versão atual dos termos, a API responde 403
             if (exigeConsentimento(requisicao) && ConsentimentoService.precisaConsentir(usuario)) {
-                responderSemConsentimento(resposta);
+                responderSemConsentimento(requisicao, resposta);
                 return;
             }
 
@@ -139,7 +140,11 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     // O campo consentimentoPendente avisa as páginas para levar o usuário à tela de aceite
-    private void responderSemConsentimento(HttpServletResponse resposta) throws IOException {
+    private void responderSemConsentimento(HttpServletRequest requisicao, HttpServletResponse resposta) throws IOException {
+        if (GlobalExceptionHandler.ehPagina(requisicao)) {
+            resposta.sendRedirect("/consentimento");
+            return;
+        }
         resposta.setStatus(HttpServletResponse.SC_FORBIDDEN);
         resposta.setContentType(MediaType.APPLICATION_JSON_VALUE);
         resposta.setCharacterEncoding(StandardCharsets.UTF_8.name());

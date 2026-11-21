@@ -40,6 +40,8 @@ class CoordenacaoPainelIntegrationTest extends CoordenacaoTestBase {
     private Curso sistemas;
     private Curso cursoDoOutro;
     private Orientador orientador;
+    private Turma turma8b;
+    private Turma turmaDoOutro;
     private int proximoAluno = 1;
 
     @BeforeEach
@@ -52,6 +54,7 @@ class CoordenacaoPainelIntegrationTest extends CoordenacaoTestBase {
 
         // Engenharia, turma 8B
         Turma t8b = turma(engenharia, "8B", LocalDate.now().plusDays(15));
+        turma8b = t8b;
         TipoEstagio tipoEngenharia = criarTipoEstagio(engenharia);
         List<Tarefa> tarefasEngenharia = criarTrilha(tipoEngenharia, 2);
         Estagio ativo8b = estagio(t8b, orientador, tipoEngenharia, StatusEstagio.ATIVO);
@@ -69,6 +72,7 @@ class CoordenacaoPainelIntegrationTest extends CoordenacaoTestBase {
 
         // Curso do outro coordenador, turma 9C
         Turma t9c = turma(cursoDoOutro, "9C", LocalDate.now().plusDays(5));
+        turmaDoOutro = t9c;
         TipoEstagio tipoOutro = criarTipoEstagio(cursoDoOutro);
         List<Tarefa> tarefasOutro = criarTrilha(tipoOutro, 1);
         Estagio ativoOutro = estagio(t9c, orientador, tipoOutro, StatusEstagio.ATIVO);
@@ -230,5 +234,38 @@ class CoordenacaoPainelIntegrationTest extends CoordenacaoTestBase {
                 .andExpect(content().string(containsString("/coordenador/turmas")))
                 .andExpect(content().string(containsString("/coordenador/tipos-estagio")))
                 .andExpect(content().string(containsString("/coordenador/trilhas")));
+    }
+
+    @Test
+    @DisplayName("Com a turma 8B escolhida, os números são só dela, e as opções dos filtros continuam completas")
+    void deveFiltrarPelaTurmaEscolhida() throws Exception {
+        mockMvc.perform(get(URL).param("turmaId", turma8b.getId().toString())
+                        .with(user(EMAIL_COORDENADOR).roles("COORDENADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estagiosSemOrientador").value(0))
+                .andExpect(jsonPath("$.estagiosAguardandoValidacao").value(1))
+                .andExpect(jsonPath("$.estagiosEmAndamento").value(1))
+                .andExpect(jsonPath("$.tarefasAguardandoCorrecao").value(1))
+                .andExpect(jsonPath("$.opcoesFiltro.semestres[0]").value("2026/2"))
+                .andExpect(jsonPath("$.opcoesFiltro.turmas.length()").value(2))
+                .andExpect(jsonPath("$.opcoesFiltro.orientadores.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("Com o filtro de orientador, o estágio sem orientador sai dos números")
+    void deveFiltrarPeloOrientador() throws Exception {
+        mockMvc.perform(get(URL).param("orientadorId", orientador.getId().toString())
+                        .with(user(EMAIL_COORDENADOR).roles("COORDENADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estagiosSemOrientador").value(0))
+                .andExpect(jsonPath("$.estagiosEmAndamento").value(2));
+    }
+
+    @Test
+    @DisplayName("Turma de outro coordenador responde 404")
+    void turmaDeOutroCoordenadorDeveResponder404() throws Exception {
+        mockMvc.perform(get(URL).param("turmaId", turmaDoOutro.getId().toString())
+                        .with(user(EMAIL_COORDENADOR).roles("COORDENADOR")))
+                .andExpect(status().isNotFound());
     }
 }

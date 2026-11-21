@@ -62,6 +62,22 @@ public class PreCadastroService {
     }
 
     /*
+       Lista para a secretaria quem está no pré-cadastro e ainda não concluiu o cadastro, com a situação
+       do convite de cada um. Quem já tem conta não aparece, porque não precisa mais de convite
+    */
+    @Transactional(readOnly = true)
+    public List<PreCadastroResponse> listarParaConvite() {
+        List<PreCadastroResponse> respostas = new ArrayList<>();
+        for (PreCadastro preCadastro : preCadastroRepository.findAllByOrderByNomeAsc()) {
+            PreCadastroResponse resposta = paraResponse(preCadastro);
+            if (!SITUACAO_CADASTRO_CONCLUIDO.equals(resposta.getSituacao())) {
+                respostas.add(resposta);
+            }
+        }
+        return respostas;
+    }
+
+    /*
        Autoriza uma pessoa a receber convite. O e-mail e o identificador não podem repetir, e a turma do
        aluno precisa ser de um curso do próprio coordenador
     */

@@ -66,17 +66,19 @@ body {
 .btn-voltar {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #2B4ECC;
+    color: #FFFFFF;
     border: 1px solid #2B4ECC;
     border-radius: 8px;
     padding: 0.5rem 1.2rem;
     text-decoration: none;
-    background: white;
+    background: #2B4ECC;
+    transition: background 0.15s;
 }
 
 .btn-voltar:hover {
-    background: #EEF2FF;
-    color: #2B4ECC;
+    background: #2440B0;
+    border-color: #2440B0;
+    color: #FFFFFF;
 }
 
 .doc-versao {
@@ -107,18 +109,20 @@ body {
     display: inline-block;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #2B4ECC;
+    color: #FFFFFF;
     border: 1px solid #2B4ECC;
     border-radius: 8px;
     padding: 0.5rem 1.2rem;
     text-decoration: none;
-    background: white;
+    background: #2B4ECC;
     cursor: pointer;
+    transition: background 0.15s;
 }
 
 .btn-doc-ver:hover {
-    background: #EEF2FF;
-    color: #2B4ECC;
+    background: #2440B0;
+    border-color: #2440B0;
+    color: #FFFFFF;
 }
 
 [x-cloak] {

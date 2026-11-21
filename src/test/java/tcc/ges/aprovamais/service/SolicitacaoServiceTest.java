@@ -60,6 +60,10 @@ class SolicitacaoServiceTest {
     private AuditoriaService auditoriaService;
     @Mock
     private EmailService emailService;
+    @Mock
+    private EntregaService entregaService;
+    @Mock
+    private EntregaVersaoRepository entregaVersaoRepository;
     @InjectMocks
     private SolicitacaoService solicitacaoService;
 
@@ -136,6 +140,30 @@ class SolicitacaoServiceTest {
         return solicitacao;
     }
 
+    private EntregaVersao versaoComAnexo() {
+        Tarefa tarefa = new Tarefa();
+        tarefa.setId(20L);
+        tarefa.setNome("Relatório parcial");
+        Entrega entrega = new Entrega();
+        entrega.setId(25L);
+        entrega.setEstagio(estagio);
+        entrega.setTarefa(tarefa);
+        entrega.setStatus(StatusEntrega.APROVADA);
+        EntregaVersao versao = new EntregaVersao();
+        versao.setId(30L);
+        versao.setNumero(1);
+        versao.setEntrega(entrega);
+        versao.setSituacaoArquivo(SituacaoArquivo.DISPONIVEL);
+        return versao;
+    }
+
+    private Solicitacao exclusaoPendente(EntregaVersao versao) {
+        Solicitacao exclusao = solicitacao(TipoSolicitacao.EXCLUSAO_ANEXO, StatusSolicitacao.PENDENTE);
+        exclusao.setVersao(versao);
+        versao.setSituacaoArquivo(SituacaoArquivo.EXCLUSAO_EM_ANALISE);
+        return exclusao;
+    }
+
     private void alunoComEstagioEmAberto() {
         when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
         when(estagioService.buscarMatriculaAtual(aluno)).thenReturn(matricula);
@@ -164,7 +192,8 @@ class SolicitacaoServiceTest {
     @DisplayName("Recusa um segundo pedido enquanto outro está em análise")
     void naoDeveAbrirDoisPedidos() {
         alunoComEstagioEmAberto();
-        when(solicitacaoRepository.existsByEstagioIdAndStatusIn(eq(10L), any())).thenReturn(true);
+        when(solicitacaoRepository.existsByEstagioIdAndStatusInAndTipoNot(eq(10L), any(), eq(TipoSolicitacao.EXCLUSAO_ANEXO)))
+                .thenReturn(true);
 
         assertThrows(RegraNegocioException.class,
                 () -> solicitacaoService.criar(EMAIL_ALUNO, pedido(TipoSolicitacao.TRANCAMENTO, null), IP));
@@ -337,8 +366,8 @@ class SolicitacaoServiceTest {
         when(solicitacaoRepository.findByTipoAndStatusAndPrazoArrependimentoBeforeAndEstagioStatus(
                 eq(TipoSolicitacao.TRANCAMENTO), eq(StatusSolicitacao.APROVADA), any(), eq(StatusEstagio.SUSPENSO)))
                 .thenReturn(List.of(vencido, vencidoComPedido));
-        when(solicitacaoRepository.existsByEstagioIdAndStatusIn(eq(10L), any())).thenReturn(false);
-        when(solicitacaoRepository.existsByEstagioIdAndStatusIn(eq(11L), any())).thenReturn(true);
+        when(solicitacaoRepository.existsByEstagioIdAndStatusInAndTipoNot(eq(10L), any(), any())).thenReturn(false);
+        when(solicitacaoRepository.existsByEstagioIdAndStatusInAndTipoNot(eq(11L), any(), any())).thenReturn(true);
 
         solicitacaoService.efetivarTrancamentosVencidos();
 
@@ -346,5 +375,86 @@ class SolicitacaoServiceTest {
         assertEquals(MotivoEncerramento.TRANCAMENTO, estagio.getMotivoEncerramento());
         assertEquals(StatusEstagio.SUSPENSO, comPedido.getStatus());
         verify(auditoriaService).registrar(eq(aluno), eq("TRANCAMENTO_EFETIVADO"), anyString(), any(), eq(true));
+    }
+
+    @Test
+    @DisplayName("O pedido de exclusão bloqueia o anexo e aguarda a secretaria ou a coordenação")
+    void pedidoDeExclusaoDeveBloquearOAnexo() {
+        EntregaVersao versao = versaoComAnexo();
+        when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
+        when(entregaVersaoRepository.findByIdAndEntregaEstagioMatriculaAlunoEmail(30L, EMAIL_ALUNO))
+                .thenReturn(Optional.of(versao));
+        salvarDevolveOMesmo();
+
+        var resposta = solicitacaoService.solicitarExclusaoAnexo(EMAIL_ALUNO, 30L, " Enviei o RG por engano ", IP);
+
+        assertEquals(SituacaoArquivo.EXCLUSAO_EM_ANALISE, versao.getSituacaoArquivo());
+        assertEquals("EXCLUSAO_ANEXO", resposta.getTipo());
+        assertEquals("PENDENTE", resposta.getStatus());
+        assertEquals("Relatório parcial", resposta.getNomeTarefa());
+        verify(auditoriaService).registrar(eq(aluno), eq("EXCLUSAO_ANEXO_SOLICITADA"), anyString(), eq(IP), eq(true));
+    }
+
+    @Test
+    @DisplayName("Não aceita um segundo pedido de exclusão para o mesmo anexo")
+    void naoDevePedirExclusaoDeAnexoJaBloqueado() {
+        EntregaVersao versao = versaoComAnexo();
+        versao.setSituacaoArquivo(SituacaoArquivo.EXCLUSAO_EM_ANALISE);
+        when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
+        when(entregaVersaoRepository.findByIdAndEntregaEstagioMatriculaAlunoEmail(30L, EMAIL_ALUNO))
+                .thenReturn(Optional.of(versao));
+
+        assertThrows(RegraNegocioException.class,
+                () -> solicitacaoService.solicitarExclusaoAnexo(EMAIL_ALUNO, 30L, "Motivo", IP));
+        verify(solicitacaoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("A secretaria aprova a exclusão sozinha, e o anexo é excluído na hora")
+    void secretariaDeveAprovarExclusao() {
+        EntregaVersao versao = versaoComAnexo();
+        Solicitacao exclusao = exclusaoPendente(versao);
+        Secretaria secretaria = new Secretaria();
+        when(usuarioRepository.findByEmail(EMAIL_SECRETARIA)).thenReturn(Optional.of(secretaria));
+        when(solicitacaoRepository.findById(40L)).thenReturn(Optional.of(exclusao));
+        salvarDevolveOMesmo();
+
+        solicitacaoService.aprovarNaSecretaria(40L, EMAIL_SECRETARIA, IP);
+
+        assertEquals(StatusSolicitacao.APROVADA, exclusao.getStatus());
+        verify(entregaService).excluirAnexo(versao, secretaria);
+    }
+
+    @Test
+    @DisplayName("A coordenação decide a exclusão pendente sem esperar a secretaria, e a reprovação libera o anexo")
+    void coordenacaoDeveReprovarExclusaoPendente() {
+        EntregaVersao versao = versaoComAnexo();
+        Solicitacao exclusao = exclusaoPendente(versao);
+        when(usuarioRepository.findByEmail(EMAIL_COORDENADOR)).thenReturn(Optional.of(new Coordenador()));
+        when(solicitacaoRepository.findByIdAndEstagioMatriculaTurmaCursoCoordenadorEmail(40L, EMAIL_COORDENADOR))
+                .thenReturn(Optional.of(exclusao));
+        salvarDevolveOMesmo();
+
+        solicitacaoService.reprovarNaCoordenacao(40L, EMAIL_COORDENADOR, "O arquivo está correto", IP);
+
+        assertEquals(StatusSolicitacao.REPROVADA, exclusao.getStatus());
+        assertEquals(SituacaoArquivo.DISPONIVEL, versao.getSituacaoArquivo());
+        verify(entregaService, never()).excluirAnexo(any(), any());
+    }
+
+    @Test
+    @DisplayName("Cancelar o pedido de exclusão libera o anexo")
+    void cancelarPedidoDeExclusaoDeveLiberarOAnexo() {
+        EntregaVersao versao = versaoComAnexo();
+        Solicitacao exclusao = exclusaoPendente(versao);
+        when(alunoRepository.findByEmail(EMAIL_ALUNO)).thenReturn(Optional.of(aluno));
+        when(estagioService.buscarMatriculaAtual(aluno)).thenReturn(matricula);
+        when(solicitacaoRepository.findByIdAndEstagioMatriculaId(40L, 2L)).thenReturn(Optional.of(exclusao));
+        salvarDevolveOMesmo();
+
+        solicitacaoService.cancelar(40L, EMAIL_ALUNO, IP);
+
+        assertEquals(StatusSolicitacao.CANCELADA, exclusao.getStatus());
+        assertEquals(SituacaoArquivo.DISPONIVEL, versao.getSituacaoArquivo());
     }
 }

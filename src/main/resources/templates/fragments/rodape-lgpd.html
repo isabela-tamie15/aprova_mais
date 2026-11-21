@@ -8,9 +8,47 @@
     devem ser divulgadas publicamente, de forma clara e objetiva.
     Para alterar o contato do encarregado, altere apenas este arquivo.
 -->
-<footer th:fragment="rodape" class="text-center text-muted small mt-4 mb-3 px-3">
-    Encarregado de proteção de dados (DPO): Coordenação do Curso de Engenharia de Software da UMC
-    · <a href="mailto:secretaria@umc.br">secretaria@umc.br</a>
+<div th:fragment="rodape" class="rodape-site">
+<footer class="rodape-site-faixa">
+    <div class="container rodape-site-conteudo">
+        <div class="row g-4">
+            <div class="col-12 col-lg-4">
+                <div class="rodape-marca">
+                    <img th:src="@{/css/img/logo-aprova-completo.png}" class="rodape-logo" alt="Aprova+">
+                </div>
+                <p class="rodape-descricao">Gestão de estágios supervisionados, do cadastro à conclusão.</p>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6>Jurídico</h6>
+                <ul>
+                    <li><a href="/privacidade">Política de Privacidade</a></li>
+                    <li><a href="/termos">Termos de Uso</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-lg-3">
+                <h6>Proteção de dados</h6>
+                <ul>
+                    <li>Encarregado (DPO): Leonardo Valdir Silva</li>
+                    <li><a href="mailto:dpo.aprova_mais@yahoo.com">dpo.aprova_mais@yahoo.com</a></li>
+                </ul>
+            </div>
+            <div class="col-12 col-lg-3">
+                <h6>Contato</h6>
+                <ul>
+                    <li><a href="tel:+551112345678">(11) 1234-5678</a></li>
+                    <li><a href="mailto:atendimentoaprovamais@gmail.com">atendimentoaprovamais@gmail.com</a></li>
+                    <li>Rua dos Estagiários, 120 - Centro, Mogi das Cruzes - SP, 08710-000</li>
+                </ul>
+            </div>
+        </div>
+        <div class="rodape-base">© 2026 Aprova+. Todos os direitos reservados.</div>
+    </div>
+</footer>
+</div>
+
+<footer th:fragment="rodape-compacto" class="rodape-lgpd text-center text-muted small mt-4 mb-3 px-3">
+    Encarregado de proteção de dados (DPO): Leonardo Valdir Silva
+    · <a href="mailto:dpo.aprova_mais@yahoo.com">dpo.aprova_mais@yahoo.com</a>
     · <a href="/privacidade">Política de Privacidade</a>
     · <a href="/termos">Termos de Uso</a>
 </footer>

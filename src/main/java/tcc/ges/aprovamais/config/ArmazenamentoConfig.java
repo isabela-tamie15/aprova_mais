@@ -41,7 +41,6 @@ public class ArmazenamentoConfig {
 
         boolean r2Configurado = !endpoint.isBlank() && !chaveAcesso.isBlank() && !chaveSecreta.isBlank() && !bucket.isBlank();
 
-        // No perfil prod o R2 é obrigatório, porque o disco do Render é apagado a cada deploy
         if (!r2Configurado && ambiente.acceptsProfiles(Profiles.of("prod"))) {
             throw new IllegalStateException(
                     "No perfil prod, configure o Cloudflare R2: R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY e R2_BUCKET");
@@ -57,7 +56,7 @@ public class ArmazenamentoConfig {
                 .region(Region.of(regiao))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(chaveAcesso, chaveSecreta)))
-                // O R2 usa o bucket no caminho da URL, e não no subdomínio
+                // O R2 usa o bucket no caminho da URL
                 .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
                 .build();
         log.info("[ARQUIVO] Arquivos das entregas no Cloudflare R2, bucket {}", bucket);

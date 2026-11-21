@@ -10,10 +10,17 @@ window.history.replaceState(null, '', window.location.pathname);
 function primeiroAcessoForm() {
     return {
         aceitou: false,
+        pedeRgm: false,
+        rgm: '',
         senha: '',
         confirmacaoSenha: '',
         enviando: false,
         erro: '',
+
+        // A página informa se o convite é de aluno, que precisa confirmar o RGM
+        init() {
+            this.pedeRgm = this.$el.dataset.pedeRgm === 'true';
+        },
 
         requisitos() {
             return {
@@ -26,10 +33,11 @@ function primeiroAcessoForm() {
         podeConcluir() {
             const requisitosDaSenha = this.requisitos();
             return this.aceitou && !this.enviando &&
+                   (!this.pedeRgm || this.rgm.trim() !== '') &&
                    requisitosDaSenha.tamanho && requisitosDaSenha.letra && requisitosDaSenha.numero &&
                    this.senha === this.confirmacaoSenha;
         },
-         async aceitar() {
+        async aceitar() {
             this.erro = '';
             this.enviando = true;
 
@@ -39,7 +47,8 @@ function primeiroAcessoForm() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         senha: this.senha,
-                        confirmacaoSenha: this.confirmacaoSenha
+                        confirmacaoSenha: this.confirmacaoSenha,
+                        rgm: this.pedeRgm ? this.rgm.trim() : null
                     })
                 });
 

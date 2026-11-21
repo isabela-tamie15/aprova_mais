@@ -140,6 +140,39 @@ class ConviteHierarquiaIntegrationTest extends IntegracaoTestBase {
                 .andExpect(jsonPath("$.campos.nome").value("Informe o nome completo"));
     }
 
+    private ResultActions aceitar(String token, String rgm) throws Exception {
+        return mockMvc.perform(post("/primeiro-acesso/aceitar")
+                .param("token", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"senha\":\"senhaForte1\",\"confirmacaoSenha\":\"senhaForte1\",\"rgm\":\"" + rgm + "\"}"));
+    }
+
+    private String tokenDoConvite(String email) {
+        ArgumentCaptor<String> link = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarConvite(eq(email), anyString(), link.capture());
+        return link.getValue().substring(link.getValue().indexOf("token=") + "token=".length());
+    }
+
+    @Test
+    @DisplayName("Cinco tentativas com RGM errado cancelam o convite do aluno")
+    void cincoRgmErradosCancelamOConvite() throws Exception {
+        convidar("{\"emailDestino\":\"" + EMAIL_ALUNO_NOVO + "\",\"perfil\":\"ALUNO\"}", EMAIL_SECRETARIA, "SECRETARIA")
+                .andExpect(status().isOk());
+        String token = tokenDoConvite(EMAIL_ALUNO_NOVO);
+
+        for (int tentativa = 1; tentativa <= 4; tentativa++) {
+            aceitar(token, "000").andExpect(status().isBadRequest());
+        }
+        aceitar(token, "000")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value(org.hamcrest.Matchers.containsString("convite foi cancelado")));
+
+        // Depois de cancelado, nem o RGM certo conclui o cadastro
+        aceitar(token, RGM).andExpect(status().isConflict());
+        entityManager.flush();
+        assertTrue(conviteRepository.findByEmailAndStatus(EMAIL_ALUNO_NOVO, StatusConvite.CANCELADO).isPresent());
+    }
+
     @Test
     @DisplayName("Fluxo completo: convite do aluno pré-cadastrado, recusa do segundo envio e matrícula criada no aceite")
     void fluxoCompletoDoAluno() throws Exception {
@@ -159,11 +192,16 @@ class ConviteHierarquiaIntegrationTest extends IntegracaoTestBase {
         verify(emailService).enviarConvite(eq(EMAIL_ALUNO_NOVO), anyString(), link.capture());
         String token = link.getValue().substring(link.getValue().indexOf("token=") + "token=".length());
 
-        // aceite com senha válida ativa a conta e cria a matrícula na turma do pré-cadastro
-        mockMvc.perform(post("/primeiro-acesso/aceitar")
-                        .param("token", token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"senha\":\"senhaForte1\",\"confirmacaoSenha\":\"senhaForte1\"}")).andExpect(status().isOk());
+        // RGM diferente do pré-cadastro volta 400 e a tentativa fica gravada no convite
+        aceitar(token, "11239999999")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").value(org.hamcrest.Matchers.containsString("Restam 4 tentativas")));
+        entityManager.flush();
+        entityManager.clear();
+        assertEquals(1, conviteRepository.findById(convite.getId()).orElseThrow().getTentativasRgm());
+
+        // aceite com o RGM do pré-cadastro e senha válida ativa a conta e cria a matrícula na turma
+        aceitar(token, RGM).andExpect(status().isOk());
 
         entityManager.flush();
         Aluno aluno = (Aluno) usuarioRepository.findByEmail(EMAIL_ALUNO_NOVO).orElseThrow();

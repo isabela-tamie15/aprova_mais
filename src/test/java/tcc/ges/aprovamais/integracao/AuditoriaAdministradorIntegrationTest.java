@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.entity.Administrador;
 import tcc.ges.aprovamais.entity.LogAuditoria;
 import tcc.ges.aprovamais.entity.enums.PerfilAuditoria;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.repository.LogAuditoriaRepository;
 import tcc.ges.aprovamais.service.ConsultaAuditoriaService;
 
 import static org.hamcrest.Matchers.everyItem;
@@ -42,6 +43,8 @@ class AuditoriaAdministradorIntegrationTest extends IntegracaoTestBase {
     private WebApplicationContext context;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private LogAuditoriaRepository logAuditoriaRepository;
 
     private MockMvc mockMvc;
 
@@ -83,8 +86,42 @@ class AuditoriaAdministradorIntegrationTest extends IntegracaoTestBase {
         mockMvc.perform(get(URL).param("email", "Orientador@teste.com").param("acao", "ESTAGIO_REJEITADO").with(user(EMAIL_ADMIN).roles("ADMINISTRADOR")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalItens").value(1))
-                .andExpect(jsonPath("$.itens[0].email").value("orientador@teste.com"))
+                .andExpect(jsonPath("$.itens[0].email").value("o***@teste.com"))
                 .andExpect(jsonPath("$.itens[0].acao").value("ESTAGIO_REJEITADO"));
+    }
+
+    @Test
+    @DisplayName("Na lista, o e-mail e o IP vêm mascarados")
+    void deveMascararEmailEIpNaLista() throws Exception {
+        mockMvc.perform(get(URL).param("acao", "LOGIN_FALHA").with(user(EMAIL_ADMIN).roles("ADMINISTRADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itens[0].email").value("a***@teste.com"))
+                .andExpect(jsonPath("$.itens[0].ipOrigem").value("127.0.*.*"))
+                .andExpect(jsonPath("$.itens[0].mascarado").value(true));
+    }
+
+    @Test
+    @DisplayName("O registro aberto vem completo e a visualização fica na auditoria")
+    void deveRevelarRegistroEAuditar() throws Exception {
+        Long id = logAuditoriaRepository.findAll().stream()
+                .filter(registro -> "LOGIN_FALHA".equals(registro.getAcao()))
+                .findFirst().orElseThrow().getId();
+
+        mockMvc.perform(get(URL + "/" + id).with(user(EMAIL_ADMIN).roles("ADMINISTRADOR")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("aluno@teste.com"))
+                .andExpect(jsonPath("$.ipOrigem").value("127.0.0.1"))
+                .andExpect(jsonPath("$.mascarado").value(false));
+
+        verify(auditoriaService).registrar(any(), eq(ConsultaAuditoriaService.ACAO_VISUALIZACAO),
+                contains("id=" + id), anyString(), eq(true));
+    }
+
+    @Test
+    @DisplayName("Coordenador não abre um registro da auditoria")
+    void coordenadorNaoRevelaRegistro() throws Exception {
+        mockMvc.perform(get(URL + "/1").with(user("coordenador@teste.com").roles("COORDENADOR")))
+                .andExpect(status().isForbidden());
     }
 
     @Test

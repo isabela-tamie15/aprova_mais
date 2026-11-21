@@ -103,6 +103,8 @@ function preCadastrosPagina() {
             }
             if (!identificador) {
                 erros.identificadorInstitucional = 'Informe o RGM ou a matrícula institucional.';
+            } else if (this.form.perfil === 'ALUNO' && !/^\d+$/.test(identificador)) {
+                erros.identificadorInstitucional = 'O RGM do aluno deve conter apenas números.';
             } else if (!/^[0-9A-Za-z.-]+$/.test(identificador)) {
                 erros.identificadorInstitucional = 'Use apenas letras, números, ponto e hífen.';
             }

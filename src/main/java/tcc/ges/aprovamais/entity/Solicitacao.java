@@ -13,7 +13,6 @@ import tcc.ges.aprovamais.security.AesEncryptor;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
-// Pedido do aluno sobre o estágio: troca de modalidade, trancamento ou reabertura
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)
@@ -41,6 +40,11 @@ public class Solicitacao {
     @ManyToOne
     @JoinColumn(name = "novo_tipo_estagio_id")
     private TipoEstagio novoTipoEstagio;
+
+    // Versão cujo anexo o aluno pediu para excluir. Fica nula nos outros pedidos
+    @ManyToOne
+    @JoinColumn(name = "versao_id")
+    private EntregaVersao versao;
 
     // O motivo pode trazer dados pessoais, como um problema de saúde, por isso fica cifrado
     @Convert(converter = AesEncryptor.class)

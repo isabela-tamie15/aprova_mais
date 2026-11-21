@@ -155,7 +155,7 @@ public class EmailService {
                 <div style="font-family: Inter, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2B4ECC;">Bem-vindo ao Aprova+</h2>
                     <p>Olá, <strong>%s</strong>!</p>
-                    <p>Você foi convidado a acessar o portal de gestão de estágios da UMC.</p>
+                    <p>Você foi convidado a acessar o portal de gestão de estágios Aprova+.</p>
                     <p>Clique no botão abaixo para concluir seu cadastro e aceitar os termos de uso:</p>
                     <a href="%s"
                        style="display: inline-block; background: #2B4ECC; color: white;

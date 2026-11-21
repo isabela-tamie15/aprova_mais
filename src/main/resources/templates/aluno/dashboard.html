@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Aprova+ | Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/navbar-aluno :: navbar('painel')}"></div>
 
@@ -30,6 +32,7 @@
         <h5 class="card-title mb-3">Meu Estágio</h5>
         <span class="badge bg-warning text-dark mb-3">Aguardando aprovação do orientador</span>
         <!-- Mesmos nomes e mesma ordem do estágio ativo, para a tela não mudar de nome quando o estágio for aprovado -->
+        <p><strong>Aluno:</strong> <span th:text="${estagio.nomeAluno + (estagio.rgmAluno != null ? ' (RGM ' + estagio.rgmAluno + ')' : '')}"></span></p>
         <p><strong>Prof. orientador:</strong>
             <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
             <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
@@ -54,7 +57,7 @@
             <span th:text="${#numbers.formatDecimal(estagio.cargaHorariaCumprida, 1, 0) + 'h de ' + #numbers.formatDecimal(estagio.cargaHorariaNecessaria, 1, 0) + 'h'}"></span>
         </p>
         <p class="mb-0">A matrícula está trancada. Dentro do prazo de arrependimento, você pode pedir a reabertura, e o estágio volta de onde parou.</p>
-        <a href="/aluno/solicitacoes" class="btn btn-primary mt-3">Ver solicitações</a>
+        <a href="/aluno/solicitacoes" class="btn btn-success mt-3">Ver solicitações</a>
     </div>
 
     <div th:if="${estagio != null and estagio.status == 'REJEITADO'}" class="card p-4">
@@ -65,13 +68,16 @@
     </div>
 
     <div th:if="${estagio != null and estagio.status == 'ATIVO'}" class="card p-4">
-        <h5 class="card-title mb-3">Meu Estágio</h5>
-        <!-- Faixa de status larga, com a mesma altura do botão "Ver minha trilha de tarefas" do painel do aluno -->
-        <div class="bg-success border border-success text-white text-center rounded fw-semibold mb-4" style="padding: .375rem .75rem;">Ativo</div>
+        <!-- Título com a situação ao lado, no mesmo padrão da tela Meu estágio -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="card-title mb-0">Meu Estágio</h5>
+            <span class="badge bg-success">Ativo</span>
+        </div>
 
         <!-- Informações em duas colunas para ocupar a tela: à esquerda os dados do estágio, à direita a carga e as entregas -->
         <div class="row">
             <div class="col-md-6">
+                <p><strong>Aluno:</strong> <span th:text="${estagio.nomeAluno + (estagio.rgmAluno != null ? ' (RGM ' + estagio.rgmAluno + ')' : '')}"></span></p>
                 <p><strong>Prof. orientador:</strong>
                     <span th:if="${estagio.nomeOrientador}" th:text="${estagio.nomeOrientador}"></span>
                     <span th:unless="${estagio.nomeOrientador}" class="text-muted">Não atribuído</span>
@@ -163,7 +169,7 @@
             </div>
         </div>
 
-        <a href="/aluno/trilha" class="btn btn-primary mt-2">Ver minha trilha de tarefas</a>
+        <a href="/aluno/trilha" class="btn btn-success mt-2">Ver minha trilha de tarefas</a>
     </div>
 
     <!-- Estágios anteriores da matrícula, concluídos ou encerrados -->
@@ -211,6 +217,6 @@
 
 <div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

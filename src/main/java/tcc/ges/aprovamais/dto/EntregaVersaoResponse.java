@@ -26,4 +26,13 @@ public class EntregaVersaoResponse {
 
     // Resultado de cada critério nesta versão. Vazio quando a tarefa não tinha critérios na correção
     private final List<RespostaCriterioResponse> checklist;
+
+    // DISPONIVEL, EXCLUSAO_EM_ANALISE ou EXCLUIDO. Fora do DISPONIVEL, ninguém abre o arquivo
+    private final String situacaoArquivo;
+    private final OffsetDateTime arquivoExcluidoEm;
+    private final String nomeQuemAprovouExclusao;
+
+    // Ações do aluno nesta versão
+    private final boolean podeCancelarEnvio;
+    private final boolean podeSolicitarExclusao;
 }

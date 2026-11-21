@@ -46,6 +46,9 @@ function loginForm() {
         segredo: '',
         erro: '',
         carregando: false,
+        pedindoLiberacao: false,
+        motivoLiberacao: '',
+        liberacaoEnviada: false,
 
         // Envia e-mail e senha e decide a próxima etapa
         async entrar() {
@@ -192,6 +195,37 @@ function loginForm() {
             this.preAuthToken = '';
             this.segredo = '';
             this.erro = '';
+            this.pedindoLiberacao = false;
+            this.motivoLiberacao = '';
+            this.liberacaoEnviada = false;
+        },
+
+        async pedirLiberacao() {
+            this.erro = '';
+            this.carregando = true;
+            try {
+                const resposta = await fetch('/api/v1/auth/2fa/liberacao', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: this.preAuthToken, motivo: this.motivoLiberacao.trim() })
+                });
+                if (resposta.ok) {
+                    this.liberacaoEnviada = true;
+                    this.pedindoLiberacao = false;
+                    return;
+                }
+                let dados = {};
+                try {
+                    dados = await resposta.json();
+                } catch (erroDeLeitura) {
+                    dados = {};
+                }
+                this.erro = mensagemDeErro(resposta, dados, 'Não foi possível enviar o pedido. Tente novamente.');
+            } catch (erro) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.carregando = false;
+            }
         },
 
         // O /inicio decide a página inicial de cada perfil, e essa regra fica só no backend
@@ -237,6 +271,29 @@ function segurancaConta() {
                 this.erro = 'Não foi possível conectar ao servidor.';
             } finally {
                 this.carregado = true;
+            }
+        },
+
+        // Manda para o e-mail da conta o link de criar uma nova senha, o mesmo da recuperação
+        async enviarLinkSenha() {
+            this.limparMensagens();
+            this.processando = true;
+            try {
+                const resposta = await fetch('/api/v1/auth/recuperacao/solicitar', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: this.$refs.cartaoSenha.dataset.email })
+                });
+                if (!resposta.ok) {
+                    this.erro = 'Não foi possível enviar o link. Tente novamente em alguns minutos.';
+                    return;
+                }
+                this.sucesso = 'Enviamos um link para o seu e-mail. Abra a mensagem para criar a nova senha.';
+            } catch (erro) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.processando = false;
             }
         },
 

@@ -53,6 +53,10 @@ public class Convite {
     @Column(name = "expiracao_token", nullable = false)
     private OffsetDateTime expiracaoToken;
 
+    // Tentativas com RGM errado no primeiro acesso do aluno. Nulo nos convites antigos, que contam como zero
+    @Column(name = "tentativas_rgm")
+    private Integer tentativasRgm;
+
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;

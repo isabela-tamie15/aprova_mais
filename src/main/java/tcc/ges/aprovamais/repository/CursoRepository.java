@@ -17,10 +17,6 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
     // Lista os cursos do coordenador logado, em ordem alfabética, para a tela de cursos e os selects das outras telas
     List<Curso> findByCoordenadorEmailOrderByNomeAsc(String emailCoordenador);
 
-    /*
-       Busca o curso só se ele for do coordenador informado. Curso de outro coordenador volta vazio
-       e o service responde 404, igual a um id que não existe
-    */
     Optional<Curso> findByIdAndCoordenadorEmail(Long id, String emailCoordenador);
 
     // Confere se o código e-MEC já está em uso, no cadastro e na edição

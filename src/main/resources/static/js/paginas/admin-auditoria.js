@@ -107,6 +107,45 @@ function auditoria() {
             return dados.mensagem || 'Não foi possível consultar a auditoria.';
         },
 
+        /*
+           Abre o registro sem máscara, buscando no servidor, que registra a visualização na auditoria.
+           Ocultar volta para a versão mascarada que já estava na tela
+        */
+        async alternarDados(indice) {
+            const registro = this.registros[indice];
+            if (!registro.mascarado) {
+                this.registros[indice] = registro.versaoMascarada;
+                return;
+            }
+            try {
+                const resposta = await fetch('/api/v1/admin/auditoria/' + registro.id, { credentials: 'include' });
+                if (!resposta.ok) {
+                    this.mensagemErro = 'Não foi possível abrir o registro.';
+                    return;
+                }
+                const completo = await resposta.json();
+                completo.versaoMascarada = registro;
+                this.registros[indice] = completo;
+            } catch (erro) {
+                this.mensagemErro = 'Não foi possível conectar ao servidor.';
+            }
+        },
+
+        // Uma linha para cada parte dos detalhes, e o e-mail que vem depois de "para:" na linha de baixo
+        linhasDetalhes(texto) {
+            if (!texto) return ['-'];
+            const linhas = [];
+            for (const parte of texto.split(' | ')) {
+                const comEmail = parte.match(/^(.*:)\s+(\S+@\S+)$/);
+                if (comEmail) {
+                    linhas.push(comEmail[1], comEmail[2]);
+                } else {
+                    linhas.push(parte);
+                }
+            }
+            return linhas;
+        },
+
         resumo() {
             if (this.totalItens === 0) return 'Nenhum registro';
             return this.totalItens === 1 ? '1 registro' : this.totalItens.toLocaleString('pt-BR') + ' registros';

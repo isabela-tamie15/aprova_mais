@@ -2,6 +2,7 @@ package tcc.ges.aprovamais.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import tcc.ges.aprovamais.dto.EstagioResponse;
 import tcc.ges.aprovamais.dto.ValidacaoEstagioResponse;
 import tcc.ges.aprovamais.entity.enums.PerfilUsuario;
+import tcc.ges.aprovamais.exception.ResourceNotFoundException;
+import tcc.ges.aprovamais.service.ConsentimentoService;
 import tcc.ges.aprovamais.service.ConviteService;
 import tcc.ges.aprovamais.service.EstagioService;
 import tcc.ges.aprovamais.service.TrilhaService;
@@ -35,22 +38,31 @@ public class PaginaController {
         return "login";
     }
 
-    // Página de consentimento dos termos
+    // Página de aceite dos termos, que mostra a versão vigente
     @GetMapping("/consentimento")
-    public String consentimento() {
+    public String consentimento(Model model) {
+        adicionarVersaoDosTermos(model);
         return "consentimento";
     }
 
     // Página dos termos de uso
     @GetMapping("/termos")
-    public String termos() {
+    public String termos(Model model) {
+        adicionarVersaoDosTermos(model);
         return "termos";
     }
 
     // Página da política de privacidade
     @GetMapping("/privacidade")
-    public String privacidade() {
+    public String privacidade(Model model) {
+        adicionarVersaoDosTermos(model);
         return "privacidade";
+    }
+
+    // Versão e data de vigência dos documentos, as mesmas que o aceite grava
+    private void adicionarVersaoDosTermos(Model model) {
+        model.addAttribute("versaoTermos", ConsentimentoService.VERSAO_TERMOS_ATUAL);
+        model.addAttribute("vigenciaTermos", ConsentimentoService.VIGENCIA_TERMOS_ATUAL);
     }
 
     // rotas de qualquer usuário autenticado (anyRequest().authenticated() no SecurityConfig)
@@ -62,8 +74,11 @@ public class PaginaController {
     }
 
     // Redireciona o usuário autenticado para a página inicial do seu perfil
-    @GetMapping("/inicio")
+    @GetMapping({"/", "/inicio"})
     public String inicio(Authentication authentication) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return "redirect:/login";
+        }
 
         /*
            A primeira authority vem no formato ROLE_ALGO. O PerfilUsuario.deAuthority devolve o perfil,
@@ -121,7 +136,27 @@ public class PaginaController {
 
         // Busca a trilha do aluno e joga no Model para a página renderizar
         String email = authentication.getName();
-        model.addAttribute("trilha", trilhaService.buscarTrilhaDoAluno(email));
+        String situacaoEstagio;
+        try {
+            situacaoEstagio = estagioService.buscarEstagioDoAluno(email)
+                    .map(EstagioResponse::getStatus)
+                    .orElse("SEM_ESTAGIO");
+            if ("SEM_ESTAGIO".equals(situacaoEstagio) && estagioService.listarEstagiosDoAluno(email).stream()
+                    .anyMatch(estagio -> "CONCLUIDO".equals(estagio.getStatus()))) {
+                situacaoEstagio = "CONCLUIDO";
+            }
+        } catch (ResourceNotFoundException excecao) {
+            situacaoEstagio = "SEM_ESTAGIO";
+        }
+
+        if ("ATIVO".equals(situacaoEstagio)) {
+            try {
+                model.addAttribute("trilha", trilhaService.buscarTrilhaDoAluno(email));
+            } catch (ResourceNotFoundException excecao) {
+                situacaoEstagio = "SEM_TRILHA";
+            }
+        }
+        model.addAttribute("situacaoEstagio", situacaoEstagio);
         return "aluno/trilha";
     }
 
@@ -141,6 +176,7 @@ public class PaginaController {
         String email = authentication.getName();
         model.addAttribute("estagio", estagioService.buscarEstagioDoAluno(email).orElse(null));
         model.addAttribute("tipos", estagioService.listarTiposEstagioDisponiveis(email));
+        model.addAttribute("historico", estagioService.listarHistoricoDoAluno(email));
         model.addAttribute("estagioConcluido", estagioService.listarEstagiosDoAluno(email).stream()
                 .filter(estagio -> estagio.getStatus().equals("CONCLUIDO"))
                 .findFirst()

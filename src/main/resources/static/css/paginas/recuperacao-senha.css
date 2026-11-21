@@ -1,7 +1,6 @@
 /* Estilos das páginas recuperar-senha.html e redefinir-senha.html, no mesmo visual do primeiro acesso */
 
-* { font-family: 'Inter', sans-serif; }
-body { background-color: #f8f9fa; }
+body { background-color: #F8FAFC; }
 
 .card-principal {
     border: none;

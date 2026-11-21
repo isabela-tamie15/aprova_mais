@@ -12,6 +12,8 @@ function avaliacaoEntrega(entregaId) {
         // Respostas do checklist, uma por critério: { idDoCriterio: { resultado, observacao } }
         respostas: {},
 
+        anexoDisponivel: anexoDisponivel,
+        textoSituacaoAnexo: textoSituacaoAnexo,
         nomeStatus: nomeStatusEntrega,
         classeStatus: classeStatusEntrega,
         nomeResultado: nomeResultadoCriterio,
@@ -61,7 +63,8 @@ function avaliacaoEntrega(entregaId) {
         },
 
         aguardando() {
-            return this.detalhe && (this.detalhe.status === 'ENVIADA' || this.detalhe.status === 'EM_REVISAO');
+            return this.detalhe && !this.detalhe.exclusaoEmAnalise
+                && (this.detalhe.status === 'ENVIADA' || this.detalhe.status === 'EM_REVISAO');
         },
 
         // Verdadeiro quando algum critério foi marcado como insuficiente. Nesse caso só dá para devolver

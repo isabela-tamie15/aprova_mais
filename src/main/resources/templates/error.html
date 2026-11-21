@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprova+ | Algo deu errado</title>
+    <link th:href="@{/vendor/bootstrap/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/vendor/inter/inter.css}" rel="stylesheet">
+    <link th:href="@{/css/paginas/primeiro-acesso-erro.css}" rel="stylesheet">
+</head>
+<body class="py-5"
+      th:with="codigo=${status != null ? status : 500},
+               tituloPadrao=${codigo == 404 ? (mensagem != null ? 'Conteúdo não encontrado' : 'Página não encontrada') : (codigo == 403 ? 'Acesso não permitido' : 'Algo deu errado')},
+               mensagemPadrao=${codigo == 404 ? 'O endereço que você tentou abrir não existe ou não está mais disponível.' : (codigo == 403 ? 'Esta página não está disponível para o seu perfil.' : 'Não conseguimos concluir esta ação agora. Tente novamente em alguns instantes.')}">
+
+<div class="container" style="max-width: 500px;">
+    <div class="card-principal">
+        <div class="header-azul text-center">
+            <div class="d-flex align-items-center gap-2 mb-4 justify-content-center">
+                <img th:src="@{/css/img/logo-aprova-completo.png}" class="logo-cabecalho" alt="Aprova+">
+            </div>
+            <div class="icone-erro">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+            <h4 class="text-white fw-bold mb-0" th:text="${titulo != null ? titulo : tituloPadrao}">Algo deu errado</h4>
+        </div>
+
+        <div class="p-4 text-center">
+            <p class="text-muted mb-4" th:text="${mensagem != null ? mensagem : mensagemPadrao}"></p>
+            <a href="/inicio" class="btn btn-voltar w-100 mb-2">Ir para a página inicial</a>
+            <a href="/inicio" class="d-inline-block small" data-acao="voltar">Voltar para a página anterior</a>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/rodape-lgpd :: rodape}"></div>
+
+<script th:src="@{/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/comum.js}"></script>
+</body>
+</html>

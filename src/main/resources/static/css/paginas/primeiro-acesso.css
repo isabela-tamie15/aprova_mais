@@ -1,7 +1,6 @@
 /* Estilos da página primeiro-acesso.html */
 
-* { font-family: 'Inter', sans-serif; }
-body { background-color: #f8f9fa; }
+body { background-color: #F8FAFC; }
 
 .card-principal {
     border: none;
@@ -24,6 +23,7 @@ body { background-color: #f8f9fa; }
     text-transform: uppercase;
     padding: 0.3rem 0.7rem;
     border-radius: 4px;
+    margin-bottom: 0;
 }
 
 .resumo-termos {

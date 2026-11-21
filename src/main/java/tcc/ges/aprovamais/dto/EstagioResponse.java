@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Builder
@@ -20,6 +21,8 @@ public class EstagioResponse {
     private final LocalDate dataPrevistaConclusao;
     private final String nomeOrientador;
     private final String nomeAluno;
+    private final String rgmAluno;
+    private final String emailAluno;
     private final String nomeEmpresa;
     private final String cnpjEmpresa;
     private final String situacaoCnpj;
@@ -45,6 +48,9 @@ public class EstagioResponse {
     // Data e observação da conclusão ou do encerramento
     private final LocalDate dataFinalizacao;
     private final String observacaoEncerramento;
+
+    // Data e hora do último envio ou alteração do cadastro do estágio, no horário de Brasília
+    private final LocalDateTime ultimoEnvio;
 
     // Dias de suspensão descontados da carga e somados à data prevista
     private final Integer diasSuspensos;

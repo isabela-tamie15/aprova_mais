@@ -3,10 +3,42 @@
 function conviteForm() {
     return {
         form: { emailDestino: '', perfil: '' },
+        preCadastros: [],
+        busca: '',
+        carregandoLista: true,
         enviando: false,
         erro: '',
         erros: {},
-        sucesso: false,
+        sucesso: '',
+
+        // Pré-cadastrados sem conta, vindos de /api/v1/secretaria/pre-cadastros
+        async carregarPreCadastros() {
+            this.carregandoLista = true;
+            try {
+                const resposta = await fetch('/api/v1/secretaria/pre-cadastros', { credentials: 'include' });
+                if (resposta.ok) {
+                    this.preCadastros = await resposta.json();
+                } else {
+                    this.erro = 'Não foi possível carregar a lista de pré-cadastro.';
+                }
+            } catch (erro) {
+                this.erro = 'Não foi possível conectar ao servidor.';
+            } finally {
+                this.carregandoLista = false;
+            }
+        },
+
+        // Busca por nome, RGM ou matrícula e e-mail, sem diferenciar maiúsculas
+        preCadastrosFiltrados() {
+            const termo = this.busca.trim().toLowerCase();
+            if (!termo) {
+                return this.preCadastros;
+            }
+            return this.preCadastros.filter(item =>
+                item.nome.toLowerCase().includes(termo) ||
+                item.identificadorInstitucional.toLowerCase().includes(termo) ||
+                item.email.toLowerCase().includes(termo));
+        },
 
         podoEnviar() {
             return this.form.emailDestino && this.form.perfil;
@@ -28,13 +60,34 @@ function conviteForm() {
             return Object.keys(erros).length === 0;
         },
 
+        // Convite para uma pessoa da lista, com o e-mail e o perfil do pré-cadastro
+        async convidar(item) {
+            const enviado = await this.enviarConvite({ emailDestino: item.email, perfil: item.perfil });
+            if (enviado) {
+                this.sucesso = 'Convite enviado para ' + item.nome + '. O e-mail chega em instantes.';
+            }
+        },
+
+        // Convite pelo formulário, com o e-mail digitado
         async enviar() {
-            this.erro = '';
-            this.sucesso = false;
+            this.erros = {};
             if (!this.validar()) {
                 return;
             }
-            this.form.emailDestino = this.form.emailDestino.trim();
+            const enviado = await this.enviarConvite({
+                emailDestino: this.form.emailDestino.trim(),
+                perfil: this.form.perfil
+            });
+            if (enviado) {
+                this.sucesso = 'Convite enviado com sucesso! O destinatário receberá um e-mail em instantes.';
+                this.form = { emailDestino: '', perfil: '' };
+            }
+        },
+
+        // Envia o convite e atualiza a lista. Devolve true quando o convite foi gravado
+        async enviarConvite(corpo) {
+            this.erro = '';
+            this.sucesso = '';
             this.enviando = true;
 
             try {
@@ -42,7 +95,7 @@ function conviteForm() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify(this.form)
+                    body: JSON.stringify(corpo)
                 });
 
                 // Lemos o corpo da resposta como JSON. Se vier vazio ou não for JSON, ficamos com um objeto vazio
@@ -62,14 +115,15 @@ function conviteForm() {
                         }
                         this.erro = dados.mensagem || 'Erro ao enviar convite.';
                     }
-                    return;
+                    return false;
                 }
 
-                this.sucesso = true;
-                this.form = { emailDestino: '', perfil: '' };
+                await this.carregarPreCadastros();
+                return true;
 
             } catch (erro) {
                 this.erro = 'Não foi possível conectar ao servidor.';
+                return false;
             } finally {
                 this.enviando = false;
             }

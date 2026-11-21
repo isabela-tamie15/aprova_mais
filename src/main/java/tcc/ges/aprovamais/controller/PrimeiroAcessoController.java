@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import tcc.ges.aprovamais.dto.PrimeiroAcessoRequest;
 import tcc.ges.aprovamais.entity.Convite;
+import tcc.ges.aprovamais.entity.enums.PerfilDestino;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
 import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.service.ConviteService;
@@ -25,12 +26,17 @@ public class PrimeiroAcessoController {
 
     // Abre a página de primeiro acesso pelo link do convite
     @GetMapping
-    public String exibirPrimeiroAcesso(@RequestParam String token, Model model) {
+    public String exibirPrimeiroAcesso(@RequestParam(required = false) String token, Model model) {
+        if (token == null || token.isBlank()) {
+            model.addAttribute("erro", "Convite não encontrado ou inválido");
+            return "primeiro-acesso-erro";
+        }
         try {
             // Com o token válido, a página recebe o token e o e-mail. Token inválido ou expirado mostra a página de erro com a mensagem
             Convite convite = conviteService.validarToken(token);
             model.addAttribute("token", token);
             model.addAttribute("email", convite.getEmail());
+            model.addAttribute("pedeRgm", convite.getPerfilDestino() == PerfilDestino.ALUNO);
             return "primeiro-acesso";
         } catch (ResourceNotFoundException | RegraNegocioException excecao) {
             // Só as falhas do convite, inexistente, usado ou expirado, viram a página de erro
@@ -45,10 +51,14 @@ public class PrimeiroAcessoController {
     public ResponseEntity<Void> aceitar(@RequestParam String token,
                                         @Valid @RequestBody PrimeiroAcessoRequest request,
                                         HttpServletRequest httpRequest) {
-        // Convite inválido volta 404 e convite usado ou expirado volta 409, os dois com a mensagem para a tela
+        /*
+           Convite inválido volta 404, convite usado ou expirado volta 409 e RGM errado volta 400,
+           todos com a mensagem para a tela
+        */
         primeiroAcessoService.concluirCadastro(
                 token,
                 request.getSenha(),
+                request.getRgm(),
                 httpRequest.getRemoteAddr()
         );
         return ResponseEntity.ok().build();

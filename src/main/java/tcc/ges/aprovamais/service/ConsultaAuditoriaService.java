@@ -13,6 +13,7 @@ import tcc.ges.aprovamais.dto.PaginaAuditoriaResponse;
 import tcc.ges.aprovamais.dto.RegistroAuditoriaResponse;
 import tcc.ges.aprovamais.entity.LogAuditoria;
 import tcc.ges.aprovamais.entity.Usuario;
+import tcc.ges.aprovamais.exception.ResourceNotFoundException;
 import tcc.ges.aprovamais.repository.LogAuditoriaRepository;
 import tcc.ges.aprovamais.repository.UsuarioRepository;
 
@@ -30,6 +31,7 @@ import java.util.Optional;
 public class ConsultaAuditoriaService {
 
     public static final String ACAO_CONSULTA = "AUDITORIA_CONSULTADA";
+    public static final String ACAO_VISUALIZACAO = "AUDITORIA_REGISTRO_VISUALIZADO";
 
     // O dia do filtro é o dia no horário de Brasília, não o do servidor
     private static final ZoneId ZONA = ZoneId.of("America/Sao_Paulo");
@@ -56,10 +58,10 @@ public class ConsultaAuditoriaService {
             auditoriaService.registrar(administrador.get(), ACAO_CONSULTA, descreverFiltros(filtro), ip, true);
         }
 
-        // Transforma cada registro do banco na linha que vai para a tela da auditoria
+        // Na lista, e-mails e IPs vão mascarados; o dado completo é visto registro a registro
         List<RegistroAuditoriaResponse> registros = new ArrayList<>();
         for (LogAuditoria registro : pagina.getContent()) {
-            registros.add(RegistroAuditoriaResponse.de(registro));
+            registros.add(RegistroAuditoriaResponse.mascarado(registro));
         }
 
         return new PaginaAuditoriaResponse(
@@ -69,6 +71,22 @@ public class ConsultaAuditoriaService {
                 pagina.getTotalElements(),
                 pagina.getTotalPages()
         );
+    }
+
+    /*
+       Devolve um registro sem máscara. Cada visualização fica na auditoria, com o administrador
+       que viu e qual registro foi aberto
+    */
+    @Transactional
+    public RegistroAuditoriaResponse revelar(Long id, String emailAdministrador, String ip) {
+        LogAuditoria registro = logAuditoriaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Registro de auditoria não encontrado"));
+        Optional<Usuario> administrador = usuarioRepository.findByEmail(emailAdministrador);
+        if (administrador.isPresent()) {
+            auditoriaService.registrar(administrador.get(), ACAO_VISUALIZACAO,
+                    "Registro de auditoria id=" + id + " visualizado sem máscara", ip, true);
+        }
+        return RegistroAuditoriaResponse.de(registro);
     }
 
     // Ações que já existem na auditoria, para o select da tela

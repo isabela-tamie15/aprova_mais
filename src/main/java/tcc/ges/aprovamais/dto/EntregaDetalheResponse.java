@@ -22,6 +22,9 @@ public class EntregaDetalheResponse {
     // Se o aluno pode mandar um arquivo agora, ou seja, sem entrega ou com a última versão devolvida
     private final boolean podeEnviar;
 
+    // Há um pedido de exclusão de anexo em análise, e a entrega fica parada até a decisão
+    private final boolean exclusaoEmAnalise;
+
     private final List<EntregaVersaoResponse> versoes;
 
     // Critérios ativos da tarefa, para o orientador preencher o checklist. Vazio na tela do aluno

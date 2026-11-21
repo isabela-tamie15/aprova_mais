@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import tcc.ges.aprovamais.service.ContaInicialService;
 
 
-// Esse component roda uma vez quando a aplicação sobe, para criar o administrador e a secretaria se ainda não existirem
+// Esse component roda uma vez quando a aplicação sobe, para criar o administrador se ainda não existir
 @Component
 @RequiredArgsConstructor
 public class ContaInicialRunner implements ApplicationRunner {
@@ -19,7 +19,6 @@ public class ContaInicialRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(ContaInicialRunner.class);
 
     private static final String NOME_PADRAO_ADMINISTRADOR = "Administrador";
-    private static final String NOME_PADRAO_SECRETARIA = "Secretaria Acadêmica";
 
     private final ContaInicialService contaInicialService;
 
@@ -33,36 +32,16 @@ public class ContaInicialRunner implements ApplicationRunner {
     @Value("${app.admin-inicial.nome:}")
     private String nomeAdministrador;
 
-    @Value("${app.secretaria-inicial.email:}")
-    private String emailSecretaria;
-
-    @Value("${app.secretaria-inicial.senha:}")
-    private String senhaSecretaria;
-
-    @Value("${app.secretaria-inicial.nome:}")
-    private String nomeSecretaria;
-
     // Chamado pelo Spring quando a aplicação termina de subir
     @Override
     public void run(ApplicationArguments args) {
-        /*
-           Cada conta fica num try separado e se uma falhar no banco, a outra
-           ainda é criada e a aplicação sobe, só com o erro no log
-        */
+        // Se a criação falhar no banco, a aplicação sobe do mesmo jeito, só com o erro no log
         try {
             contaInicialService.criarAdministradorInicialSeNecessario(emailAdministrador, senhaAdministrador,
                     nomeOuPadrao(nomeAdministrador, NOME_PADRAO_ADMINISTRADOR));
         } catch (DataAccessException excecao) {
             log.error("[CONTA INICIAL] Não foi possível criar o administrador inicial. Num banco criado antes "
                             + "do perfil ADMINISTRADOR, a restrição usuarios_perfil_check precisa ser atualizada. Erro: {}",
-                    excecao.getMostSpecificCause().getMessage());
-        }
-
-        try {
-            contaInicialService.criarSecretariaInicialSeNecessario(emailSecretaria, senhaSecretaria,
-                    nomeOuPadrao(nomeSecretaria, NOME_PADRAO_SECRETARIA));
-        } catch (DataAccessException excecao) {
-            log.error("[CONTA INICIAL] Não foi possível criar a secretaria inicial. Erro: {}",
                     excecao.getMostSpecificCause().getMessage());
         }
     }

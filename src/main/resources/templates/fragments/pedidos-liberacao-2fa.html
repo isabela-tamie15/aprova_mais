@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="lista(endereco, ocultarVazio)" class="card p-4 mb-4"
+     th:attr="data-endereco=${endereco}" x-data="pedidosLiberacao()"
+     x-show="!carregando && (pedidos.length > 0 || !ocultarVazio)" x-cloak
+     th:classappend="${ocultarVazio} ? 'ocultar-vazio' : ''">
+    <h5 class="fw-semibold mb-1">Pedidos de nova configuração do 2FA</h5>
+    <p class="text-muted small mb-3">Antes de aprovar, confirme com a pessoa, por telefone ou pessoalmente, que o pedido é dela.</p>
+
+    <div class="alert alert-danger py-2" x-show="erro" x-text="erro" x-cloak></div>
+    <div class="alert alert-success py-2" x-show="sucesso" x-text="sucesso" x-cloak></div>
+
+    <p class="text-muted small mb-0" x-show="pedidos.length === 0">Nenhum pedido aguardando análise.</p>
+
+    <template x-for="pedido in pedidos" :key="pedido.id">
+        <div class="border-top pt-3 mt-3">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+                <div>
+                    <div class="fw-semibold" x-text="pedido.nome"></div>
+                    <div class="small text-muted" x-text="pedido.email + ' · ' + nomeDoPerfil(pedido.perfil)"></div>
+                    <div class="small text-muted" x-text="'Pedido em ' + formatarData(pedido.criadoEm)"></div>
+                    <div class="small mt-1" x-show="pedido.motivo" x-text="'Motivo: ' + pedido.motivo"></div>
+                </div>
+                <div class="d-flex gap-2 align-items-start">
+                    <button type="button" class="btn btn-sm btn-primary" :disabled="salvando" @click="aprovar(pedido)">Aprovar</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="salvando"
+                            @click="recusando = (recusando === pedido.id ? null : pedido.id); justificativa = ''">Recusar</button>
+                </div>
+            </div>
+            <div class="mt-2" x-show="recusando === pedido.id" x-cloak>
+                <label class="form-label small" :for="'justificativa' + pedido.id">Motivo da recusa</label>
+                <textarea class="form-control" rows="2" maxlength="1000" :id="'justificativa' + pedido.id" x-model="justificativa"></textarea>
+                <button type="button" class="btn btn-sm btn-danger mt-2" :disabled="salvando || !justificativa.trim()" @click="recusar(pedido)">Confirmar recusa</button>
+            </div>
+        </div>
+    </template>
+</div>
+
+</body>
+</html>

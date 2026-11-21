@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import tcc.ges.aprovamais.entity.enums.SituacaoArquivo;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.entity.enums.TipoArquivo;
 import tcc.ges.aprovamais.security.AesEncryptor;
@@ -37,8 +38,8 @@ public class EntregaVersao {
     @Column(nullable = false, updatable = false)
     private Integer numero;
 
-    // Nome original do arquivo, só para exibir e para o download
-    @Column(name = "nome_arquivo", nullable = false, updatable = false)
+    // Nome original do arquivo, só para exibir e para o download. Sai quando o anexo é excluído
+    @Column(name = "nome_arquivo", nullable = false)
     private String nomeArquivo;
 
     // Onde o arquivo ficou guardado (disco local ou Cloudflare R2). Nunca vai para o navegador
@@ -78,4 +79,22 @@ public class EntregaVersao {
 
     @Column(name = "avaliada_em")
     private OffsetDateTime avaliadaEm;
+
+    // Nula nas versões gravadas antes da exclusão de anexo existir, e nesse caso vale como DISPONIVEL
+    @Enumerated(EnumType.STRING)
+    @Column(name = "situacao_arquivo", length = 30)
+    private SituacaoArquivo situacaoArquivo;
+
+    @Column(name = "arquivo_excluido_em")
+    private OffsetDateTime arquivoExcluidoEm;
+
+    // Quem aprovou a exclusão do anexo, da secretaria ou da coordenação
+    @ManyToOne
+    @JoinColumn(name = "exclusao_aprovada_por_id")
+    @ToString.Exclude
+    private Usuario exclusaoAprovadaPor;
+
+    public boolean arquivoDisponivel() {
+        return situacaoArquivo == null || situacaoArquivo == SituacaoArquivo.DISPONIVEL;
+    }
 }

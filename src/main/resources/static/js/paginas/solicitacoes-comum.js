@@ -3,7 +3,8 @@
 const NOMES_TIPO_SOLICITACAO = {
     TROCA_MODALIDADE: 'Troca de modalidade',
     TRANCAMENTO: 'Trancamento',
-    REABERTURA: 'Reabertura'
+    REABERTURA: 'Reabertura',
+    EXCLUSAO_ANEXO: 'Exclusão de anexo'
 };
 
 const CLASSES_STATUS_SOLICITACAO = {
@@ -18,7 +19,9 @@ const CLASSES_STATUS_SOLICITACAO = {
 function nomeStatusSolicitacao(solicitacao) {
     switch (solicitacao.status) {
         case 'PENDENTE':
-            return 'Aguardando a secretaria';
+            return solicitacao.tipo === 'EXCLUSAO_ANEXO'
+                ? 'Aguardando a secretaria ou a coordenação'
+                : 'Aguardando a secretaria';
         case 'EM_ANALISE_COORDENACAO':
             return solicitacao.tipo === 'TRANCAMENTO'
                 ? 'Validado pela secretaria, aguardando a coordenação'
@@ -80,6 +83,9 @@ async function chamarApiSolicitacoes(url, metodo = 'GET', corpo = null) {
    o curso, e a secretaria vê todos os pedidos de trancamento e de reabertura
 */
 function painelSolicitacoes(urlBase, statusDaVez, usaCurso) {
+    // A exclusão de anexo pode ser decidida pela secretaria ou pela coordenação logo que chega
+    const aguardaDecisao = solicitacao => solicitacao.status === statusDaVez
+        || (solicitacao.tipo === 'EXCLUSAO_ANEXO' && solicitacao.status === 'PENDENTE');
     return {
         cursos: [],
         cursoId: '',
@@ -128,15 +134,15 @@ function painelSolicitacoes(urlBase, statusDaVez, usaCurso) {
             if (this.filtro === 'todas') {
                 return this.solicitacoes;
             }
-            return this.solicitacoes.filter(solicitacao => solicitacao.status === statusDaVez);
+            return this.solicitacoes.filter(aguardaDecisao);
         },
 
         aguardando() {
-            return this.solicitacoes.filter(solicitacao => solicitacao.status === statusDaVez).length;
+            return this.solicitacoes.filter(aguardaDecisao).length;
         },
 
         podeDecidir(solicitacao) {
-            return solicitacao.status === statusDaVez;
+            return aguardaDecisao(solicitacao);
         },
 
         async aprovar(solicitacao) {

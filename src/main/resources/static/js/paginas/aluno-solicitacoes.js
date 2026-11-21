@@ -62,7 +62,8 @@ function solicitacoesAluno() {
         },
 
         temEmAnalise() {
-            return this.solicitacoes.some(s => s.status === 'PENDENTE' || s.status === 'EM_ANALISE_COORDENACAO');
+            return this.solicitacoes.some(s => s.tipo !== 'EXCLUSAO_ANEXO'
+                && (s.status === 'PENDENTE' || s.status === 'EM_ANALISE_COORDENACAO'));
         },
 
         validar() {

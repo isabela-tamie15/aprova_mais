@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tcc.ges.aprovamais.dto.*;
 import tcc.ges.aprovamais.entity.*;
+import tcc.ges.aprovamais.entity.enums.SituacaoArquivo;
 import tcc.ges.aprovamais.entity.enums.StatusEntrega;
 import tcc.ges.aprovamais.exception.DadoInvalidoException;
 import tcc.ges.aprovamais.exception.RegraNegocioException;
@@ -201,6 +202,9 @@ public class CorrecaoService {
         Entrega entrega = buscarEntregaDoOrientador(entregaId, emailOrientador);
         if (!AGUARDANDO_ANALISE.contains(entrega.getStatus())) {
             throw new RegraNegocioException("Esta entrega já foi avaliada.");
+        }
+        if (entregaVersaoRepository.existsByEntregaIdAndSituacaoArquivo(entrega.getId(), SituacaoArquivo.EXCLUSAO_EM_ANALISE)) {
+            throw new RegraNegocioException("O aluno pediu a exclusão do anexo desta entrega. Aguarde a decisão do pedido.");
         }
         EntregaVersao versao = entregaVersaoRepository.findFirstByEntregaIdOrderByNumeroDesc(entrega.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Entrega não encontrada."));
