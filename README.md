@@ -10,10 +10,10 @@ O sistema permite que alunos cadastrem seus estágios, orientadores validem as s
 
 ## Equipe
 
-| Nome | RGM | Função |
-|------|-----|--------|
-| Leonardo Valdir Silva | 11232100617 | Desenvolvedor - Feature: Trilha Personalizada |
-| Isabela Tamie Shihara | 11231203887 | Desenvolvedora - Feature: Cadastro e Validação de Estágio |
+| Nome | RGM |
+|------|-----|
+| Leonardo Valdir Silva | 11232100617 |
+| Isabela Tamie Shihara | 11231203887 |
 
 Turma: 8B - Engenharia de Software - UMC
 Orientador: Prof. Leonardo Torres
@@ -29,7 +29,7 @@ Orientador: Prof. Leonardo Torres
 - Redis - lista de tokens JWT revogados no logout
 - Thymeleaf - renderização server-side
 - Alpine.js - interatividade leve no frontend
-- Bootstrap 5 - estilização (Alpine.js, Bootstrap e qrcodejs carregados do jsDelivr)
+- Bootstrap 5 - estilização (Alpine.js, Bootstrap, qrcodejs e a fonte Inter servidos pelo próprio sistema, na pasta static/vendor, sem CDN)
 - JWT (jjwt) via cookie HttpOnly com SameSite=Strict
 - BCrypt - hash de senhas
 - AES-256-GCM - criptografia de dados sensíveis em repouso
@@ -37,7 +37,7 @@ Orientador: Prof. Leonardo Torres
 - qrcodejs - geração do QR Code do 2FA no navegador
 - Resend - API externa de envio de e-mails (convites, recuperação de senha e notificações)
 - BrasilAPI - consulta pública do CNPJ da empresa na Receita Federal
-- Cloudflare R2 - armazenamento dos arquivos das entregas (opcional; sem ele, os arquivos ficam no disco)
+- Cloudflare R2 - armazenamento dos arquivos das entregas (obrigatório no perfil prod; no desenvolvimento, sem ele, os arquivos ficam no disco)
 - springdoc-openapi - documentação da API (Swagger UI)
 - JUnit 5, Mockito, H2 e JaCoCo - testes automatizados e cobertura
 - Docker + Docker Compose
@@ -78,6 +78,8 @@ Orientador: Prof. Leonardo Torres
 - Orientador vê num só painel as entregas dos seus alunos, das mais antigas para as mais recentes, com filtros por aluno, tarefa, status e data
 - Orientador aprova ou devolve com feedback, e o aluno é avisado por e-mail
 - Tela de acompanhamento de cada aluno, com o progresso e as tarefas, onde o orientador conclui ou reprova o estágio
+- Aluno cancela o último envio enquanto o orientador ainda não abriu a entrega: a versão sai do histórico e o arquivo é apagado na hora
+- Aluno pede a exclusão do anexo de uma versão já aberta ou avaliada, com o motivo: durante a análise, o anexo fica bloqueado para todos e a entrega fica parada; a secretaria ou a coordenação decide, e na aprovação o arquivo é apagado automaticamente, sem ninguém abri-lo
 
 ### Feature 5 - Histórico de Versões das Entregas
 - Cada envio gera uma nova versão, e as anteriores ficam guardadas com o feedback recebido
@@ -95,7 +97,7 @@ Orientador: Prof. Leonardo Torres
 - Lista de pré-cadastro mantida pelo coordenador, com RGM só com números para aluno: a secretaria só convida quem está nela, vê na tela de convites quem ainda aguarda convite e convida pela própria lista, e a matrícula do aluno é criada na turma indicada ao aceitar o convite
 - Primeiro acesso pelo link do convite: definição de senha, aceite dos Termos de Uso e ciência da Política de Privacidade; o aluno confirma o RGM do pré-cadastro, e 5 tentativas com RGM errado cancelam o convite
 - Autenticação de dois fatores (2FA), obrigatória para os perfis administrativos, e tela de segurança da conta, com a troca de senha
-- Recuperação de senha por link enviado por e-mail
+- Recuperação de senha por link enviado por e-mail e pedido de nova configuração do 2FA para quem perdeu o celular
 - Auditoria das ações de acesso e das operações relevantes, com e-mail e IP mascarados na consulta
 - Páginas de Termos de Uso e Política de Privacidade com versão, vigência e histórico de versões, novo aceite quando a versão muda e histórico de aceites de cada usuário
 - Exercício dos direitos do titular: acesso e correção (com protocolo e prazo de resposta) e anonimização dos dados
@@ -105,6 +107,7 @@ Orientador: Prof. Leonardo Torres
 - Com o trancamento aprovado, o estágio fica suspenso com as horas mantidas, e o aluno pode pedir a reabertura dentro do prazo de arrependimento; sem reabertura, o estágio é encerrado ao fim do prazo
 - Orientador conclui ou reprova o estágio, e o coordenador encerra por desligamento
 - Coordenador atribui e troca o orientador de cada turma, levando junto os estágios em aberto
+- Pedido de exclusão de anexo decidido pela secretaria ou pela coordenação, quem analisar primeiro, sem bloquear os outros pedidos do aluno
 - Administrador ajusta os parâmetros do sistema (prazos, bloqueio, validade da sessão e retenção da auditoria) dentro de limites, e faz correções excepcionais com justificativa (desativar o 2FA de um usuário e corrigir o status de um estágio)
 
 ---
@@ -121,6 +124,7 @@ As regras abaixo estão implementadas no backend. Ocultar botões no frontend n�
 - Resposta genérica (401) para e-mail inexistente, senha incorreta ou conta inativa, evitando a descoberta de contas cadastradas
 - Bloqueio automático da conta após 5 tentativas falhas (senha ou código 2FA), com desbloqueio automático após 5 minutos. Esses são os valores padrão, que o administrador pode ajustar
 - Limite de 250 requisições por minuto por endereço IP nas rotas de autenticação, no aceite do primeiro acesso e na consulta de CNPJ; acima disso, a resposta é 429
+- Limite de 300 requisições por minuto por usuário logado em toda a API (LIMITE_REQUISICOES_POR_USUARIO); acima disso, a resposta é 429, sem afetar os demais usuários
 - Conta desativada perde o acesso imediatamente, mesmo com JWT ainda dentro da validade (verificação no JwtFilter)
 - Validade do JWT: 8 horas por padrão
 - Logout revoga o JWT no servidor: o token entra numa lista no Redis até expirar (com cópia em memória, para o logout valer mesmo se o Redis cair)
@@ -133,7 +137,7 @@ As regras abaixo estão implementadas no backend. Ocultar botões no frontend n�
 - Cada código TOTP é aceito uma única vez
 - Token de pré-autenticação: aleatório, de uso único, válido por 2 minutos (ajustável pelo administrador) e armazenado apenas como hash SHA-256
 - Código errado conta como tentativa falha e compartilha o bloqueio da senha; o contador só é zerado após o login completo
-- QR Code gerado no navegador: o segredo não é enviado a serviços externos; o script do CDN usa verificação de integridade (SRI)
+- QR Code gerado no navegador pelo qrcodejs, servido pelo próprio sistema: o segredo não é enviado a serviços externos
 - Segredo do 2FA armazenado cifrado com AES-256-GCM
 
 Fluxo de login:
@@ -157,10 +161,11 @@ POST /api/v1/auth/login (e-mail e senha)
 - Swagger e /v3/api-docs desativados no perfil prod
 
 ### Proteções no Navegador
-- Content-Security-Policy: scripts só do próprio sistema e do jsDelivr, fontes do Google Fonts, nenhum script inline e nenhuma abertura dentro de frame de outro site
+- Content-Security-Policy: scripts, estilos e fontes só do próprio sistema, nenhum script inline e nenhuma abertura dentro de frame de outro site
 - Referrer-Policy no-referrer, X-Content-Type-Options e X-Frame-Options
 - Os tokens do convite e da redefinição de senha são retirados da barra de endereço assim que a página abre
 - Arquivos das entregas baixados com Content-Disposition: attachment e X-Content-Type-Options: nosniff
+- Páginas de erro próprias para 403, 404 e 500 nas telas, sem detalhes internos; a API continua respondendo em JSON. Abrir uma página com a sessão expirada leva ao login
 
 ### Validação de Entrada
 - Todos os formulários são validados no frontend, para avisar antes do envio, e de novo no backend com Bean Validation (@Valid), porque a validação da tela pode ser contornada chamando a API direto
@@ -170,11 +175,11 @@ POST /api/v1/auth/login (e-mail e senha)
 
 | Perfil | Pode acessar |
 |--------|--------------|
-| ADMINISTRADOR | convites de coordenadores, auditoria, configurações do sistema, correções excepcionais, segurança da conta |
-| COORDENADOR | painel, cursos, turmas e orientador da turma, tipos de estágio, trilhas e critérios, pré-cadastro, estágios, solicitações, convites de secretarias, segurança da conta, direitos LGPD |
-| SECRETARIA | envio e acompanhamento de convites, solicitações de trancamento e reabertura, segurança da conta, direitos LGPD |
+| ADMINISTRADOR | convites de coordenadores, auditoria, configurações do sistema, correções excepcionais, pedidos de nova configuração do 2FA, segurança da conta |
+| COORDENADOR | painel, cursos, turmas e orientador da turma, tipos de estágio, trilhas e critérios, pré-cadastro, estágios, solicitações (inclusive exclusão de anexo), pedidos de nova configuração do 2FA do administrador, convites de secretarias, segurança da conta, direitos LGPD |
+| SECRETARIA | envio e acompanhamento de convites, solicitações de trancamento, reabertura e exclusão de anexo, segurança da conta, direitos LGPD |
 | ORIENTADOR | validação dos estágios, correções, histórico de correções, acompanhamento dos alunos, segurança da conta, direitos LGPD |
-| ALUNO | cadastro de estágio, painel, trilha e entregas, solicitações, segurança da conta, direitos LGPD |
+| ALUNO | cadastro de estágio, painel, trilha e entregas (com cancelamento de envio e pedido de exclusão de anexo), solicitações, segurança da conta, direitos LGPD |
 
 ### Criptografia
 - Em trânsito: HTTPS (TLS) no perfil prod
@@ -196,12 +201,12 @@ Os eventos são gravados na tabela registros_auditoria na mesma transação da o
 | Grupo | Eventos |
 |-------|---------|
 | Login | LOGIN_SUCESSO, LOGIN_FALHA, LOGOUT, RECUPERACAO_SENHA_SOLICITADA, SENHA_REDEFINIDA |
-| 2FA | LOGIN_2FA_REQUERIDO, LOGIN_CONFIGURACAO_2FA_REQUERIDA, LOGIN_2FA_FALHA, DOIS_FATORES_ATIVADO, DOIS_FATORES_DESATIVADO, DOIS_FATORES_FALHA |
+| 2FA | LOGIN_2FA_REQUERIDO, LOGIN_CONFIGURACAO_2FA_REQUERIDA, LOGIN_2FA_FALHA, DOIS_FATORES_ATIVADO, DOIS_FATORES_DESATIVADO, DOIS_FATORES_FALHA, DOIS_FATORES_LIBERACAO_SOLICITADA, DOIS_FATORES_LIBERACAO_APROVADA, DOIS_FATORES_LIBERACAO_RECUSADA |
 | Acesso ao sistema | CONVITE_ENVIADO, PRIMEIRO_ACESSO_ACEITO, PRIMEIRO_ACESSO_RECUSADO, PRIMEIRO_ACESSO_RGM_INCORRETO, CONTA_INICIAL_CRIADA, MATRICULA_CRIADA, PRE_CADASTRO_INCLUIDO, PRE_CADASTRO_ALTERADO |
 | Cadastros da coordenação | CURSO_CADASTRADO, CURSO_ALTERADO, TURMA_CADASTRADA, TURMA_ALTERADA, ORIENTADOR_ATRIBUIDO, TIPO_ESTAGIO_CADASTRADO, TIPO_ESTAGIO_ALTERADO, TRILHA_CRIADA, TRILHA_ALTERADA, TAREFA_ADICIONADA, TAREFA_ALTERADA, TAREFA_REMOVIDA, CRITERIO_ADICIONADO, CRITERIO_ALTERADO, CRITERIO_DESATIVADO, CRITERIO_REMOVIDO |
 | Estágio | ESTAGIO_CADASTRADO, ESTAGIO_APROVADO, ESTAGIO_REJEITADO, ESTAGIO_CONCLUIDO, ESTAGIO_REPROVADO, ESTAGIO_DESLIGADO |
-| Entregas | ENTREGA_ENVIADA, ENTREGA_APROVADA, ENTREGA_DEVOLVIDA, ARQUIVO_BAIXADO |
-| Solicitações | SOLICITACAO_CRIADA, SOLICITACAO_CANCELADA, SOLICITACAO_APROVADA_SECRETARIA, SOLICITACAO_APROVADA, SOLICITACAO_REPROVADA, TRANCAMENTO_EFETIVADO |
+| Entregas | ENTREGA_ENVIADA, ENTREGA_APROVADA, ENTREGA_DEVOLVIDA, ARQUIVO_BAIXADO, ENVIO_CANCELADO, ANEXO_EXCLUIDO |
+| Solicitações | SOLICITACAO_CRIADA, EXCLUSAO_ANEXO_SOLICITADA, SOLICITACAO_CANCELADA, SOLICITACAO_APROVADA_SECRETARIA, SOLICITACAO_APROVADA, SOLICITACAO_REPROVADA, TRANCAMENTO_EFETIVADO |
 | Administração | AUDITORIA_CONSULTADA, AUDITORIA_REGISTRO_VISUALIZADO, CONFIGURACAO_ALTERADA, CORRECAO_DOIS_FATORES, CORRECAO_STATUS_ESTAGIO |
 | LGPD | CONSENTIMENTO_ACEITO, SOLICITACAO_ACESSO_DADOS, SOLICITACAO_CORRECAO_DADOS, ANONIMIZACAO_EXECUTADA, ANONIMIZACAO_FALHA |
 
@@ -217,13 +222,16 @@ FROM registros_auditoria ORDER BY id DESC LIMIT 20;
 - Cada aceite fica no histórico de aceites (tabela aceites_termos), que não é apagado pela eliminação periódica da auditoria. Quando a versão muda, as páginas e a API exigem um novo aceite antes de continuar, e quem não concorda pode sair pela própria tela de aceite
 - Contato do encarregado de proteção de dados (DPO) no rodapé de todas as páginas (art. 41 da LGPD)
 - Direitos do titular na tela de privacidade: solicitar acesso e correção, com protocolo e prazo de resposta de 15 dias, e anonimizar os dados
-- Anonimização substitui nome, e-mail, senha e identificadores por valores neutros, cancela as solicitações em aberto e desativa a conta; os registros acadêmicos de estágio são conservados para cumprimento de obrigação legal (art. 16, I, da LGPD), sem ligação com a conta, e os arquivos enviados ficam como foram enviados
+- Anonimização substitui nome, e-mail, senha e identificadores por valores neutros, cancela as solicitações em aberto e desativa a conta; os registros acadêmicos de estágio são conservados para cumprimento de obrigação legal (art. 16, I, da LGPD), sem ligação com a conta, e os arquivos enviados ficam como foram enviados, exceto os anexos excluídos a pedido do aluno
+- Arquivo enviado por engano: o aluno cancela o envio ou pede a exclusão do anexo pela trilha. O anexo fica bloqueado para todos durante a análise e, na aprovação, é apagado do armazenamento sem etapa manual; a versão continua no histórico, sem o nome do arquivo, com a data e quem aprovou
 
 ### Riscos Residuais e Decisões de Projeto
 - Conta bloqueada por tentativas falhas mantém a sessão já aberta: o bloqueio protege o login contra força bruta. A revogação imediata do acesso é feita desativando a conta (ativo = false)
 - A resposta 423 (conta bloqueada) só ocorre para e-mail existente após as tentativas configuradas, mantida por usabilidade
 - CSRF desabilitado, mitigado pelo cookie SameSite=Strict
-- Perda do dispositivo autenticador: não há recuperação automática; o administrador desativa o 2FA da conta na tela Correções, com justificativa registrada na auditoria, e o usuário configura um novo no próximo login
+- Perda do dispositivo autenticador: não há recuperação automática. Na etapa do código, o usuário pede uma nova configuração; o pedido só pode ser aberto depois da senha correta. O administrador analisa os pedidos de todos os perfis na tela Correções, e um coordenador analisa os pedidos do administrador na tela Solicitações. Quem aprova confirma a identidade da pessoa fora do sistema, a aprovação desativa o 2FA da conta e o usuário configura um novo no próximo login. Pedidos, aprovações e recusas ficam na auditoria
+- O pedido de exclusão de anexo é decidido pelo motivo informado, sem abrir o arquivo: abrir exporia justamente o dado que o aluno quer apagar
+- Os arquivos do seed de demonstração apontam todos para o mesmo PDF; nesse caso o arquivo físico não é apagado na exclusão, para não afetar as outras versões
 - O Alpine.js precisa de 'unsafe-eval' na Content-Security-Policy, porque avalia as expressões dos atributos das páginas
 
 ---
@@ -263,7 +271,7 @@ O validador já aceita o CNPJ alfanumérico emitido pela Receita Federal a parti
 
 ## Integração com Serviço Externo (Cloudflare R2)
 
-Os arquivos das entregas são guardados no Cloudflare R2 (ArmazenamentoR2), compatível com a API do S3, quando as quatro variáveis R2_* estão preenchidas. Sem elas, os arquivos ficam no disco, na pasta definida em ARMAZENAMENTO_DIRETORIO (padrão `uploads`).
+Os arquivos das entregas são guardados no Cloudflare R2 (ArmazenamentoR2), compatível com a API do S3, quando as quatro variáveis R2_* estão preenchidas. No perfil prod elas são obrigatórias, e a aplicação não sobe sem elas. No desenvolvimento, sem as variáveis, os arquivos ficam no disco, na pasta definida em ARMAZENAMENTO_DIRETORIO (padrão `uploads`).
 
 | Item | Descrição |
 |------|-----------|
@@ -272,7 +280,7 @@ Os arquivos das entregas são guardados no Cloudflare R2 (ArmazenamentoR2), comp
 | Autenticação | Chaves de acesso nas variáveis R2_ACCESS_KEY e R2_SECRET_KEY |
 | Transferência internacional | Sim (servidores distribuídos), declarada na Política de Privacidade |
 
-No Render, o disco é apagado a cada implantação, então o R2 é necessário em produção.
+No Render, o disco é apagado a cada implantação, por isso o perfil prod exige o R2. A exclusão de um anexo apaga o objeto do bucket.
 
 ---
 
@@ -346,13 +354,10 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=<gerado com openssl rand -hex 24>
 
-# Contas criadas na inicialização, apenas se ainda não existirem
+# Conta do administrador, criada na inicialização apenas se ainda não existir nenhum
 ADMIN_INICIAL_EMAIL=admin@exemplo.com
 ADMIN_INICIAL_SENHA=<8 a 72 caracteres, com letra e número>
 ADMIN_INICIAL_NOME=Administrador
-SECRETARIA_INICIAL_EMAIL=secretaria@exemplo.com
-SECRETARIA_INICIAL_SENHA=<8 a 72 caracteres, com letra e número>
-SECRETARIA_INICIAL_NOME=Secretaria Acadêmica
 
 # Endereço usado nos links dos e-mails
 APP_URL=http://localhost:8080
@@ -361,7 +366,7 @@ APP_URL=http://localhost:8080
 RESEND_API_KEY=<chave do Resend>
 EMAIL_REMETENTE=
 
-# Cloudflare R2 (opcional). Vazio, os arquivos ficam no disco
+# Cloudflare R2 (obrigatório no perfil prod). No dev, vazio, os arquivos ficam no disco
 R2_ENDPOINT=
 R2_ACCESS_KEY=
 R2_SECRET_KEY=
@@ -378,10 +383,10 @@ GRAFANA_SENHA=<gerado com openssl rand -hex 24>
 | DB_URL, DB_USERNAME, DB_PASSWORD | Sim | O docker-compose cria o banco com esse usuário e essa senha |
 | JWT_SECRET, ENCRYPTION_SECRET | Sim | No mínimo 32 bytes aleatórios |
 | REDIS_PASSWORD, GRAFANA_SENHA | Sim | O docker-compose não sobe sem elas |
-| ADMIN_INICIAL_*, SECRETARIA_INICIAL_* | Sim, na primeira subida | Criam as primeiras contas; depois são ignoradas |
+| ADMIN_INICIAL_* | Sim, na primeira subida | Cria a conta do administrador; depois é ignorada |
 | APP_URL | Recomendada | Base dos links enviados por e-mail |
 | RESEND_API_KEY, EMAIL_REMETENTE | Não | Ver [Resend](#resend-e-mail) |
-| R2_*, ARMAZENAMENTO_DIRETORIO | Não | Ver [Cloudflare R2](#cloudflare-r2-arquivos-das-entregas) |
+| R2_*, ARMAZENAMENTO_DIRETORIO | No perfil prod, R2_* sim | Ver [Cloudflare R2](#cloudflare-r2-arquivos-das-entregas) |
 
 A aplicação confere essas chaves ao subir: se faltar o perfil, ou se o JWT_SECRET ou o ENCRYPTION_SECRET tiverem menos de 32 bytes ou ainda estiverem com um valor de exemplo, ela para e o log diz qual variável corrigir.
 
@@ -396,7 +401,7 @@ O Dockerfile compila o projeto dentro do contêiner, então não é preciso gera
 docker compose ps
 docker compose logs -f backend
 ```
-A aplicação está pronta quando o log mostra `Started AprovamaisApplication`. Nesse momento, o Hibernate já criou as tabelas e o ContaInicialRunner já criou o administrador e a secretaria do .env.
+A aplicação está pronta quando o log mostra `Started AprovamaisApplication`. Nesse momento, o Hibernate já criou as tabelas e o ContaInicialRunner já criou o administrador do .env.
 
 **5. Acesse:**
 
@@ -420,7 +425,7 @@ Para parar, use `docker compose down`. Para apagar também o banco e começar do
 
 ## Roteiro de Testes
 
-O banco começa vazio, apenas com o administrador e a secretaria do .env, e não há seed: os dados são criados pela própria interface, na ordem em que o sistema exige. Use sempre e-mails fictícios, como `coordenador@exemplo.com`.
+O banco começa vazio, apenas com o administrador do .env, e não há seed: os dados são criados pela própria interface, na ordem em que o sistema exige. Use sempre e-mails fictícios, como `coordenador@exemplo.com`.
 
 ### Links de convite sem e-mail
 
@@ -441,23 +446,25 @@ Abra o link numa janela anônima do navegador, para não misturar a sessão de q
    - a trilha desse tipo (Trilhas), com algumas tarefas;
    - em Critérios, o checklist de avaliação de uma tarefa.
 4. **Pré-cadastro.** Em Pré-cadastro, inclua um aluno (com RGM só com números e turma) e um orientador (com matrícula institucional).
-5. **Secretaria.** Entre com o SECRETARIA_INICIAL_EMAIL e configure o 2FA. Em Enviar convite, clique em Convidar na lista de pré-cadastrados para o aluno e o orientador e aceite os dois convites pelos links do log. No convite do aluno, informe o RGM do pré-cadastro: com um RGM errado, a tela mostra quantas tentativas restam. O coordenador também pode convidar outras secretarias no menu Convites.
+5. **Secretaria.** Como coordenador, no menu Convites, convide uma secretaria e aceite o convite pelo link do log. Entre como secretaria e configure o 2FA. Em Enviar convite, clique em Convidar na lista de pré-cadastrados para o aluno e o orientador e aceite os dois convites pelos links do log. No convite do aluno, informe o RGM do pré-cadastro: com um RGM errado, a tela mostra quantas tentativas restam.
 6. **Orientador da turma.** Como coordenador, em Turmas, escolha o orientador na coluna Orientador.
 7. **Cadastro do estágio.** Como aluno, em Meu estágio, cadastre o estágio. Ao digitar um CNPJ válido, o nome da empresa é preenchido pela BrasilAPI.
 8. **Validação.** Como orientador, em Validações, confira a data de início e aprove. Teste também a rejeição com justificativa, que libera o reenvio para o aluno.
 9. **Progresso.** Como aluno, confira no Painel a carga horária cumprida e restante, o cálculo por semanas e o aviso de prazo.
 10. **Entregas e checklist.** Como aluno, em Minha trilha, envie um PDF numa tarefa. Como orientador, em Correções, abra a entrega, marque os critérios como Suficiente ou Insuficiente e devolva com feedback. O aluno vê o resultado e envia uma nova versão, que o orientador aprova.
-11. **Solicitações.** Como aluno, em Solicitações, peça a troca de modalidade (decidida pelo coordenador) ou o trancamento (analisado pela secretaria e aprovado pelo coordenador). Com o trancamento aprovado, peça a reabertura dentro do prazo mostrado.
-12. **Encerramento.** O orientador conclui ou reprova o estágio na tela de acompanhamento do aluno (botão Ver acompanhamento, em Validações). O coordenador encerra por desligamento em Estágios.
-13. **Painel do coordenador.** Confira os indicadores por etapa e os gráficos por turma, e combine os filtros de curso, semestre, turma e orientador.
-14. **Administração.** Como administrador:
+11. **Arquivo enviado por engano.** Como aluno, envie um arquivo numa tarefa e clique em Cancelar envio: a versão some e o arquivo é apagado. Envie de novo, abra a entrega como orientador e, como aluno, clique em Solicitar exclusão do anexo. Confira que ninguém consegue abrir o arquivo e que o orientador não consegue avaliar a entrega. Como secretaria ou coordenador, em Solicitações, aprove: o histórico mostra o anexo excluído, e a tarefa volta para o aluno.
+12. **Solicitações.** Como aluno, em Solicitações, peça a troca de modalidade (decidida pelo coordenador) ou o trancamento (analisado pela secretaria e aprovado pelo coordenador). Com o trancamento aprovado, peça a reabertura dentro do prazo mostrado.
+13. **Encerramento.** O orientador conclui ou reprova o estágio na tela de acompanhamento do aluno (botão Ver acompanhamento, em Validações). O coordenador encerra por desligamento em Estágios.
+14. **Painel do coordenador.** Confira os indicadores por etapa e os gráficos por turma, e combine os filtros de curso, semestre, turma e orientador.
+15. **Administração.** Como administrador:
     - em Configurações, altere um parâmetro, por exemplo o prazo de arrependimento;
+    - na tela de login de outro perfil, na etapa do código, use "Perdi o acesso ao aplicativo autenticador" e, como administrador, aprove o pedido em Correções;
     - em Correções, desative o 2FA de um usuário ou corrija o status de um estágio, com justificativa;
     - em Auditoria, filtre os registros das ações feitas nos passos anteriores e abra um registro pelo botão Ver para ver o e-mail e o IP sem máscara.
-15. **LGPD.** Pelo rodapé, abra a Política de Privacidade:
+16. **LGPD.** Pelo rodapé, abra a Política de Privacidade:
     - peça acesso ou correção dos dados e confira o protocolo e o prazo;
     - teste a anonimização com uma conta de aluno de teste, informando a senha e o código do 2FA quando ele estiver ativo.
-16. **Recuperação de senha.** Na tela de login, use "Esqueceu sua senha? Recupere agora". O link chega por e-mail, então este passo depende do Resend.
+17. **Recuperação de senha.** Na tela de login, use "Esqueceu sua senha? Recupere agora". O link chega por e-mail, então este passo depende do Resend.
 
 ### Comandos úteis durante os testes
 
@@ -527,7 +534,7 @@ curl -i http://localhost:8080/api/v1/conta/2fa -H "Cookie: jwt=<token copiado an
 
 | Evidência | Resultado |
 |-----------|-----------|
-| `./mvnw test` | 347 testes, entre testes de unidade dos serviços e testes de integração que sobem a aplicação e chamam a API, sem falhas |
+| `./mvnw test` | 352 testes, entre testes de unidade dos serviços e testes de integração que sobem a aplicação e chamam a API, sem falhas |
 | Cobertura (JaCoCo) | 78,2% das linhas, acima do mínimo de 50% configurado no pom.xml; o relatório fica em `target/site/jacoco/index.html` |
 | CI (GitHub Actions) | `.github/workflows/ci.yml` roda os testes a cada push e pull request para a develop e a main; o selo no topo deste README mostra o último resultado |
 | Regressão da API | 87 respostas da API capturadas antes e depois de cada branch, sem diferenças fora das mudanças previstas |
@@ -552,10 +559,28 @@ curl -i -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: applic
 
 ### Telas do sistema
 
-Capturas feitas com dados fictícios, as mesmas do manual do usuário da monografia:
+Capturas feitas com dados fictícios do seed de demonstração, usadas também no manual do usuário da monografia:
 
 | Tela | Captura |
 |------|---------|
+| Login | [login.png](docs/evidencias/login.png) |
+| Primeiro acesso pelo convite | [figura12_primeiro_acesso.png](docs/evidencias/figura12_primeiro_acesso.png) |
+| Login com a verificação em duas etapas | [figura13_login_2fa.png](docs/evidencias/figura13_login_2fa.png) |
+| Pedido de nova configuração do 2FA | [liberacao_2fa_pedido.png](docs/evidencias/liberacao_2fa_pedido.png) |
+| Análise do pedido pelo administrador | [liberacao_2fa_analise.png](docs/evidencias/liberacao_2fa_analise.png) |
+| Painel do aluno | [figura14_painel_aluno.png](docs/evidencias/figura14_painel_aluno.png) |
+| Trilha com o histórico de versões | [figura15_trilha_versoes.png](docs/evidencias/figura15_trilha_versoes.png) |
+| Pedido de exclusão de anexo pelo aluno | [exclusao_anexo_aluno.png](docs/evidencias/exclusao_anexo_aluno.png) |
+| Pedido de exclusão na tela da secretaria | [exclusao_anexo_secretaria.png](docs/evidencias/exclusao_anexo_secretaria.png) |
+| Validação de estágios | [figura16_validacoes.png](docs/evidencias/figura16_validacoes.png) |
+| Painel de correção | [figura17_painel_correcao.png](docs/evidencias/figura17_painel_correcao.png) |
+| Avaliação com o checklist de critérios | [figura18_avaliacao_checklist.png](docs/evidencias/figura18_avaliacao_checklist.png) |
+| Montagem da trilha | [figura19_montagem_trilha.png](docs/evidencias/figura19_montagem_trilha.png) |
+| Painel do coordenador com filtros | [painel_coordenador.png](docs/evidencias/painel_coordenador.png) |
+| Auditoria | [figura20_auditoria.png](docs/evidencias/figura20_auditoria.png) |
+| Página de erro (acesso não permitido) | [pagina_erro.png](docs/evidencias/pagina_erro.png) |
+
+------|---------|
 | Primeiro acesso pelo convite | [figura12_primeiro_acesso.png](docs/evidencias/figura12_primeiro_acesso.png) |
 | Login com a verificação em duas etapas | [figura13_login_2fa.png](docs/evidencias/figura13_login_2fa.png) |
 | Painel do aluno | [figura14_painel_aluno.png](docs/evidencias/figura14_painel_aluno.png) |
@@ -574,7 +599,7 @@ O arquivo `render.yaml` descreve a implantação no Render: o serviço web em Do
 
 1. No Render, crie um Blueprint apontando para este repositório.
 2. O Render gera o JWT_SECRET e o ENCRYPTION_SECRET e liga o banco e o Redis automaticamente.
-3. Na criação, informe APP_URL (o endereço público), RESEND_API_KEY, EMAIL_REMETENTE, as variáveis R2_* e as contas iniciais ADMIN_INICIAL_* e SECRETARIA_INICIAL_*.
+3. Na criação, informe APP_URL (o endereço público), RESEND_API_KEY, EMAIL_REMETENTE, as variáveis R2_*, obrigatórias no perfil prod, e a conta inicial ADMIN_INICIAL_*.
 4. O perfil prod liga o HTTPS obrigatório e o cookie Secure e desativa o Swagger. A verificação de saúde usa o /readyz.
 
 No plano gratuito, o serviço hiberna sem uso, e a primeira requisição depois disso demora cerca de um minuto.
@@ -593,7 +618,8 @@ entity/      - Entidades JPA e enums
 exception/   - Tratamento global de exceções
 external/    - Clientes externos: EmailService (Resend) e ConsultaCnpjService (BrasilAPI)
 repository/  - Repositórios Spring Data JPA
-security/    - JwtService, JwtFilter, AesEncryptor, TokenRevogadoService, LimiteRequisicoesFilter
+security/    - JwtService, JwtFilter, AesEncryptor, TokenRevogadoService, LimiteRequisicoesFilter,
+               LimiteUsuarioFilter
 service/     - Lógica de negócio: EstagioService, TrilhaService, EntregaService, ConviteService,
                SolicitacaoService, EncerramentoEstagioService, PainelCoordenadorService,
                ConfiguracaoService, CorrecaoExcepcionalService, AuditoriaService,
@@ -605,7 +631,7 @@ storage/     - Armazenamento dos arquivos: disco local e Cloudflare R2
 **src/main/resources/**
 ```
 templates/
-├── login.html, primeiro-acesso.html, primeiro-acesso-erro.html
+├── login.html, primeiro-acesso.html, primeiro-acesso-erro.html, error.html
 ├── recuperar-senha.html, redefinir-senha.html
 ├── consentimento.html, termos.html, privacidade.html
 ├── admin/          auditoria, convites, configuracoes, correcoes
@@ -615,9 +641,11 @@ templates/
 ├── orientador/     validacoes, correcoes, correcao, historico, acompanhamento
 ├── aluno/          dashboard, estagio, trilha, solicitacoes
 ├── conta/          seguranca
-└── fragments/      barras de navegação por perfil, rodapé LGPD e lista de solicitações
+└── fragments/      barras de navegação por perfil, rodapé LGPD, lista de solicitações e pedidos do 2FA
 static/
+├── vendor/               Bootstrap, Alpine.js, qrcodejs e fonte Inter, servidos sem CDN
 ├── css/
+│   ├── img/              logos do Aprova+
 │   ├── main.css          estilos usados em várias páginas
 │   └── paginas/          um arquivo por página (ex.: secretaria-convites.css)
 └── js/
@@ -641,6 +669,7 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 | POST | /api/v1/auth/2fa/verificar | Segunda etapa do login (conta com 2FA ativo) |
 | POST | /api/v1/auth/2fa/configuracao/iniciar | Gera o QR Code no primeiro login de perfil com 2FA obrigatório |
 | POST | /api/v1/auth/2fa/configuracao/confirmar | Confirma o primeiro código, ativa o 2FA e cria o cookie JWT |
+| POST | /api/v1/auth/2fa/liberacao | Pede uma nova configuração do 2FA, com o token da etapa do código |
 | POST | /api/v1/auth/recuperacao/solicitar | Envia o link de recuperação de senha |
 | POST | /api/v1/auth/recuperacao/redefinir | Troca a senha usando o token do link |
 
@@ -685,7 +714,9 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 | GET | /api/v1/aluno/trilha | Busca a trilha personalizada do aluno |
 | POST | /api/v1/aluno/tarefas/{tarefaId}/entregas | Envia o arquivo de uma tarefa, criando uma nova versão |
 | GET | /api/v1/aluno/tarefas/{tarefaId}/entrega | Busca a entrega da tarefa, com o histórico de versões e o resultado do checklist |
-| GET | /api/v1/aluno/entregas/versoes/{versaoId}/arquivo | Baixa o arquivo de uma versão |
+| GET | /api/v1/aluno/entregas/versoes/{versaoId}/arquivo | Baixa o arquivo de uma versão (bloqueado se houver pedido de exclusão) |
+| DELETE | /api/v1/aluno/entregas/versoes/{versaoId} | Cancela o último envio, enquanto o orientador não abriu a entrega |
+| POST | /api/v1/aluno/entregas/versoes/{versaoId}/exclusao | Pede a exclusão do anexo de uma versão, com o motivo |
 | GET | /api/v1/aluno/solicitacoes | Lista as solicitações do aluno |
 | POST | /api/v1/aluno/solicitacoes | Cria solicitação de troca de modalidade, trancamento ou reabertura |
 | POST | /api/v1/aluno/solicitacoes/{id}/cancelar | Cancela uma solicitação em análise |
@@ -724,15 +755,15 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 | GET | /api/v1/coordenador/estagios | Lista os estágios em aberto de um curso |
 | POST | /api/v1/coordenador/estagios/{estagioId}/desligar | Encerra o estágio por desligamento |
 | GET | /api/v1/coordenador/solicitacoes | Lista as solicitações dos cursos do coordenador |
-| POST | /api/v1/coordenador/solicitacoes/{id}/aprovar | Aprova a troca de modalidade ou o trancamento |
+| POST | /api/v1/coordenador/solicitacoes/{id}/aprovar | Aprova a troca de modalidade, o trancamento ou a exclusão de anexo |
 | POST | /api/v1/coordenador/solicitacoes/{id}/reprovar | Reprova com justificativa |
 
 ### Secretaria
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | GET | /api/v1/secretaria/pre-cadastros | Lista os pré-cadastrados que ainda não têm conta, com a situação do convite |
-| GET | /api/v1/secretaria/solicitacoes | Lista os pedidos de trancamento e de reabertura |
-| POST | /api/v1/secretaria/solicitacoes/{id}/aprovar | Aprova (o trancamento segue para a coordenação) |
+| GET | /api/v1/secretaria/solicitacoes | Lista os pedidos de trancamento, de reabertura e de exclusão de anexo |
+| POST | /api/v1/secretaria/solicitacoes/{id}/aprovar | Aprova (o trancamento segue para a coordenação; a exclusão de anexo apaga o arquivo) |
 | POST | /api/v1/secretaria/solicitacoes/{id}/reprovar | Reprova com justificativa |
 
 ### Administrador
@@ -744,6 +775,9 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 | GET | /api/v1/admin/configuracoes | Lista os parâmetros, com valor, padrão e limites |
 | PUT | /api/v1/admin/configuracoes/{parametro} | Altera um parâmetro dentro dos limites |
 | POST | /api/v1/admin/correcoes/dois-fatores | Desativa o 2FA de um usuário, com justificativa |
+| GET | /api/v1/admin/liberacoes-2fa | Lista os pedidos de nova configuração do 2FA em análise (o coordenador usa /api/v1/coordenador/liberacoes-2fa, só para os do administrador) |
+| POST | /api/v1/admin/liberacoes-2fa/{id}/aprovar | Aprova o pedido e desativa o 2FA da conta |
+| POST | /api/v1/admin/liberacoes-2fa/{id}/recusar | Recusa o pedido, com justificativa |
 | GET | /api/v1/admin/correcoes/estagios/{id} | Busca um estágio para correção |
 | POST | /api/v1/admin/correcoes/estagios/{id}/status | Corrige o status de um estágio, com justificativa |
 
@@ -759,11 +793,11 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 | /termos | Público | Termos de Uso |
 | /privacidade | Público | Política de Privacidade e direitos do titular |
 | /consentimento | Autenticado | Aceite dos termos de uso |
-| /inicio | Autenticado | Redireciona para a página inicial do perfil |
+| / e /inicio | Público | Redireciona para a página inicial do perfil, ou para o login sem sessão |
 | /conta/seguranca | Autenticado | Ativar/desativar verificação em duas etapas |
 | /aluno/dashboard | ALUNO | Painel com a situação do estágio, a carga horária e os avisos de prazo |
 | /estagio | ALUNO | Formulário de cadastro ou reenvio |
-| /aluno/trilha | ALUNO | Trilha de tarefas, entregas e histórico de versões |
+| /aluno/trilha | ALUNO | Trilha de tarefas, entregas, histórico de versões, cancelamento de envio e pedido de exclusão de anexo |
 | /aluno/solicitacoes | ALUNO | Troca de modalidade, trancamento e reabertura |
 | /orientador/validacoes | ORIENTADOR | Estágios para validar e estágios ativos |
 | /orientador/correcoes | ORIENTADOR | Painel de correção |
@@ -779,7 +813,7 @@ As páginas não têm `<script>` nem `<style>` dentro do HTML. O nome do arquivo
 | /secretaria/dashboard | SECRETARIA | Painel da secretaria |
 | /secretaria/enviar-convite | SECRETARIA | Envio de convites |
 | /secretaria/convites | SECRETARIA | Convites enviados |
-| /secretaria/solicitacoes | SECRETARIA | Pedidos de trancamento e de reabertura |
+| /secretaria/solicitacoes | SECRETARIA | Pedidos de trancamento, de reabertura e de exclusão de anexo |
 | /admin/auditoria | ADMINISTRADOR | Consulta da auditoria |
 | /admin/convites | ADMINISTRADOR | Convites de coordenadores |
 | /admin/configuracoes | ADMINISTRADOR | Parâmetros do sistema |
